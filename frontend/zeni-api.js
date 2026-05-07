@@ -81,6 +81,11 @@
     // Clear legacy + remove active account from multi-account
     localStorage.removeItem(ACCESS_KEY);
     localStorage.removeItem(REFRESH_KEY);
+    // Nuke per-tenant cached state so next login does not see prior tenant data
+    try {
+      localStorage.removeItem('zeniCloud_v2_clean');
+      localStorage.removeItem('zeniCloud_session_v1');
+    } catch (e) { /* swallow */ }
     const id = _getActiveId();
     if (id) {
       const accounts = _getAccounts().filter(a => a.id !== id);
@@ -291,6 +296,29 @@
       try {
         await ZeniAPI.login(email, pass);
         const user = await ZeniAPI.me();
+        // Cross-tenant safety: if cached session belongs to a different user,
+        // wipe stale per-tenant state (auditLog, projects, connectors, ws map)
+        // BEFORE the new session writes to localStorage.
+        try {
+          const cachedRaw = localStorage.getItem('zeniCloud_session_v1');
+          if (cachedRaw) {
+            const cached = JSON.parse(cachedRaw);
+            const cachedId = cached && cached.user && cached.user.id;
+            if (cachedId && user && user.id && cachedId !== user.id) {
+              localStorage.removeItem('zeniCloud_v2_clean');
+              localStorage.removeItem('zeniCloud_session_v1');
+              if (window.state) {
+                window.state.projects = [];
+                window.state.agents = [];
+                window.state.secrets = [];
+                window.state.connectors = [];
+                window.state.auditLog = [];
+                window.state.members = [];
+              }
+              console.log('[ZeniAPI] tenant change detected — wiped stale state');
+            }
+          }
+        } catch (e) { console.warn('[ZeniAPI] mismatch-check failed:', e); }
         window.__ZENI_REAL_USER = user;
 
         const mappedUser = {

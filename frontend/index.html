@@ -2632,12 +2632,14 @@ document.addEventListener('keydown', e => {
 
   function saveState() {
     try {
+      // NOTE: auditLog is NOT persisted to localStorage — it lives server-side
+      // and is fetched per-workspace via ZeniAPI.listAudit(). Persisting it
+      // would leak prior tenant's events to the next user on the same browser.
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         projects: state.projects,
         agents: state.agents,
         secrets: state.secrets,
         connectors: state.connectors,
-        auditLog: state.auditLog,
         members: state.members,
         meteredToday: state.meteredToday || 0
       }));
@@ -2650,7 +2652,13 @@ document.addEventListener('keydown', e => {
       if (raw) {
         const s = JSON.parse(raw);
         const u = USERS.find(x => x.id === s.uid);
-        if (u) { state.currentUser = u; state.currentWs = s.ws || u.ws[0]; }
+        if (u) {
+          state.currentUser = u;
+          // Cross-tenant safety: only honour cached ws if it belongs to user.
+          // Otherwise fallback to user's first owned workspace.
+          const owned = (u.ws || []);
+          state.currentWs = (s.ws && owned.includes(s.ws)) ? s.ws : owned[0];
+        }
       }
     } catch(e) {}
   }
@@ -3182,29 +3190,47 @@ document.addEventListener('keydown', e => {
 
     grid.appendChild(leftCol);
 
-    // Right: recent activity
+    // Right: recent activity — fetched from server per-workspace to avoid
+    // leaking events from a previous tenant cached in localStorage.
     const rightCol = el('div');
+    const wrap = el('div');
+    wrap.appendChild(el('div', { style: { padding: '14px 0', fontSize: '12px', color: 'var(--ink-500)' }, text: 'Đang tải hoạt động…' }));
     const actCard = el('div', { class: 'card' }, [
       el('div', { class: 'card-head' }, [
         el('div', { class: 'card-title' }, [ el('span', { text: 'Hoạt động gần đây' }) ])
       ]),
-      (() => {
-        const wrap = el('div');
-        state.auditLog.slice(0, 8).forEach(log => {
-          const sevMap = { info: 'pill-info', ok: 'pill-ok', warn: 'pill-warn', err: 'pill-err' };
-          wrap.appendChild(el('div', { style: { padding: '10px 0', borderBottom: '1px solid var(--border-soft)', display: 'flex', flexDirection: 'column', gap: '4px'} }, [
-            el('div', { style: { display: 'flex', justifyContent: 'space-between', gap: '10px' } }, [
-              el('span', { class: 'pill ' + sevMap[log.sev], text: log.action }),
-              el('span', { class: 'mono', style: { color: 'var(--ink-500)', fontSize: '11px' }, text: timeAgo(log.ts) })
-            ]),
-            el('div', { style: { fontSize: '12px', color: 'var(--ink-200)' }, text: log.target }),
-            el('div', { class: 'mono', style: { fontSize: '10px', color: 'var(--ink-500)' }, text: log.actor })
-          ]));
-        });
-        return wrap;
-      })()
+      wrap
     ]);
     rightCol.appendChild(actCard);
+    // Async fetch latest 8 events for current ws from backend
+    (async () => {
+      const sevMap = { info: 'pill-info', ok: 'pill-ok', warn: 'pill-warn', err: 'pill-err' };
+      try {
+        const events = (window.ZeniAPI && typeof window.ZeniAPI.listAudit === 'function')
+          ? await window.ZeniAPI.listAudit({ ws: state.currentWs, limit: 8 })
+          : [];
+        const list = Array.isArray(events) ? events : (events && events.items) || [];
+        wrap.innerHTML = '';
+        if (!list.length) {
+          wrap.appendChild(el('div', { style: { padding: '14px 0', fontSize: '12px', color: 'var(--ink-500)' }, text: 'Chưa có hoạt động.' }));
+          return;
+        }
+        list.slice(0, 8).forEach(log => {
+          const ts = log.ts || (log.created_at ? new Date(log.created_at).getTime() : Date.now());
+          wrap.appendChild(el('div', { style: { padding: '10px 0', borderBottom: '1px solid var(--border-soft)', display: 'flex', flexDirection: 'column', gap: '4px'} }, [
+            el('div', { style: { display: 'flex', justifyContent: 'space-between', gap: '10px' } }, [
+              el('span', { class: 'pill ' + (sevMap[log.sev] || 'pill-info'), text: log.action || '—' }),
+              el('span', { class: 'mono', style: { color: 'var(--ink-500)', fontSize: '11px' }, text: timeAgo(ts) })
+            ]),
+            el('div', { style: { fontSize: '12px', color: 'var(--ink-200)' }, text: log.target || '' }),
+            el('div', { class: 'mono', style: { fontSize: '10px', color: 'var(--ink-500)' }, text: log.actor || '' })
+          ]));
+        });
+      } catch (e) {
+        wrap.innerHTML = '';
+        wrap.appendChild(el('div', { style: { padding: '14px 0', fontSize: '12px', color: 'var(--ink-500)' }, text: 'Không tải được audit log.' }));
+      }
+    })();
 
     grid.appendChild(rightCol);
     c.appendChild(grid);
@@ -4783,36 +4809,59 @@ document.addEventListener('keydown', e => {
       ])
     ]));
 
+    // Audit log table — fetched from server per-workspace.
+    const tbWrap = el('div', { class: 'table-wrap' });
+    const tbTable = el('table', { class: 'table' });
+    tbTable.appendChild(el('thead', {}, [ el('tr', {}, [
+      el('th', { text: 'Time' }),
+      el('th', { text: 'Actor' }),
+      el('th', { text: 'Action' }),
+      el('th', { text: 'Target' }),
+      el('th', { text: 'Severity' })
+    ])]));
+    const tbBody = el('tbody');
+    tbBody.appendChild(el('tr', {}, [ el('td', { colspan: 5, style: { padding: '14px', color: 'var(--ink-500)', fontSize: '12px' }, text: 'Đang tải audit log…' }) ]));
+    tbTable.appendChild(tbBody); tbWrap.appendChild(tbTable);
+
+    const tagCount = el('span', { class: 'tag', text: '… events' });
+
     c.appendChild(el('div', { class: 'card' }, [
       el('div', { class: 'card-head' }, [
-        el('div', { class: 'card-title' }, [ el('span', { text: 'Gần đây' }), el('span', { class: 'tag', text: state.auditLog.length + ' events' }) ]),
+        el('div', { class: 'card-title' }, [ el('span', { text: 'Gần đây' }), tagCount ]),
         el('div', { class: 'card-actions' }, [
           el('button', { class: 'btn btn-sm btn-ghost', onclick: () => toast('Export CSV (demo)', 'info'), text: '↓ Export CSV' })
         ])
       ]),
-      (() => {
-        const w = el('div', { class: 'table-wrap' });
-        const t = el('table', { class: 'table' });
-        t.appendChild(el('thead', {}, [ el('tr', {}, [
-          el('th', { text: 'Time' }),
-          el('th', { text: 'Actor' }),
-          el('th', { text: 'Action' }),
-          el('th', { text: 'Target' }),
-          el('th', { text: 'Severity' })
-        ])]));
-        const tb = el('tbody');
-        state.auditLog.slice(0, 50).forEach(log => {
-          tb.appendChild(el('tr', {}, [
-            el('td', { class: 'mono', style: { color: 'var(--ink-400)', fontSize: '11px' }, text: new Date(log.ts).toLocaleString('vi-VN') }),
-            el('td', { class: 'mono', text: log.actor }),
-            el('td', { class: 'mono', style: { color: 'var(--L3)'}, text: log.action }),
-            el('td', { text: log.target }),
-            el('td', {}, [ el('span', { class: 'pill ' + ({info:'pill-info',ok:'pill-ok',warn:'pill-warn',err:'pill-err'}[log.sev]), text: log.sev }) ])
+      tbWrap
+    ]));
+
+    (async () => {
+      try {
+        const events = (window.ZeniAPI && typeof window.ZeniAPI.listAudit === 'function')
+          ? await window.ZeniAPI.listAudit({ ws: state.currentWs, limit: 50 })
+          : [];
+        const list = Array.isArray(events) ? events : (events && events.items) || [];
+        tbBody.innerHTML = '';
+        tagCount.textContent = list.length + ' events';
+        if (!list.length) {
+          tbBody.appendChild(el('tr', {}, [ el('td', { colspan: 5, style: { padding: '14px', color: 'var(--ink-500)', fontSize: '12px' }, text: 'Chưa có events.' }) ]));
+          return;
+        }
+        list.slice(0, 50).forEach(log => {
+          const ts = log.ts || (log.created_at ? new Date(log.created_at).getTime() : Date.now());
+          tbBody.appendChild(el('tr', {}, [
+            el('td', { class: 'mono', style: { color: 'var(--ink-400)', fontSize: '11px' }, text: new Date(ts).toLocaleString('vi-VN') }),
+            el('td', { class: 'mono', text: log.actor || '' }),
+            el('td', { class: 'mono', style: { color: 'var(--L3)'}, text: log.action || '' }),
+            el('td', { text: log.target || '' }),
+            el('td', {}, [ el('span', { class: 'pill ' + ({info:'pill-info',ok:'pill-ok',warn:'pill-warn',err:'pill-err'}[log.sev] || 'pill-info'), text: log.sev || 'info' }) ])
           ]));
         });
-        t.appendChild(tb); w.appendChild(t); return w;
-      })()
-    ]));
+      } catch (e) {
+        tbBody.innerHTML = '';
+        tbBody.appendChild(el('tr', {}, [ el('td', { colspan: 5, style: { padding: '14px', color: 'var(--ink-500)', fontSize: '12px' }, text: 'Không tải được audit log: ' + (e.message || e) }) ]));
+      }
+    })();
   }
 
   function renderMembers(c) {

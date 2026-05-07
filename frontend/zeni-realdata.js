@@ -135,12 +135,18 @@
       log('workspaces:', Object.keys(wsMap).join(', '));
     }
 
-    // 2) Pick current workspace
-    let currentWs = (window.state && window.state.currentWs) || 'anima';
-    if (window.__ZENI_REAL_USER && window.__ZENI_REAL_USER.workspaces && window.__ZENI_REAL_USER.workspaces.length) {
-      if (!window.__ZENI_REAL_USER.workspaces.includes(currentWs)) {
-        currentWs = window.__ZENI_REAL_USER.workspaces[0];
+    // 2) Pick current workspace — never hardcode a tenant slug.
+    //    Always derive from the authenticated user's owned workspaces.
+    const userWs = (window.__ZENI_REAL_USER && window.__ZENI_REAL_USER.workspaces) || [];
+    let currentWs = (window.state && window.state.currentWs) || userWs[0] || null;
+    if (userWs.length) {
+      if (!userWs.includes(currentWs)) {
+        currentWs = userWs[0];
       }
+    }
+    if (!currentWs) {
+      warn('no workspace available for user — abort bootstrap');
+      return;
     }
 
     // 3) Fetch all per-workspace data
