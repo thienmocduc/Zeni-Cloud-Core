@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Agent Deploy — Zeni Cloud (1-call API for Claude/ChatGPT/Cursor sessions)</title>
+<style>
+:root{--bg-void:#0a0a14;--bg-card:#14142a;--border:rgba(168,139,250,0.18);
+  --ink-50:#faf5ff;--ink-100:#e5e7eb;--ink-200:#c4b5fd;--ink-300:#9e8be5;--ink-400:#7c6bb0;
+  --gold:#fde68a;--indigo:#7d68ff;--crown:#a855f7;--emerald:#34d399;--rose:#fb7185;--code-bg:#0d1117}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg-void);color:var(--ink-100);line-height:1.7;font-size:15px;padding:40px 20px}
+.wrap{max-width:980px;margin:0 auto}
+h1{font-size:36px;font-weight:800;background:linear-gradient(135deg,var(--gold),var(--indigo));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.lead{font-size:16px;color:var(--ink-200);margin-bottom:32px}
+h2{font-size:22px;font-weight:700;margin-top:36px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--border)}
+h3{font-size:17px;font-weight:700;margin-top:24px;margin-bottom:10px;color:var(--gold)}
+p{margin-bottom:14px;color:var(--ink-100)}
+strong{color:var(--gold)}
+code{background:var(--code-bg);padding:2px 8px;border-radius:4px;color:var(--gold);font-family:'JetBrains Mono',monospace;font-size:13px}
+pre{background:var(--code-bg);padding:16px;border-radius:8px;border:1px solid var(--border);overflow-x:auto;margin:14px 0;font-family:'JetBrains Mono',monospace;font-size:13px;color:#e5e7eb;line-height:1.55}
+.callout{padding:16px 20px;border-radius:10px;margin:14px 0;border-left:4px solid var(--indigo);background:rgba(125,104,255,0.08)}
+.callout.success{border-left-color:var(--emerald);background:rgba(52,211,153,0.08)}
+.callout.warn{border-left-color:var(--gold);background:rgba(253,230,138,0.08)}
+.method-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;margin:14px 0}
+.method-card h3{margin-top:0}
+ul{margin-left:24px;margin-bottom:14px}
+li{margin-bottom:6px}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+th{color:var(--gold);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.06em}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>🤖 Deploy Code lên Zeni Cloud — 1 API Call</h1>
+<p class="lead">Hướng dẫn cho <strong>AI Agents</strong> (Claude Sessions, ChatGPT, Cursor, Replit Agents). Một endpoint <code>POST /deploy/quick</code> để deploy bất kỳ app nào lên production trong 60-90 giây.</p>
+
+<div class="callout success">
+  <strong>✅ Production-ready endpoint</strong>: <code>POST https://zenicloud.io/api/v1/deploy/quick?ws=$WORKSPACE</code><br>
+  Auth: <code>Authorization: Bearer zeni_pat_xxx</code> (PAT hoặc JWT)
+</div>
+
+<h2>🚀 Bắt đầu — 30 giây</h2>
+
+<h3>Bước 1: Lấy ZENI_TOKEN</h3>
+<p>Login dashboard <a href="https://zenicloud.io/app">zenicloud.io/app</a> → Tab <strong>API Tokens</strong> → "+ New Token" → copy token bắt đầu bằng <code>zeni_pat_</code></p>
+
+<h3>Bước 2: Chọn 1 trong 3 cách deploy</h3>
+
+<div class="method-card">
+  <h3>🐳 Cách 1: Docker Image (NHANH NHẤT — 30 giây)</h3>
+  <p>Đã có image trên Docker Hub / Artifact Registry / GCR samples? Deploy ngay:</p>
+<pre>curl -X POST "https://zenicloud.io/api/v1/deploy/quick?ws=$WORKSPACE" \
+  -H "Authorization: Bearer $ZENI_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "image": "docker.io/library/nginx:alpine",
+    "name": "my-static-site",
+    "port": 80
+  }'</pre>
+  <p><strong>Response (202):</strong></p>
+<pre>{
+  "deploy_id": "...",
+  "method": "docker_image",
+  "status": "deploying",
+  "project_id": "uuid",
+  "poll_url": "https://zenicloud.io/api/v1/projects/{id}?ws=...",
+  "estimated_live_in_sec": 30
+}</pre>
+  <p>Poll <code>poll_url</code> sau 30s → status=running → có <code>domain</code> URL live.</p>
+</div>
+
+<div class="method-card">
+  <h3>📦 Cách 2: ZIP base64 (KHÔNG CẦN GITHUB hoặc Docker — 90 giây)</h3>
+  <p>Có code local? Zip + base64 + POST:</p>
+<pre><span style="color:#6e7681"># Bash + Python (POSIX)</span>
+ZIP_B64=$(zip -qr - ./my-app/ | base64 -w0)
+curl -X POST "https://zenicloud.io/api/v1/deploy/quick?ws=$WORKSPACE" \
+  -H "Authorization: Bearer $ZENI_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"zip_base64\":\"$ZIP_B64\",\"name\":\"my-app\",\"framework\":\"auto\"}"</pre>
+  <p><strong>Python (cross-platform):</strong></p>
+<pre>import requests, zipfile, io, base64
+
+buf = io.BytesIO()
+with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as z:
+    z.writestr('index.html', '&lt;h1&gt;Hello World&lt;/h1&gt;')
+    z.writestr('package.json', '{"name":"my-app"}')
+
+r = requests.post(
+    'https://zenicloud.io/api/v1/deploy/quick',
+    params={'ws': 'your-workspace'},
+    headers={'Authorization': 'Bearer zeni_pat_xxx'},
+    json={
+        'zip_base64': base64.b64encode(buf.getvalue()).decode(),
+        'name': 'my-app',
+        'framework': 'auto',  # auto-detect from package.json/requirements.txt
+        'port': 8080
+    }
+)
+print(r.json())
+# → {"deploy_id":"...", "poll_url":"...", "status":"queued"}</pre>
+  <p>Poll <code>poll_url</code> mỗi 10s. Status: <code>queued → extracting → building → deploying → success</code></p>
+</div>
+
+<div class="method-card">
+  <h3>🐙 Cách 3: GitHub Public Repo (120 giây)</h3>
+  <p>Repo public trên GitHub? Paste URL → Zeni clone + build + deploy:</p>
+<pre>curl -X POST "https://zenicloud.io/api/v1/deploy/quick?ws=$WORKSPACE" \
+  -H "Authorization: Bearer $ZENI_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repo_url": "https://github.com/owner/repo",
+    "branch": "main",
+    "name": "my-app",
+    "framework": "auto"
+  }'</pre>
+  <div class="callout warn">
+    <strong>⚠ Phase 1:</strong> Hỗ trợ public repo only. Phase 2 (đang phát triển): GitHub OAuth cho private repo + auto-clone.
+  </div>
+</div>
+
+<h2>🎯 Auto-detect Framework</h2>
+
+<p>Zeni Cloud tự nhận diện framework từ files trong ZIP/repo:</p>
+
+<table>
+<tr><th>Detect file</th><th>Framework</th><th>Auto-Dockerfile</th><th>Default port</th></tr>
+<tr><td><code>next.config.js</code></td><td>Next.js</td><td>node:20-alpine + standalone build</td><td>3000</td></tr>
+<tr><td><code>vite.config.js</code></td><td>React/Vite</td><td>node:20 build → nginx serve</td><td>80</td></tr>
+<tr><td><code>vue.config.js</code></td><td>Vue.js</td><td>node:20 build → nginx serve</td><td>80</td></tr>
+<tr><td><code>requirements.txt</code></td><td>FastAPI (default Python)</td><td>python:3.12-slim + uvicorn</td><td>8080</td></tr>
+<tr><td><code>package.json</code> (no Next/Vite)</td><td>Express.js</td><td>node:20-alpine + npm start</td><td>3000</td></tr>
+<tr><td><code>index.html</code> only</td><td>Static HTML</td><td>nginx:alpine + serve</td><td>80</td></tr>
+<tr><td><code>Dockerfile</code> exists</td><td>Custom</td><td>Use repo's Dockerfile as-is</td><td>(detected)</td></tr>
+</table>
+
+<p>Override bằng <code>"framework": "nextjs|react|vue|fastapi|express|static"</code></p>
+
+<h2>📊 Poll Deploy Status</h2>
+
+<pre>curl "$POLL_URL" -H "Authorization: Bearer $ZENI_TOKEN"
+
+# Response:
+{
+  "deploy_id": "...",
+  "status": "building",       # queued|extracting|building|deploying|success|failed
+  "name": "my-app",
+  "framework": "express",
+  "image_url": null,          # populated khi build SUCCESS
+  "deploy_url": null,         # populated khi deploy SUCCESS
+  "error": null,
+  "completed_at": null
+}
+
+# Khi success:
+{
+  "deploy_id": "...",
+  "status": "success",
+  "image_url": "us-central1-docker.pkg.dev/zeni-cloud-core/zeni-images/zeni-myws-myapp:abc123",
+  "deploy_url": "https://my-app-xxx-uc.a.run.app",
+  "completed_at": "2026-05-03T..."
+}</pre>
+
+<h2>🛠 Working Examples for AI Agents</h2>
+
+<h3>Claude Code Session (clone repo + deploy)</h3>
+<pre>// Pseudocode for Claude Code:
+1. User: "Deploy my Next.js app at /home/user/my-app to Zeni Cloud"
+2. Bash: cd /home/user/my-app && zip -qr /tmp/app.zip ./
+3. Python: read /tmp/app.zip, base64 encode
+4. curl POST /deploy/quick with zip_base64
+5. Loop: poll /deploy/quick/{id} every 10s until status='success'
+6. Return deploy_url to user
+</pre>
+
+<h3>ChatGPT Code Interpreter</h3>
+<pre>import requests, zipfile, base64
+from pathlib import Path
+
+# Upload + deploy in one cell
+def deploy_to_zeni(folder_path, ws, token, name=None, framework='auto'):
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as z:
+        for f in Path(folder_path).rglob('*'):
+            if f.is_file() and 'node_modules' not in str(f) and '.git' not in str(f):
+                z.write(f, f.relative_to(folder_path))
+
+    r = requests.post(f'https://zenicloud.io/api/v1/deploy/quick',
+        params={'ws': ws},
+        headers={'Authorization': f'Bearer {token}'},
+        json={'zip_base64': base64.b64encode(buf.getvalue()).decode(),
+              'name': name or folder_path.split('/')[-1], 'framework': framework})
+    return r.json()</pre>
+
+<h3>Cursor Composer / Replit Agent</h3>
+<p>Same pattern: zip current workspace → POST /deploy/quick → poll → return URL.</p>
+
+<h2>💡 Tips for AI Agents</h2>
+
+<ul>
+<li><strong>Always use <code>framework: "auto"</code></strong> trừ khi user explicit override</li>
+<li><strong>Default <code>region: asia-southeast1</code></strong> (Singapore — gần VN nhất)</li>
+<li><strong>Skip <code>node_modules/</code>, <code>.git/</code>, <code>__pycache__/</code></strong> khi zip — giảm size</li>
+<li><strong>Poll status max 90s</strong> — nếu vẫn building sau 90s, tell user check dashboard</li>
+<li><strong>Catch 413 Payload Too Large</strong> — ZIP > 50MB → tell user remove large files</li>
+<li><strong>Catch 401</strong> → token invalid, tell user regenerate at /app#api-tokens</li>
+<li><strong>Catch 404 trên poll</strong> → deploy_id mismatch hoặc khác workspace</li>
+</ul>
+
+<h2>📋 Endpoint Reference</h2>
+
+<table>
+<tr><th>Endpoint</th><th>Purpose</th></tr>
+<tr><td><code>POST /api/v1/deploy/quick?ws=X</code></td><td>One-call deploy (3 input methods)</td></tr>
+<tr><td><code>GET /api/v1/deploy/quick/{id}?ws=X</code></td><td>Poll status</td></tr>
+<tr><td><code>POST /api/v1/upload/source?ws=X</code></td><td>Multipart ZIP upload (alternative to base64)</td></tr>
+<tr><td><code>GET /api/v1/projects?ws=X</code></td><td>List all deployed projects</td></tr>
+<tr><td><code>POST /api/v1/projects?ws=X</code></td><td>Full custom deploy (more options)</td></tr>
+</table>
+
+<p style="text-align:center;margin-top:40px;color:var(--ink-400);font-size:13px;">
+🤖 Designed for AI agents. Tối giản, idempotent, single-call. Built by <a href="https://zenicloud.io" style="color:var(--gold)">Zeni Cloud</a>.
+</p>
+
+</div>
+</body>
+</html>

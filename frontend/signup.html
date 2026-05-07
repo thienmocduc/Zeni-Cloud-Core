@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<title>Đăng ký · Zeni Cloud</title>
+<meta name="description" content="Tạo tài khoản Zeni Cloud miễn phí · 50.000đ free credit · Không cần thẻ tín dụng">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-void: #030014; --bg-base: #08051F;
+  --ink-50: #FAF5FF; --ink-100: #EDE9FE; --ink-200: #C4B5FD; --ink-300: #9E8BE5; --ink-400: #7C6BB0;
+  --crown: #A855F7; --crown-deep: #7E22CE; --crown-light: #D8B4FE; --crown-gold: #FDE68A;
+  --ok: #22D3EE; --err: #F87171;
+  --border: rgba(168, 139, 250, 0.18); --border-strong: rgba(168, 139, 250, 0.32);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg-void); color: var(--ink-100);
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 40px 20px;
+  background:
+    radial-gradient(ellipse 1200px 900px at 80% 5%, rgba(168, 85, 247, 0.14), transparent 55%),
+    radial-gradient(ellipse 1000px 700px at 5% 90%, rgba(99, 102, 241, 0.11), transparent 55%),
+    var(--bg-void);
+}
+.signup-card {
+  width: 100%; max-width: 460px;
+  background: rgba(10, 5, 32, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-strong);
+  border-radius: 20px;
+  padding: 40px 36px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+}
+.brand { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
+.brand-logo {
+  width: 44px; height: 44px; border-radius: 11px;
+  background: linear-gradient(135deg, var(--crown-gold), var(--crown), var(--crown-deep));
+  color: #1a0938; font-weight: 900; font-size: 22px;
+  display: grid; place-items: center;
+}
+.brand-name { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
+.brand-name em { font-style: normal; color: var(--crown-gold); }
+.brand-sub { font-size: 10px; font-family: 'Roboto Mono', ui-monospace, monospace; color: var(--ink-400); letter-spacing: 0.1em; }
+h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; }
+h1 em { font-style: normal; color: var(--crown-gold); }
+.sub { font-size: 13px; color: var(--ink-300); margin-bottom: 24px; line-height: 1.5; }
+.field { margin-bottom: 16px; }
+label { display: block; font-size: 11px; font-weight: 600; color: var(--crown-light);
+  text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+input {
+  width: 100%; padding: 12px 14px;
+  background: rgba(10, 5, 32, 0.6);
+  border: 1px solid var(--border); border-radius: 10px;
+  color: var(--ink-50); font-size: 14px;
+  transition: all 0.15s;
+}
+input:focus { outline: none; border-color: var(--crown); box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15); }
+.pass-wrap { position: relative; }
+.toggle-pass {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  background: transparent; border: 0; color: var(--ink-400); cursor: pointer;
+  padding: 6px; font-size: 18px;
+}
+.workspace-suggestion {
+  font-size: 11px; color: var(--ink-400); margin-top: 4px; font-family: 'Roboto Mono', monospace;
+}
+.btn-primary {
+  width: 100%; padding: 14px;
+  background: linear-gradient(135deg, var(--crown-gold), #F59E0B);
+  border: 0; border-radius: 10px;
+  color: #1a0938; font-size: 14px; font-weight: 800; letter-spacing: 0.02em;
+  cursor: pointer; margin-top: 8px;
+  transition: all 0.15s;
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(253, 230, 138, 0.3); }
+.btn-primary:disabled { opacity: 0.6; cursor: wait; transform: none; }
+.divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 24px 0; font-size: 11px; color: var(--ink-400); letter-spacing: 0.1em;
+}
+.divider::before, .divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+.btn-oauth {
+  width: 100%; padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 10px; color: var(--ink-100);
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin-bottom: 10px; transition: all 0.15s;
+}
+.btn-oauth:hover { border-color: var(--crown); background: rgba(168, 85, 247, 0.08); }
+.btn-oauth:disabled { opacity: 0.4; cursor: not-allowed; }
+.msg { padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 16px; display: none; }
+.msg.show { display: block; }
+.msg.err { background: rgba(248, 113, 113, 0.12); color: #FCA5A5; border: 1px solid rgba(248, 113, 113, 0.3); }
+.msg.ok { background: rgba(34, 211, 238, 0.12); color: #67E8F9; border: 1px solid rgba(34, 211, 238, 0.3); }
+.foot { text-align: center; font-size: 12px; color: var(--ink-400); margin-top: 20px; }
+.foot a { color: var(--crown-gold); text-decoration: none; font-weight: 600; }
+.benefits { display: flex; flex-direction: column; gap: 6px; margin: 16px 0;
+  background: rgba(34, 211, 238, 0.06); border-radius: 10px; padding: 12px 14px;
+  font-size: 11.5px; color: var(--ink-200); }
+.benefits-title { color: var(--crown-gold); font-weight: 700; font-size: 11px; letter-spacing: 0.05em;
+  text-transform: uppercase; margin-bottom: 4px; }
+.legal-acceptance a { text-decoration: underline; }
+.legal-acceptance a:hover { color: #fff; }
+.legal-acceptance input[type="checkbox"] {
+  width: 16px; height: 16px; accent-color: #fde68a; cursor: pointer;
+}
+</style>
+</head>
+<body>
+  <div class="signup-card">
+    <a class="brand" href="/">
+      <div class="brand-logo">Z</div>
+      <div>
+        <div class="brand-name">Zeni<em>Cloud</em></div>
+        <div class="brand-sub">UNIFIED CLOUD OS · VN</div>
+      </div>
+    </a>
+
+    <h1>Tạo tài khoản <em>miễn phí</em></h1>
+    <p class="sub">100% Google Cloud · 50.000đ tín dụng tự động · Không cần thẻ tín dụng · Hủy bất kỳ lúc nào.</p>
+
+    <div class="benefits">
+      <div class="benefits-title">★ Free trial bao gồm</div>
+      <div>✓ 5 agent runs (architecture / interior / fashion / structural)</div>
+      <div>✓ 5 ảnh Imagen 3 chất lượng 8K</div>
+      <div>✓ 50.000 tokens AI text (Gemini 2.5)</div>
+      <div>✓ 50.000đ ví prepaid để dùng vượt quota</div>
+    </div>
+
+    <div class="msg" id="msg" role="status" aria-live="polite"></div>
+
+    <form id="signup-form" novalidate>
+      <div class="field">
+        <label for="full_name">Họ tên</label>
+        <input type="text" id="full_name" required minlength="2" maxlength="128" placeholder="Nguyễn Văn A">
+      </div>
+      <div class="field">
+        <label for="email">Email công ty</label>
+        <input type="email" id="email" required maxlength="120" placeholder="you@company.vn" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="password">Mật khẩu</label>
+        <div class="pass-wrap">
+          <input type="password" id="password" required minlength="8" maxlength="128" placeholder="Tối thiểu 8 ký tự" autocomplete="new-password" style="padding-right:42px;">
+          <button type="button" class="toggle-pass" id="toggle-pass" aria-label="Hiện/ẩn mật khẩu">👁</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="company_name">Tên công ty (sẽ tạo workspace)</label>
+        <input type="text" id="company_name" required minlength="2" maxlength="64" placeholder="VD: NexDesign Studio">
+        <div class="workspace-suggestion" id="ws-suggest">Workspace ID sẽ là: <span id="ws-preview">your_company</span></div>
+      </div>
+      <div class="legal-acceptance" style="margin: 20px 0; padding: 16px; background: rgba(255,255,255,0.03); border-radius: 12px; font-size: 13px; line-height: 1.6;">
+        <label style="display: flex; gap: 10px; align-items: flex-start; cursor: pointer; margin-bottom: 12px;">
+          <input type="checkbox" id="accept-tos" required style="margin-top: 3px;">
+          <span style="color: var(--ink-200, #e5e7eb);">
+            Tôi đã đọc và đồng ý
+            <a href="/legal/terms.html" target="_blank" style="color: #fde68a;">Điều khoản dịch vụ</a>,
+            <a href="/legal/privacy.html" target="_blank" style="color: #fde68a;">Chính sách bảo mật</a>,
+            và <a href="/legal/dpa.html" target="_blank" style="color: #fde68a;">DPA</a>.
+          </span>
+        </label>
+        <label style="display: flex; gap: 10px; align-items: flex-start; cursor: pointer;">
+          <input type="checkbox" id="ai-optin" style="margin-top: 3px;">
+          <span style="color: var(--ink-200, #e5e7eb);">
+            <strong style="color: #fde68a;">(Tuỳ chọn — giảm 20% giá)</strong>
+            Tôi đồng ý cho Zeni Make + Zeni Claw học từ dữ liệu anonymized của tôi để cải thiện dịch vụ AI
+            (chi tiết tại
+            <a href="/legal/ai-data-usage.html" target="_blank" style="color: #fde68a;">AI Data Usage Policy</a>).
+          </span>
+        </label>
+      </div>
+      <button type="submit" class="btn-primary" id="signup-btn">Tạo tài khoản miễn phí →</button>
+    </form>
+
+    <div class="divider">HOẶC</div>
+
+    <a class="btn-oauth" id="btn-google" href="/api/v1/auth/oauth/google/authorize?return_to=/app" style="text-decoration:none;">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+      <span>Continue with Google</span>
+    </a>
+    <a class="btn-oauth" id="btn-github" href="/api/v1/auth/oauth/github/authorize?return_to=/app" style="text-decoration:none;">
+      <svg width="18" height="18" viewBox="0 0 16 16" fill="white"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+      <span>Continue with GitHub</span>
+    </a>
+    <a class="btn-oauth" id="btn-zenidigital" href="/api/v1/auth/oauth/zenidigital/authorize?return_to=/app" style="text-decoration:none;background:linear-gradient(135deg,rgba(253,230,138,0.15),rgba(168,85,247,0.15));border-color:rgba(253,230,138,0.3);">
+      <span style="font-weight:900;color:#FDE68A;font-size:14px;">Z</span>
+      <span>Continue with <strong>Zeni Digital</strong> (SSO)</span>
+    </a>
+
+    <script>
+      // Catch OAuth provider not-configured (503) → show fallback message
+      (async function() {
+        try {
+          const r = await fetch('/api/v1/auth/oauth/providers');
+          if (!r.ok) return;
+          const data = await r.json();
+          const status = {};
+          (data.providers || []).forEach(p => { status[p.name] = p.ready; });
+          ['google','github','zenidigital'].forEach(name => {
+            const btn = document.getElementById('btn-' + name);
+            if (btn && !status[name]) {
+              btn.style.opacity = '0.55';
+              btn.style.cursor = 'not-allowed';
+              const labels = {google:'Google', github:'GitHub', zenidigital:'Zeni Digital SSO'};
+              btn.title = labels[name] + ' OAuth chưa cấu hình. Liên hệ admin để bật.';
+              btn.addEventListener('click', e => {
+                e.preventDefault();
+                document.getElementById('msg').className = 'msg show err';
+                document.getElementById('msg').textContent = '🔧 ' + labels[name] + ' OAuth đang được cấu hình. Vui lòng dùng Email + Mật khẩu ở trên.';
+              });
+            }
+          });
+        } catch {}
+      })();
+    </script>
+
+    <div class="foot">
+      Đã có tài khoản? <a href="/app">Đăng nhập →</a>
+    </div>
+    <div class="foot" style="margin-top:8px;font-size:11px;">
+      Bằng cách tạo tài khoản, bạn đồng ý <a href="/legal/terms">Điều khoản</a> và <a href="/legal/privacy">Chính sách riêng tư</a>.
+    </div>
+  </div>
+
+<script>
+(function() {
+  'use strict';
+  const form = document.getElementById('signup-form');
+  const msg = document.getElementById('msg');
+  const btn = document.getElementById('signup-btn');
+  const wsPreview = document.getElementById('ws-preview');
+  const companyInput = document.getElementById('company_name');
+  const togglePass = document.getElementById('toggle-pass');
+  const passInput = document.getElementById('password');
+
+  function slugify(s) {
+    return (s || '').toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/đ/g, 'd').replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '').slice(0, 32) || 'workspace';
+  }
+  companyInput.addEventListener('input', () => {
+    wsPreview.textContent = slugify(companyInput.value);
+  });
+
+  togglePass.addEventListener('click', () => {
+    if (passInput.type === 'password') { passInput.type = 'text'; togglePass.textContent = '🙈'; }
+    else { passInput.type = 'password'; togglePass.textContent = '👁'; }
+    passInput.focus();
+  });
+
+  function show(kind, text) {
+    msg.className = 'msg show ' + kind;
+    msg.textContent = text;
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const acceptTosEl = document.getElementById('accept-tos');
+    const aiOptinEl = document.getElementById('ai-optin');
+    const data = {
+      full_name: document.getElementById('full_name').value.trim(),
+      email: document.getElementById('email').value.trim().toLowerCase(),
+      password: passInput.value,
+      company_name: companyInput.value.trim(),
+      workspace_id: slugify(companyInput.value),
+      ai_training_optin: !!(aiOptinEl && aiOptinEl.checked),
+    };
+    if (!data.full_name || !data.email || !data.password || !data.company_name) {
+      show('err', 'Vui lòng điền đủ thông tin'); return;
+    }
+    if (data.password.length < 8) {
+      show('err', 'Mật khẩu phải tối thiểu 8 ký tự'); return;
+    }
+    if (!acceptTosEl || !acceptTosEl.checked) {
+      show('err', 'Vui lòng đồng ý Điều khoản dịch vụ, Chính sách bảo mật và DPA để tiếp tục.');
+      return;
+    }
+    btn.disabled = true; show('ok', 'Đang tạo tài khoản...');
+    try {
+      const res = await fetch('/api/v1/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      let body = {};
+      try { body = await res.json(); } catch (_) { body = {}; }
+      if (res.ok) {
+        show('ok', '✓ Tạo tài khoản thành công! Đang chuyển đến dashboard...');
+        // Save tokens
+        if (body.access_token) localStorage.setItem('zeni.jwt.access', body.access_token);
+        if (body.refresh_token) localStorage.setItem('zeni.jwt.refresh', body.refresh_token);
+        setTimeout(() => { window.location.href = '/app'; }, 1500);
+      } else {
+        // Detailed error from backend
+        let msg = body.detail;
+        if (Array.isArray(msg)) {
+          msg = msg.map(e => `${e.loc?.join('.') || 'field'}: ${e.msg}`).join('; ');
+        }
+        if (!msg) msg = `Lỗi server (HTTP ${res.status}). Vui lòng thử lại hoặc liên hệ support@zenicloud.io`;
+        show('err', msg);
+        btn.disabled = false;
+      }
+    } catch (err) {
+      show('err', `Không kết nối được máy chủ (${err?.message || 'network error'}). Kiểm tra kết nối internet và thử lại.`);
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+
+<title>Onboarding · Zeni Cloud · Setup tài khoản trong 60 giây</title>
+<meta name="description" content="Wizard 4 bước: Welcome → Use case → Pick tier → Quick start. Setup Zeni Cloud trong 60 giây.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg-void: #030014;
+  --bg-base: #08051F;
+  --border-soft: rgba(168, 139, 250, 0.08);
+  --border: rgba(168, 139, 250, 0.18);
+  --border-strong: rgba(168, 139, 250, 0.32);
+  --ink-50: #FAF5FF;
+  --ink-100: #EDE9FE;
+  --ink-200: #C4B5FD;
+  --ink-300: #9E8BE5;
+  --ink-400: #7C6BB0;
+  --ajna: #6366F1;
+  --crown: #A855F7;
+  --crown-light: #D8B4FE;
+  --crown-gold: #FDE68A;
+  --crown-gold-deep: #F59E0B;
+  --ok: #22D3EE;
+  --font: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Roboto Mono', ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font);
+  background: var(--bg-void);
+  color: var(--ink-100);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  position: relative;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 1200px 900px at 80% 5%, rgba(168, 85, 247, 0.14), transparent 55%),
+    radial-gradient(ellipse 1000px 700px at 5% 90%, rgba(99, 102, 241, 0.11), transparent 55%),
+    radial-gradient(ellipse at 50% 50%, #0A0520 0%, #030014 70%);
+  z-index: -2;
+  pointer-events: none;
+}
+a { color: inherit; text-decoration: none; }
+
+/* ═══ TOPBAR (minimal) ═══ */
+.topbar-min {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.brand {
+  display: flex; align-items: center; gap: 12px;
+}
+.brand-logo {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--crown), var(--ajna));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; color: var(--ink-50); font-size: 18px;
+}
+.brand-name { font-weight: 700; font-size: 17px; color: var(--ink-50); }
+.brand-name em { font-style: normal; font-weight: 500; color: var(--crown-gold); }
+.skip-link {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--ink-400);
+  cursor: pointer;
+}
+.skip-link:hover { color: var(--ink-200); }
+
+/* ═══ PROGRESS BAR ═══ */
+.progress-wrap {
+  max-width: 720px;
+  margin: 30px auto 0;
+  padding: 0 24px;
+}
+.progress-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(168, 85, 247, 0.10);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--crown-gold), var(--crown-light));
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+.progress-label {
+  display: flex; justify-content: space-between;
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-400);
+  letter-spacing: 0.06em;
+}
+.progress-step-num { color: var(--crown-gold); font-weight: 700; }
+
+/* ═══ WIZARD CARD ═══ */
+.wizard {
+  max-width: 720px;
+  margin: 36px auto 80px;
+  padding: 0 24px;
+}
+.step-panel {
+  background:
+    linear-gradient(180deg, rgba(168, 85, 247, 0.05), transparent 80%),
+    rgba(10, 5, 32, 0.60);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 40px 36px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: none;
+}
+.step-panel.active { display: block; }
+.step-kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--crown-light);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.step-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink-50);
+  line-height: 1.2;
+  margin-bottom: 10px;
+}
+.step-title em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--crown-gold), var(--crown-light));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.step-sub {
+  font-size: 15.5px;
+  color: var(--ink-300);
+  margin-bottom: 28px;
+}
+
+/* ═══ FORM FIELDS ═══ */
+.field {
+  margin-bottom: 18px;
+}
+.field-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-200);
+  margin-bottom: 8px;
+  letter-spacing: 0.02em;
+}
+.field-hint {
+  display: inline-block;
+  margin-left: 6px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-400);
+  letter-spacing: 0.04em;
+}
+.input, select.input {
+  width: 100%;
+  padding: 12px 14px;
+  background: rgba(10, 5, 32, 0.55);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--ink-50);
+  font-size: 14.5px;
+  font-family: var(--font);
+  transition: all 0.15s;
+}
+.input:focus, select.input:focus {
+  outline: none;
+  border-color: var(--crown-gold);
+  background: rgba(10, 5, 32, 0.75);
+  box-shadow: 0 0 0 3px rgba(253, 230, 138, 0.10);
+}
+select.input {
+  cursor: pointer;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink-300) 50%), linear-gradient(135deg, var(--ink-300) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+/* Avatar circle */
+.avatar-row {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 18px;
+}
+.avatar-circle {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(253, 230, 138, 0.20), rgba(168, 85, 247, 0.20));
+  border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--crown-gold);
+  font-size: 24px;
+  font-weight: 700;
+  cursor: pointer;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-info { flex: 1; }
+.avatar-info .label {
+  font-size: 13px; color: var(--ink-200); font-weight: 600;
+}
+.avatar-info .hint {
+  font-size: 12px; color: var(--ink-400); margin-top: 2px;
+}
+
+/* Use-case multi-select */
+.uc-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.uc-option {
+  position: relative;
+  padding: 14px 16px;
+  background: rgba(10, 5, 32, 0.45);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 14px;
+  color: var(--ink-200);
+}
+.uc-option input[type="checkbox"] {
+  appearance: none;
+  width: 18px; height: 18px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 5px;
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  background: transparent;
+}
+.uc-option input[type="checkbox"]:checked {
+  background: linear-gradient(135deg, var(--crown-gold), var(--crown-gold-deep));
+  border-color: var(--crown-gold);
+}
+.uc-option input[type="checkbox"]:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  color: #1a0a0a;
+  font-size: 13px;
+  font-weight: 800;
+}
+.uc-option:hover {
+  border-color: var(--border-strong);
+  background: rgba(168, 85, 247, 0.06);
+}
+.uc-option.checked {
+  border-color: var(--crown-gold);
+  background: rgba(253, 230, 138, 0.05);
+  color: var(--ink-50);
+}
+
+/* Tier mini cards */
+.tier-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.tier-mini {
+  position: relative;
+  padding: 14px 10px;
+  background: rgba(10, 5, 32, 0.45);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+}
+.tier-mini:hover { border-color: var(--border-strong); }
+.tier-mini.selected {
+  border-color: var(--crown-gold);
+  background: rgba(253, 230, 138, 0.06);
+}
+.tier-mini-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-100);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.tier-mini-price {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-400);
+}
+.tier-mini.selected .tier-mini-price { color: var(--crown-gold); }
+.tier-info-line {
+  font-size: 13px;
+  color: var(--ink-300);
+  text-align: center;
+  margin-top: 8px;
+  font-style: italic;
+}
+.tier-info-line a { color: var(--crown-gold); font-weight: 600; }
+
+/* Quick start grid */
+.qs-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.qs-card {
+  display: flex; align-items: center; gap: 16px;
+  padding: 18px 20px;
+  background: rgba(10, 5, 32, 0.45);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: all 0.15s;
+}
+.qs-card:hover {
+  border-color: var(--crown-gold);
+  background: rgba(253, 230, 138, 0.04);
+  transform: translateX(4px);
+}
+.qs-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(253, 230, 138, 0.18), rgba(168, 85, 247, 0.10));
+  display: flex; align-items: center; justify-content: center;
+  color: var(--crown-gold);
+  flex-shrink: 0;
+}
+.qs-card .body {
+  flex: 1;
+}
+.qs-card .title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-50);
+  margin-bottom: 2px;
+}
+.qs-card .desc {
+  font-size: 13px;
+  color: var(--ink-400);
+}
+.qs-card .arrow {
+  color: var(--crown-gold);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* ═══ NAV BUTTONS ═══ */
+.step-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 32px;
+  padding-top: 22px;
+  border-top: 1px solid var(--border-soft);
+  gap: 12px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 22px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+  font-family: var(--font);
+  text-decoration: none;
+}
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-ghost {
+  background: rgba(168, 85, 247, 0.06);
+  color: var(--ink-100);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: rgba(168, 85, 247, 0.14);
+  border-color: var(--border-strong);
+}
+.btn-primary {
+  background: linear-gradient(135deg, #FDE68A, #F59E0B);
+  color: #1a0a0a;
+  border: 1px solid rgba(253, 230, 138, 0.5);
+  box-shadow: 0 8px 24px -8px rgba(253, 230, 138, 0.4);
+}
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #fef3c7, #fbbf24);
+  transform: translateY(-1px);
+}
+
+/* Status message */
+.status-msg {
+  margin-top: 10px;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  color: var(--ok);
+  text-align: center;
+  min-height: 18px;
+}
+.status-msg.error { color: #f87171; }
+
+@media (max-width: 720px) {
+  .topbar-min { padding: 14px 18px; }
+  .step-panel { padding: 28px 22px; }
+  .step-title { font-size: 22px; }
+  .uc-grid { grid-template-columns: 1fr; }
+  .tier-mini-grid { grid-template-columns: repeat(3, 1fr); }
+  .step-nav { flex-direction: column; }
+  .step-nav button { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════ TOPBAR ═══════ -->
+<header class="topbar-min">
+  <a class="brand" href="/landing.html">
+    <div class="brand-logo">Z</div>
+    <div>
+      <div class="brand-name">Zeni<em>Cloud</em></div>
+    </div>
+  </a>
+  <a class="skip-link" id="skip-onboarding">Bỏ qua →</a>
+</header>
+
+<!-- ═══════ PROGRESS ═══════ -->
+<div class="progress-wrap">
+  <div class="progress-track">
+    <div class="progress-fill" id="progress-fill" style="width: 25%;"></div>
+  </div>
+  <div class="progress-label">
+    <span>Setup tài khoản Zeni Cloud</span>
+    <span><span class="progress-step-num" id="step-num">1</span> / 4</span>
+  </div>
+</div>
+
+<!-- ═══════ WIZARD ═══════ -->
+<main class="wizard">
+
+  <!-- ═══ STEP 1 — Welcome ═══ -->
+  <section class="step-panel active" data-step="1">
+    <div class="step-kicker">● Bước 1 · Chào mừng</div>
+    <h1 class="step-title">Chào mừng <em><span id="user-name">bạn</span></em>!<br>Cùng setup Zeni Cloud trong <em>60 giây</em>.</h1>
+    <p class="step-sub">Chỉ vài thông tin cơ bản để chúng tôi cá nhân hoá trải nghiệm cho doanh nghiệp của bạn.</p>
+
+    <div class="avatar-row">
+      <label class="avatar-circle" for="avatar-input" id="avatar-circle">
+        <span id="avatar-letter">Z</span>
+      </label>
+      <div class="avatar-info">
+        <div class="label">Avatar (tuỳ chọn)</div>
+        <div class="hint">Ảnh đại diện — bỏ qua cũng được</div>
+        <input type="file" id="avatar-input" accept="image/*" style="display:none;">
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="company-name">Tên công ty <span class="field-hint">(đã điền từ đăng ký)</span></label>
+      <input class="input" type="text" id="company-name" placeholder="VD: Công ty TNHH ABC">
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="industry">Ngành nghề</label>
+      <select class="input" id="industry">
+        <option value="">Chọn ngành nghề...</option>
+        <option value="saas">SaaS</option>
+        <option value="fintech">Fintech</option>
+        <option value="ecommerce">E-commerce</option>
+        <option value="healthcare">Healthcare</option>
+        <option value="education">Education</option>
+        <option value="other">Khác</option>
+      </select>
+    </div>
+
+    <div class="step-nav">
+      <button class="btn btn-ghost" id="step1-skip">Bỏ qua bước này</button>
+      <button class="btn btn-primary" id="step1-next">Tiếp theo →</button>
+    </div>
+    <div class="status-msg" id="status-1"></div>
+  </section>
+
+  <!-- ═══ STEP 2 — Use case ═══ -->
+  <section class="step-panel" data-step="2">
+    <div class="step-kicker">● Bước 2 · Mục đích sử dụng</div>
+    <h1 class="step-title">Bạn muốn dùng Zeni Cloud cho <em>gì</em>?</h1>
+    <p class="step-sub">Chọn 1 hoặc nhiều lựa chọn — chúng tôi sẽ gợi ý template + onboarding phù hợp.</p>
+
+    <div class="uc-grid" id="uc-grid">
+      <label class="uc-option">
+        <input type="checkbox" name="usecase" value="ai_chatbot">
+        <span>Build AI chatbot</span>
+      </label>
+      <label class="uc-option">
+        <input type="checkbox" name="usecase" value="webapp">
+        <span>Deploy web app</span>
+      </label>
+      <label class="uc-option">
+        <input type="checkbox" name="usecase" value="ocr_translation">
+        <span>OCR / Translation tools</span>
+      </label>
+      <label class="uc-option">
+        <input type="checkbox" name="usecase" value="smart_contract">
+        <span>Smart Contract</span>
+      </label>
+      <label class="uc-option">
+        <input type="checkbox" name="usecase" value="automation">
+        <span>Internal automation</span>
+      </label>
+      <label class="uc-option">
+        <input type="checkbox" name="usecase" value="other">
+        <span>Khác</span>
+      </label>
+    </div>
+
+    <div class="step-nav">
+      <button class="btn btn-ghost" id="step2-back">← Quay lại</button>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-ghost" id="step2-skip">Bỏ qua</button>
+        <button class="btn btn-primary" id="step2-next">Tiếp theo →</button>
+      </div>
+    </div>
+    <div class="status-msg" id="status-2"></div>
+  </section>
+
+  <!-- ═══ STEP 3 — Pick tier ═══ -->
+  <section class="step-panel" data-step="3">
+    <div class="step-kicker">● Bước 3 · Chọn gói</div>
+    <h1 class="step-title">Chọn gói phù hợp với <em>doanh nghiệp</em></h1>
+    <p class="step-sub">Bắt đầu với <strong>Free</strong> — bạn có thể nâng cấp bất cứ lúc nào.</p>
+
+    <div class="tier-mini-grid" id="tier-mini-grid">
+      <div class="tier-mini selected" data-tier="free">
+        <div class="tier-mini-name">Free</div>
+        <div class="tier-mini-price">0 đ/tháng</div>
+      </div>
+      <div class="tier-mini" data-tier="starter">
+        <div class="tier-mini-name">Starter</div>
+        <div class="tier-mini-price">999K đ</div>
+      </div>
+      <div class="tier-mini" data-tier="pro">
+        <div class="tier-mini-name">Pro ★</div>
+        <div class="tier-mini-price">4.9M đ</div>
+      </div>
+      <div class="tier-mini" data-tier="business">
+        <div class="tier-mini-name">Business</div>
+        <div class="tier-mini-price">49M đ</div>
+      </div>
+      <div class="tier-mini" data-tier="enterprise">
+        <div class="tier-mini-name">Enterprise</div>
+        <div class="tier-mini-price">Liên hệ</div>
+      </div>
+    </div>
+    <div class="tier-info-line">Cần xem chi tiết? <a href="/pricing.html" target="_blank">Xem bảng giá đầy đủ →</a></div>
+
+    <div class="step-nav">
+      <button class="btn btn-ghost" id="step3-back">← Quay lại</button>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-ghost" id="step3-skip">Bỏ qua</button>
+        <button class="btn btn-primary" id="step3-next">Tiếp theo →</button>
+      </div>
+    </div>
+    <div class="status-msg" id="status-3"></div>
+  </section>
+
+  <!-- ═══ STEP 4 — Quick start ═══ -->
+  <section class="step-panel" data-step="4">
+    <div class="step-kicker">● Bước 4 · Quick start</div>
+    <h1 class="step-title">Sẵn sàng <em>bắt đầu</em>!</h1>
+    <p class="step-sub">Chọn 1 trong 3 hành động bên dưới để khởi động nhanh.</p>
+
+    <div class="qs-grid">
+      <a class="qs-card" href="/app#new-project" id="qs-new">
+        <div class="qs-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </div>
+        <div class="body">
+          <div class="title">Tạo project đầu tiên</div>
+          <div class="desc">Bắt đầu deploy app đầu tiên trên Zeni Cloud (recommend)</div>
+        </div>
+        <div class="arrow">→</div>
+      </a>
+
+      <a class="qs-card" href="/docs/quickstart.html" id="qs-docs">
+        <div class="qs-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </div>
+        <div class="body">
+          <div class="title">Đọc Quickstart</div>
+          <div class="desc">Hướng dẫn 5 phút để hiểu nền tảng Zeni Cloud</div>
+        </div>
+        <div class="arrow">→</div>
+      </a>
+
+      <a class="qs-card" href="/app" id="qs-dash">
+        <div class="qs-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        </div>
+        <div class="body">
+          <div class="title">Khám phá dashboard</div>
+          <div class="desc">Xem giao diện quản lý + tính năng có sẵn</div>
+        </div>
+        <div class="arrow">→</div>
+      </a>
+    </div>
+
+    <div class="step-nav">
+      <button class="btn btn-ghost" id="step4-back">← Quay lại</button>
+      <button class="btn btn-primary" id="step4-finish">Hoàn tất setup ✓</button>
+    </div>
+    <div class="status-msg" id="status-4"></div>
+  </section>
+
+</main>
+
+<script>
+(function() {
+  'use strict';
+
+  /* ═══ State ═══ */
+  var state = {
+    currentStep: 1,
+    avatar: null,
+    company_name: '',
+    industry: '',
+    use_cases: [],
+    tier: 'free'
+  };
+
+  var TOTAL_STEPS = 4;
+
+  /* ═══ Pre-fill from query string / localStorage / signup data ═══ */
+  function prefill() {
+    var params = new URLSearchParams(window.location.search);
+    var qsCompany = params.get('company');
+    var qsName = params.get('name');
+    var stored = null;
+    try {
+      stored = JSON.parse(localStorage.getItem('signup_data') || '{}');
+    } catch (e) { stored = {}; }
+
+    var company = qsCompany || stored.company_name || stored.company || '';
+    if (company) {
+      document.getElementById('company-name').value = company;
+      state.company_name = company;
+    }
+
+    var name = qsName || stored.full_name || stored.name || '';
+    if (name) {
+      var nameEl = document.getElementById('user-name');
+      if (nameEl) nameEl.textContent = name.split(' ')[0] || name;
+      // Avatar letter
+      var letter = (name[0] || 'Z').toUpperCase();
+      var avEl = document.getElementById('avatar-letter');
+      if (avEl) avEl.textContent = letter;
+    }
+  }
+
+  /* ═══ Navigation ═══ */
+  function showStep(n) {
+    if (n < 1 || n > TOTAL_STEPS) return;
+    document.querySelectorAll('.step-panel').forEach(function(p) {
+      p.classList.remove('active');
+    });
+    var panel = document.querySelector('[data-step="' + n + '"]');
+    if (panel) panel.classList.add('active');
+    state.currentStep = n;
+    var pct = (n / TOTAL_STEPS) * 100;
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('step-num').textContent = n;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /* ═══ Save to localStorage every step ═══ */
+  function persist() {
+    try {
+      localStorage.setItem('onboarding_state', JSON.stringify(state));
+    } catch (e) {}
+  }
+
+  /* ═══ Skip (mark as completed and go to /app) ═══ */
+  function skipAll() {
+    try {
+      localStorage.setItem('onboarding_completed', '1');
+      localStorage.setItem('onboarding_skipped_at', new Date().toISOString());
+    } catch (e) {}
+    window.location.href = '/app';
+  }
+
+  /* ═══ POST to API (best effort) ═══ */
+  function submitOnboarding(payload) {
+    var msgEl = document.getElementById('status-4');
+    msgEl.textContent = 'Đang lưu thiết lập...';
+    msgEl.classList.remove('error');
+
+    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var timeout = ctrl ? setTimeout(function() { ctrl.abort(); }, 6000) : null;
+
+    return fetch('/api/v1/onboarding/complete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      credentials: 'include',
+      signal: ctrl ? ctrl.signal : undefined,
+      body: JSON.stringify(payload)
+    })
+      .then(function(r) {
+        if (timeout) clearTimeout(timeout);
+        // We don't strictly require ok — backend logs whatever it gets
+        try { localStorage.setItem('onboarding_completed', '1'); } catch (e) {}
+        msgEl.textContent = '✓ Đã lưu. Đang chuyển hướng...';
+        return r;
+      })
+      .catch(function() {
+        if (timeout) clearTimeout(timeout);
+        // Even if API fails, still mark complete so user is not blocked
+        try { localStorage.setItem('onboarding_completed', '1'); } catch (e) {}
+        msgEl.textContent = '✓ Đã lưu offline. Đang chuyển hướng...';
+      });
+  }
+
+  /* ═══ STEP 1 events ═══ */
+  document.getElementById('step1-next').addEventListener('click', function() {
+    state.company_name = document.getElementById('company-name').value.trim();
+    state.industry = document.getElementById('industry').value;
+    persist();
+    showStep(2);
+  });
+  document.getElementById('step1-skip').addEventListener('click', function() { showStep(2); });
+
+  document.getElementById('avatar-input').addEventListener('change', function(e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Ảnh quá lớn — tối đa 2MB');
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      state.avatar = ev.target.result;
+      var circle = document.getElementById('avatar-circle');
+      circle.innerHTML = '<img src="' + ev.target.result + '" alt="">';
+      persist();
+    };
+    reader.readAsDataURL(file);
+  });
+
+  /* ═══ STEP 2 events ═══ */
+  document.querySelectorAll('input[name="usecase"]').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      var label = cb.closest('.uc-option');
+      if (cb.checked) {
+        label.classList.add('checked');
+      } else {
+        label.classList.remove('checked');
+      }
+    });
+  });
+  document.getElementById('step2-next').addEventListener('click', function() {
+    var checked = [];
+    document.querySelectorAll('input[name="usecase"]:checked').forEach(function(cb) {
+      checked.push(cb.value);
+    });
+    state.use_cases = checked;
+    persist();
+    showStep(3);
+  });
+  document.getElementById('step2-back').addEventListener('click', function() { showStep(1); });
+  document.getElementById('step2-skip').addEventListener('click', function() { showStep(3); });
+
+  /* ═══ STEP 3 events ═══ */
+  document.querySelectorAll('.tier-mini').forEach(function(card) {
+    card.addEventListener('click', function() {
+      document.querySelectorAll('.tier-mini').forEach(function(c) { c.classList.remove('selected'); });
+      card.classList.add('selected');
+      state.tier = card.getAttribute('data-tier');
+    });
+  });
+  document.getElementById('step3-next').addEventListener('click', function() {
+    persist();
+    showStep(4);
+  });
+  document.getElementById('step3-back').addEventListener('click', function() { showStep(2); });
+  document.getElementById('step3-skip').addEventListener('click', function() { showStep(4); });
+
+  /* ═══ STEP 4 events ═══ */
+  document.getElementById('step4-back').addEventListener('click', function() { showStep(3); });
+  document.getElementById('step4-finish').addEventListener('click', function() {
+    var btn = this;
+    btn.disabled = true;
+    var payload = {
+      company_name: state.company_name,
+      industry: state.industry,
+      use_cases: state.use_cases,
+      tier: state.tier,
+      has_avatar: !!state.avatar,
+      completed_at: new Date().toISOString()
+    };
+    submitOnboarding(payload).then(function() {
+      setTimeout(function() {
+        window.location.href = '/app';
+      }, 700);
+    });
+  });
+
+  /* Quick-start cards: also POST + mark complete on click (best effort, fire-and-forget) */
+  ['qs-new', 'qs-docs', 'qs-dash'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('click', function(e) {
+      var payload = {
+        company_name: state.company_name,
+        industry: state.industry,
+        use_cases: state.use_cases,
+        tier: state.tier,
+        quickstart_action: id.replace('qs-', ''),
+        completed_at: new Date().toISOString()
+      };
+      try { localStorage.setItem('onboarding_completed', '1'); } catch (e2) {}
+      // Fire-and-forget — don't block navigation
+      try {
+        fetch('/api/v1/onboarding/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(payload),
+          keepalive: true
+        });
+      } catch (e3) {}
+    });
+  });
+
+  /* Skip link in topbar */
+  document.getElementById('skip-onboarding').addEventListener('click', function(e) {
+    e.preventDefault();
+    if (confirm('Bỏ qua onboarding? Bạn vẫn có thể setup sau trong Settings.')) {
+      skipAll();
+    }
+  });
+
+  /* ═══ Init ═══ */
+  prefill();
+  showStep(1);
+})();
+</script>
+
+</body>
+</html>

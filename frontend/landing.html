@@ -1,0 +1,3407 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+
+<title>Zeni Cloud · Cloud toàn năng cho Việt Nam · Hạ tầng, Data, AI, Web3, Thanh toán trong một tài khoản</title>
+<meta name="description" content="Deploy code, chạy AI, sync data từ Shopee/TikTok/Zalo/VNPay, nhận thanh toán, triển khai smart contract — tất cả trong một dashboard. Rẻ hơn AWS/GCP 30%. Compliance Nghị định 13.">
+<meta property="og:title" content="Zeni Cloud · Cloud toàn năng cho Việt Nam">
+<meta property="og:description" content="Hạ tầng · Data · AI · Web3 · Thanh toán · Tất cả trong 1 tài khoản. Compliance NĐ13. Rẻ hơn 30%.">
+<meta property="og:url" content="https://zenicloud.io">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg-void: #030014;
+  --bg-base: #08051F;
+  --bg-surface: rgba(168, 85, 247, 0.04);
+  --bg-elev: rgba(168, 85, 247, 0.08);
+  --border-soft: rgba(168, 139, 250, 0.08);
+  --border: rgba(168, 139, 250, 0.18);
+  --border-strong: rgba(168, 139, 250, 0.32);
+  --ink-50: #FAF5FF;
+  --ink-100: #EDE9FE;
+  --ink-200: #C4B5FD;
+  --ink-300: #9E8BE5;
+  --ink-400: #7C6BB0;
+  --ink-500: #5B4F85;
+  --ajna: #6366F1;
+  --ajna-light: #A5B4FC;
+  --crown: #A855F7;
+  --crown-deep: #7E22CE;
+  --crown-light: #D8B4FE;
+  --crown-gold: #FDE68A;
+  --crown-gold-deep: #F59E0B;
+  --aurora-cyan: #22D3EE;
+  --ok: #22D3EE;
+  --font: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Roboto Mono', ui-monospace, monospace;
+  /* 6-layer signature colors */
+  --L1: #A5B4FC;
+  --L2: #6366F1;
+  --L3: #22D3EE;
+  --L4: #FDE68A;
+  --L5: #A855F7;
+  --L6: #D8B4FE;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+body {
+  font-family: var(--font);
+  background: var(--bg-void);
+  color: var(--ink-100);
+  font-size: 15px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 1200px 900px at 80% 5%, rgba(168, 85, 247, 0.14), transparent 55%),
+    radial-gradient(ellipse 1000px 700px at 5% 90%, rgba(99, 102, 241, 0.11), transparent 55%),
+    radial-gradient(ellipse 800px 500px at 50% 50%, rgba(253, 230, 138, 0.04), transparent 70%),
+    radial-gradient(ellipse at 50% 50%, #0A0520 0%, #030014 70%);
+  z-index: -2;
+  pointer-events: none;
+}
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.55), transparent),
+    radial-gradient(1px 1px at 25% 40%, rgba(216,180,254,0.45), transparent),
+    radial-gradient(1px 1px at 40% 8%, rgba(253,230,138,0.45), transparent),
+    radial-gradient(1px 1px at 60% 22%, rgba(165,180,252,0.55), transparent),
+    radial-gradient(1px 1px at 78% 18%, rgba(255,255,255,0.45), transparent),
+    radial-gradient(1px 1px at 90% 35%, rgba(216,180,254,0.5), transparent),
+    radial-gradient(1px 1px at 15% 55%, rgba(253,230,138,0.4), transparent),
+    radial-gradient(1px 1px at 35% 68%, rgba(255,255,255,0.45), transparent),
+    radial-gradient(1px 1px at 72% 62%, rgba(165,180,252,0.4), transparent),
+    radial-gradient(1px 1px at 88% 82%, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1px 1px at 45% 92%, rgba(253,230,138,0.35), transparent),
+    radial-gradient(1px 1px at 8% 30%, rgba(253,230,138,0.4), transparent),
+    radial-gradient(1px 1px at 58% 78%, rgba(216,180,254,0.4), transparent);
+  background-size: 100% 100%;
+  z-index: -1;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: linear-gradient(180deg, var(--ajna), var(--crown)); border-radius: 5px; opacity: 0.6; }
+
+/* ═══ TOPBAR ═══ */
+.topbar {
+  position: sticky; top: 0;
+  height: 72px;
+  background: linear-gradient(180deg, rgba(10, 5, 32, 0.95), rgba(10, 5, 32, 0.75));
+  backdrop-filter: blur(26px) saturate(1.3);
+  -webkit-backdrop-filter: blur(26px) saturate(1.3);
+  border-bottom: 1px solid var(--border-soft);
+  z-index: 100;
+  display: flex; align-items: center;
+  padding: 0 40px;
+  gap: 24px;
+}
+.topbar::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.5) 30%, rgba(168, 85, 247, 0.5) 70%, transparent);
+}
+.brand {
+  display: flex; align-items: center; gap: 12px;
+  text-decoration: none;
+}
+.brand-logo {
+  width: 40px; height: 40px;
+  background: radial-gradient(circle at 30% 30%, var(--crown-gold), var(--crown) 55%, var(--crown-deep));
+  border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800;
+  font-size: 19px;
+  color: var(--bg-void);
+  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.3);
+  position: relative;
+}
+.brand-logo::after {
+  content: ''; position: absolute; inset: -3px;
+  border-radius: 14px;
+  border: 1px solid rgba(253, 230, 138, 0.25);
+  opacity: 0.7;
+  animation: pulse 3s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(1.06); }
+}
+.brand-name {
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  color: var(--ink-50);
+  line-height: 1.1;
+}
+.brand-name em { font-style: normal; color: var(--crown-gold); font-weight: 500; }
+.brand-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--crown-light);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.topbar-nav {
+  display: flex; gap: 2px;
+  margin-left: auto;
+  height: 100%;
+  align-items: center;
+}
+.nav-item {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+.nav-trigger {
+  padding: 9px 14px;
+  border-radius: 8px;
+  color: var(--ink-200);
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: all 0.15s;
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.nav-trigger:hover, .nav-trigger.open {
+  background: rgba(168, 85, 247, 0.1);
+  color: var(--crown-light);
+}
+.nav-trigger svg.chev {
+  width: 10px; height: 10px;
+  transition: transform 0.18s ease;
+  opacity: 0.65;
+}
+.nav-item:hover .nav-trigger svg.chev,
+.nav-trigger.open svg.chev { transform: rotate(180deg); opacity: 1; }
+
+/* Mega menu dropdown */
+.mega-menu {
+  position: absolute;
+  top: calc(100% - 8px);
+  left: 0;
+  min-width: 520px;
+  padding: 20px;
+  background: linear-gradient(180deg, rgba(12, 7, 36, 0.98), rgba(10, 5, 32, 0.98));
+  backdrop-filter: blur(28px) saturate(1.4);
+  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(168, 139, 250, 0.05);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 200;
+}
+.mega-menu::before {
+  content: '';
+  position: absolute;
+  top: -6px; left: 28px;
+  width: 12px; height: 12px;
+  background: rgba(12, 7, 36, 0.98);
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  transform: rotate(45deg);
+  border-top-left-radius: 2px;
+}
+.nav-item:hover .mega-menu,
+.nav-item.open .mega-menu {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateY(0);
+}
+.mega-grid {
+  display: grid;
+  gap: 8px;
+}
+.mega-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+.mega-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.mega-link {
+  display: flex; gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: background 0.15s;
+  border: 1px solid transparent;
+}
+.mega-link:hover {
+  background: rgba(168, 85, 247, 0.08);
+  border-color: var(--border);
+}
+.mega-link .mega-icon {
+  flex-shrink: 0;
+  width: 36px; height: 36px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--mega-color, var(--crown)) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mega-color, var(--crown)) 32%, transparent);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--mega-color, var(--crown-gold));
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.mega-link .mega-body { min-width: 0; }
+.mega-link .mega-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-50);
+  letter-spacing: -0.01em;
+  margin-bottom: 3px;
+  display: flex; align-items: center; gap: 8px;
+}
+.mega-link .mega-desc {
+  font-size: 12px;
+  color: var(--ink-300);
+  line-height: 1.5;
+}
+.mega-footer {
+  margin-top: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-soft);
+  display: flex; justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+.mega-footer a {
+  color: var(--crown-gold);
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.mega-footer a:hover { text-decoration: underline; }
+
+/* Language switcher */
+.lang-switch {
+  position: relative;
+  margin-left: 8px;
+}
+.lang-btn {
+  padding: 8px 10px 8px 12px;
+  border-radius: 8px;
+  background: rgba(168, 85, 247, 0.04);
+  border: 1px solid var(--border-soft);
+  color: var(--ink-200);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+.lang-btn:hover { background: rgba(168, 85, 247, 0.1); color: var(--crown-light); border-color: var(--border); }
+.lang-btn svg.chev { width: 9px; height: 9px; opacity: 0.65; transition: transform 0.18s; }
+.lang-switch.open .lang-btn svg.chev { transform: rotate(180deg); }
+.lang-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 160px;
+  padding: 6px;
+  background: linear-gradient(180deg, rgba(12, 7, 36, 0.98), rgba(10, 5, 32, 0.98));
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 0.15s, transform 0.15s;
+  z-index: 200;
+}
+.lang-switch.open .lang-menu {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateY(0);
+}
+.lang-option {
+  display: flex;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: none;
+  border: none;
+  color: var(--ink-200);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  transition: background 0.12s;
+}
+.lang-option:hover { background: rgba(168, 85, 247, 0.12); color: var(--ink-50); }
+.lang-option.active { color: var(--crown-gold); font-weight: 600; }
+.lang-option .flag { font-size: 16px; line-height: 1; }
+.lang-option .code {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-400);
+  margin-left: auto;
+  letter-spacing: 0.06em;
+}
+.lang-option.active .code { color: var(--crown-gold); }
+
+.topbar-cta {
+  display: flex; gap: 10px;
+  margin-left: 8px;
+}
+.btn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  text-decoration: none;
+  display: inline-flex; align-items: center; gap: 8px;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-ghost {
+  background: rgba(168, 85, 247, 0.06);
+  border-color: var(--border);
+  color: var(--ink-100);
+}
+.btn-ghost:hover { background: rgba(168, 85, 247, 0.14); border-color: var(--border-strong); }
+.btn-primary {
+  background: linear-gradient(135deg, var(--crown-gold), var(--crown-gold-deep));
+  color: var(--bg-void);
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(253, 230, 138, 0.22);
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(253, 230, 138, 0.35);
+}
+.btn-primary.lg { padding: 14px 26px; font-size: 15px; border-radius: 12px; }
+.btn-ghost.lg { padding: 14px 26px; font-size: 15px; border-radius: 12px; }
+
+/* ═══ HERO ═══ */
+.hero {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 96px 40px 110px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+  min-height: 640px;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 8px 16px;
+  background: rgba(253, 230, 138, 0.08);
+  border: 1px solid rgba(253, 230, 138, 0.28);
+  border-radius: 100px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--crown-gold);
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 28px;
+}
+.hero-badge::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--crown-gold);
+  box-shadow: 0 0 10px var(--crown-gold);
+  animation: blink 2s ease-in-out infinite;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.hero h1 {
+  font-size: 60px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  color: var(--ink-50);
+  margin-bottom: 28px;
+}
+.hero h1 em {
+  font-style: normal;
+  font-weight: 500;
+  background: linear-gradient(135deg, var(--crown-gold) 0%, var(--crown-light) 55%, var(--ajna-light) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+.hero-sub {
+  font-size: 19px;
+  color: var(--ink-200);
+  line-height: 1.6;
+  margin-bottom: 40px;
+  max-width: 580px;
+}
+.hero-sub-tagline {
+  display: block;
+  font-size: 15px;
+  color: var(--crown-gold);
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+  margin-bottom: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.hero-sub strong { color: var(--ink-50); font-weight: 600; }
+.hero-ctas {
+  display: flex; gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.hero-assurance {
+  display: flex; align-items: center; gap: 20px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-400);
+  letter-spacing: 0.04em;
+}
+.hero-assurance span {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.hero-assurance span::before {
+  content: '✓';
+  color: var(--ok);
+  font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ZENI COMPASS — bàn la kinh hệ điều hành Zeni
+   Compass dial xoay + 6 pill cho 6 layer (L1-L6) đặt 6 hướng
+   ═══════════════════════════════════════════════════════════ */
+.hero-visual.zeni-compass {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  max-width: 560px;
+  min-height: 480px;
+  margin: 0 auto;
+  filter: drop-shadow(0 30px 80px rgba(168, 85, 247, 0.30));
+}
+
+/* Cloud shape (replaces 6 pills) */
+.compass-cloud {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* ═══ 6 Lục Đạo — 6 layers orbit slowly (counter-rotate so labels stay readable) ═══ */
+.compass-orbits {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  z-index: 6;
+  pointer-events: none;
+}
+.compass-orbits .orbit-rotate {
+  transform-origin: 200px 200px;
+  animation: orbitSpin 80s linear infinite;
+}
+.compass-orbits .orbit-rotate > g {
+  /* Counter-rotate each badge so text always upright */
+  animation: orbitCounter 80s linear infinite;
+  transform-origin: center;
+}
+@keyframes orbitSpin {
+  to { transform: rotate(360deg); }
+}
+@keyframes orbitCounter {
+  to { transform: rotate(-360deg); }
+}
+@media (max-width: 760px) {
+  .compass-orbits { display: none; }  /* mobile: hide để hero gọn */
+}
+.compass-cloud .cloud-float {
+  transform-origin: 200px 200px;
+  animation: cloudFloat 8s ease-in-out infinite;
+}
+@keyframes cloudFloat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-6px) scale(1.02); }
+}
+
+/* Zeni logo PNG transparent — center perfect trong cloud, NHỎ vừa, viền mượt */
+.compass-logo {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 32%;
+  max-width: 200px;
+  z-index: 5;
+  pointer-events: none;
+  animation: logoBreathe 6s ease-in-out infinite;
+  /* Soft purple glow, không cần drop-shadow cứng */
+  filter: drop-shadow(0 0 24px rgba(168, 85, 247, 0.22));
+}
+.compass-logo img {
+  width: 100%;
+  height: auto;
+  display: block;
+  /* Trả về auto cho browser anti-alias mượt, KHÔNG dùng crisp-edges (gây halo) */
+  image-rendering: auto;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+@keyframes logoBreathe {
+  0%, 100% { opacity: 0.95; transform: translate(-50%, -50%) scale(1); }
+  50%      { opacity: 1.00; transform: translate(-50%, -50%) scale(1.03); }
+}
+
+/* Compass dial SVG */
+.compass-dial {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+/* Outer rotating ring */
+.compass-dial .ring-rotate {
+  transform-origin: 200px 200px;
+  animation: dialSpin 60s linear infinite;
+}
+@keyframes dialSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Counter-rotating dashed inner ring */
+.compass-dial .ring-static circle:last-child {
+  transform-origin: 200px 200px;
+  animation: ringCounter 90s linear infinite reverse;
+}
+@keyframes ringCounter {
+  to { transform: rotate(360deg); }
+}
+
+/* 24 ticks rotate with the outer ring */
+.compass-dial .ticks {
+  transform-origin: 200px 200px;
+  animation: dialSpin 60s linear infinite;
+}
+
+/* Spinning compass needle */
+.compass-dial .needle-spin {
+  transform-origin: 200px 200px;
+  animation: needleSpin 8s linear infinite;
+}
+@keyframes needleSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Pulsing energy beams */
+.compass-dial .beams .beam {
+  stroke-dasharray: 4 5;
+  animation: beamFlow 3.5s linear infinite;
+  opacity: 0.6;
+}
+.compass-dial .beams .beam:nth-child(1) { animation-delay: 0s;   }
+.compass-dial .beams .beam:nth-child(2) { animation-delay: 0.5s; }
+.compass-dial .beams .beam:nth-child(3) { animation-delay: 1.0s; }
+.compass-dial .beams .beam:nth-child(4) { animation-delay: 1.5s; }
+.compass-dial .beams .beam:nth-child(5) { animation-delay: 2.0s; }
+.compass-dial .beams .beam:nth-child(6) { animation-delay: 2.5s; }
+@keyframes beamFlow {
+  0%   { stroke-dashoffset: 0;   opacity: 0.25; }
+  50%  {                          opacity: 0.85; }
+  100% { stroke-dashoffset: -45; opacity: 0.25; }
+}
+
+/* ═══ Center core (ZENI CLOUD) ═══ */
+.compass-core {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 26%;
+  aspect-ratio: 1;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+}
+.core-glow {
+  position: absolute;
+  inset: -45%;
+  background: radial-gradient(circle,
+    rgba(253, 230, 138, 0.32) 0%,
+    rgba(168, 85, 247, 0.18) 40%,
+    transparent 75%);
+  border-radius: 50%;
+  filter: blur(10px);
+  animation: coreGlowPulse 4s ease-in-out infinite;
+  z-index: -1;
+}
+@keyframes coreGlowPulse {
+  0%, 100% { opacity: 0.55; transform: scale(0.92); }
+  50%      { opacity: 1;    transform: scale(1.10); }
+}
+.core-inner {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 32%,
+      rgba(253, 230, 138, 0.18) 0%,
+      rgba(168, 85, 247, 0.12) 45%,
+      rgba(8, 5, 31, 0.95)    100%);
+  border: 1px solid rgba(253, 230, 138, 0.4);
+  box-shadow:
+    0 0 30px rgba(168, 85, 247, 0.4),
+    inset 0 0 20px rgba(253, 230, 138, 0.08);
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+.core-icon {
+  font-family: var(--font-mono);
+  font-size: 36px;
+  color: var(--crown-gold);
+  line-height: 1;
+  margin-bottom: 4px;
+  text-shadow: 0 0 14px rgba(253, 230, 138, 0.7);
+  animation: iconBreath 3s ease-in-out infinite;
+}
+@keyframes iconBreath {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.05); }
+}
+.core-name {
+  font-family: var(--font);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--ink-50);
+  margin-top: 2px;
+}
+.core-tag {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 7.5px;
+  letter-spacing: 0.18em;
+  color: var(--crown-gold);
+  margin-top: 4px;
+  opacity: 0.72;
+}
+
+/* ═══ 6 floating layer pills around dial ═══ */
+.layer-pills {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+.layer-pill {
+  position: absolute;
+  top: 50%; left: 50%;
+  /* Place pill on circle of radius ≈ 50% from center using --angle */
+  transform:
+    translate(-50%, -50%)
+    rotate(var(--angle))
+    translate(50%)
+    rotate(calc(-1 * var(--angle)));
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 9px 18px 11px;
+  border-radius: 999px;
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--c) 90%, white 10%) 0%,
+    color-mix(in srgb, var(--c) 78%, #030014 22%) 100%);
+  border: 1px solid color-mix(in srgb, var(--c) 60%, white 35%);
+  box-shadow:
+    0 6px 18px color-mix(in srgb, var(--c) 35%, transparent),
+    0 0 24px color-mix(in srgb, var(--c) 18%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  white-space: nowrap;
+  animation: pillBreath 3s ease-in-out infinite;
+}
+.layer-pill:nth-of-type(1) { animation-delay: 0s; }
+.layer-pill:nth-of-type(2) { animation-delay: 0.4s; }
+.layer-pill:nth-of-type(3) { animation-delay: 0.8s; }
+.layer-pill:nth-of-type(4) { animation-delay: 1.2s; }
+.layer-pill:nth-of-type(5) { animation-delay: 1.6s; }
+.layer-pill:nth-of-type(6) { animation-delay: 2.0s; }
+@keyframes pillBreath {
+  0%, 100% {
+    box-shadow:
+      0 6px 18px color-mix(in srgb, var(--c) 35%, transparent),
+      0 0 24px color-mix(in srgb, var(--c) 18%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+  50% {
+    box-shadow:
+      0 8px 28px color-mix(in srgb, var(--c) 60%, transparent),
+      0 0 50px color-mix(in srgb, var(--c) 40%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+}
+.pill-tag {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 800;
+  color: #1a0938;
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+/* L4 (gold) and L1 (light indigo) need dark text — others use white text */
+.layer-pill[style*="#FDE68A"] .pill-tag,
+.layer-pill[style*="#A5B4FC"] .pill-tag,
+.layer-pill[style*="#D8B4FE"] .pill-tag,
+.layer-pill[style*="#22D3EE"] .pill-tag {
+  color: #1a0938;
+}
+.layer-pill[style*="#6366F1"] .pill-tag,
+.layer-pill[style*="#A855F7"] .pill-tag {
+  color: #FFFFFF;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+.pill-name {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: rgba(26, 9, 56, 0.85);
+}
+.layer-pill[style*="#6366F1"] .pill-name,
+.layer-pill[style*="#A855F7"] .pill-name {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* ═══ Cosmic dust (twinkling stars) ═══ */
+.cosmic-dust {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1.5px 1.5px at 18% 22%, #FFFFFF, transparent),
+    radial-gradient(1.2px 1.2px at 78% 18%, #D8B4FE, transparent),
+    radial-gradient(2px   2px   at 52% 72%, #FDE68A, transparent),
+    radial-gradient(1px   1px   at 88% 80%, #A5B4FC, transparent),
+    radial-gradient(1.3px 1.3px at 12% 86%, #FFFFFF, transparent),
+    radial-gradient(1px   1px   at 62% 14%, #22D3EE, transparent),
+    radial-gradient(1.6px 1.6px at 30% 50%, #FFFFFF, transparent),
+    radial-gradient(1.2px 1.2px at 92% 42%, #FDE68A, transparent);
+  animation: dustTwinkle 5s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+@keyframes dustTwinkle {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.85; }
+}
+
+/* Reduced motion: stop spinning, keep visual */
+@media (prefers-reduced-motion: reduce) {
+  .compass-dial .ring-rotate, .compass-dial .ticks, .compass-dial .needle-spin,
+  .compass-dial .ring-static circle:last-child,
+  .compass-dial .beams .beam,
+  .core-glow, .core-icon,
+  .layer-pill, .cosmic-dust {
+    animation: none !important;
+  }
+}
+
+/* ═══ TRUST BAR ═══ */
+.trust {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 28px 40px 48px;
+  text-align: center;
+}
+.trust-lbl {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-400);
+  margin-bottom: 22px;
+  font-weight: 600;
+}
+.trust-logos {
+  display: flex; flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 36px 48px;
+}
+.trust-logo {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-300);
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  position: relative;
+  padding: 6px 0;
+}
+.trust-logo:hover { opacity: 1; color: var(--crown-gold); }
+.trust-logo .tiny {
+  display: block;
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--ink-500);
+  letter-spacing: 0.1em;
+  margin-top: 2px;
+}
+
+/* ═══ SECTION ═══ */
+.section {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 80px 40px;
+}
+.sect-head {
+  text-align: center;
+  margin-bottom: 56px;
+}
+.sect-head.left { text-align: left; }
+.sect-kicker {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--crown-light);
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.sect-kicker::before {
+  content: ''; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--crown-gold);
+  box-shadow: 0 0 8px var(--crown-gold);
+}
+.sect-title {
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--ink-50);
+  margin-bottom: 18px;
+}
+.sect-title em {
+  font-style: normal;
+  font-weight: 500;
+  background: linear-gradient(135deg, var(--crown-gold), var(--crown-light));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.sect-sub {
+  font-size: 17px;
+  color: var(--ink-300);
+  max-width: 760px;
+  line-height: 1.6;
+  margin: 0 auto;
+}
+.sect-head.left .sect-sub { margin-left: 0; }
+
+/* ═══ VALUE PROPS ═══ */
+.vp-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+.vp-card {
+  padding: 30px 28px 32px;
+  background:
+    linear-gradient(180deg, rgba(168, 85, 247, 0.04), transparent 60%),
+    rgba(10, 5, 32, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+.vp-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-strong);
+  background:
+    linear-gradient(180deg, rgba(168, 85, 247, 0.08), transparent 60%),
+    rgba(10, 5, 32, 0.65);
+}
+.vp-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, var(--vp-color, var(--crown-gold)), transparent);
+  opacity: 0.6;
+}
+.vp-icon {
+  width: 52px; height: 52px;
+  background: color-mix(in srgb, var(--vp-color, var(--crown-gold)) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--vp-color, var(--crown-gold)) 30%, transparent);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--vp-color, var(--crown-gold));
+  margin-bottom: 20px;
+}
+.vp-title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink-50);
+  margin-bottom: 10px;
+  line-height: 1.25;
+}
+.vp-desc {
+  font-size: 14.5px;
+  color: var(--ink-300);
+  line-height: 1.6;
+}
+.vp-desc strong { color: var(--ink-100); font-weight: 600; }
+.vp-metric {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-soft);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--vp-color, var(--crown-gold));
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* ═══ COMPARISON TABLE ═══ */
+.comparison-wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(168, 85, 247, 0.05), transparent 80%),
+    rgba(10, 5, 32, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+}
+.comparison-table thead th {
+  padding: 22px 18px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--ink-200);
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  border-bottom: 1px solid var(--border);
+  background: rgba(168, 85, 247, 0.04);
+}
+.comparison-table thead th.cmp-feature {
+  text-align: left;
+  color: var(--ink-400);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.comparison-table thead th.cmp-zeni {
+  color: var(--crown-gold);
+  position: relative;
+  background: linear-gradient(180deg, rgba(253, 230, 138, 0.08), rgba(168, 85, 247, 0.04));
+}
+.comparison-table tbody td {
+  padding: 18px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--ink-300);
+}
+.comparison-table tbody tr:last-child td { border-bottom: none; }
+.comparison-table tbody td.cmp-feature {
+  text-align: left;
+  font-weight: 600;
+  color: var(--ink-100);
+}
+.comparison-table tbody td.cmp-zeni {
+  background: rgba(253, 230, 138, 0.04);
+  color: var(--crown-gold);
+  font-weight: 600;
+}
+.cmp-check { color: var(--ok); font-weight: 700; font-size: 18px; }
+.cmp-x { color: var(--ink-500); font-weight: 700; font-size: 18px; }
+.cmp-partial {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--ink-400);
+  font-style: italic;
+}
+
+/* ═══ STEPS (LỘ TRÌNH) ═══ */
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.step-card {
+  position: relative;
+  padding: 36px 30px 32px;
+  background:
+    linear-gradient(180deg, rgba(168, 85, 247, 0.05), transparent 60%),
+    rgba(10, 5, 32, 0.55);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: all 0.2s;
+}
+.step-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-strong);
+}
+.step-num {
+  font-family: var(--font-mono);
+  font-size: 36px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--crown-gold), var(--crown-light));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
+  margin-bottom: 14px;
+}
+.step-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink-50);
+  margin-bottom: 10px;
+  letter-spacing: -0.02em;
+}
+.step-desc {
+  font-size: 14.5px;
+  color: var(--ink-300);
+  line-height: 1.6;
+}
+.step-desc strong { color: var(--ink-100); font-weight: 600; }
+.step-time {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-soft);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--crown-gold);
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+/* ═══ FINAL HERO CTA ═══ */
+.final-hero-cta {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 64px 44px;
+  text-align: center;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background:
+    radial-gradient(ellipse 600px 280px at 50% 0%, rgba(253, 230, 138, 0.10), transparent 70%),
+    linear-gradient(180deg, rgba(168, 85, 247, 0.06), transparent 80%),
+    rgba(10, 5, 32, 0.55);
+  position: relative;
+  overflow: hidden;
+}
+.final-hero-cta::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, var(--crown-gold), transparent);
+  height: 1px; top: 0; opacity: 0.5;
+}
+.final-hero-cta h2 {
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--ink-50);
+  margin-bottom: 14px;
+}
+.final-hero-cta h2 em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--crown-gold), var(--crown-light));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.final-hero-cta p {
+  font-size: 16px;
+  color: var(--ink-300);
+  max-width: 600px;
+  margin: 0 auto 30px;
+  line-height: 1.6;
+}
+
+@media (max-width: 980px) {
+  .steps-grid { grid-template-columns: 1fr; }
+  .comparison-table thead th,
+  .comparison-table tbody td { padding: 14px 10px; font-size: 13px; }
+  .final-hero-cta { padding: 44px 24px; }
+  .final-hero-cta h2 { font-size: 30px; }
+}
+
+/* ═══ 6-LAYER PLATFORM ═══ */
+.layer-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.layer-card {
+  padding: 28px 26px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--layer-color) 8%, transparent), transparent 70%),
+    rgba(10, 5, 32, 0.5);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--layer-color);
+  border-radius: 14px;
+  position: relative;
+  transition: all 0.2s;
+}
+.layer-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--layer-color);
+  box-shadow: 0 10px 32px color-mix(in srgb, var(--layer-color) 18%, transparent);
+}
+.layer-head {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 16px;
+}
+.layer-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  background: color-mix(in srgb, var(--layer-color) 14%, transparent);
+  color: var(--layer-color);
+  border-radius: 6px;
+  letter-spacing: 0.08em;
+}
+.layer-name {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--ink-50);
+}
+.layer-desc {
+  font-size: 14px;
+  color: var(--ink-300);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+.layer-features {
+  list-style: none; padding: 0; margin: 0;
+}
+.layer-features li {
+  padding: 5px 0 5px 18px;
+  position: relative;
+  font-size: 13px;
+  color: var(--ink-200);
+  line-height: 1.55;
+}
+.layer-features li::before {
+  content: '→';
+  position: absolute;
+  left: 0; top: 5px;
+  color: var(--layer-color);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ═══ COMPARISON ═══ */
+.compare-card {
+  background:
+    radial-gradient(ellipse at 80% 0%, rgba(253, 230, 138, 0.08), transparent 60%),
+    rgba(10, 5, 32, 0.6);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border: 1px solid var(--border-strong);
+  border-radius: 22px;
+  padding: 40px 44px;
+  position: relative;
+  overflow: hidden;
+}
+.compare-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--ajna), var(--crown), var(--crown-gold));
+  opacity: 0.8;
+}
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 28px;
+  align-items: center;
+}
+.compare-side {
+  padding: 26px 28px;
+  background: rgba(10, 5, 32, 0.4);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+}
+.compare-side.bad { border-color: rgba(244, 114, 182, 0.24); }
+.compare-side.good { border-color: rgba(253, 230, 138, 0.32); background: rgba(253, 230, 138, 0.04); }
+.compare-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+.compare-side.bad .compare-label { color: #F472B6; }
+.compare-side.good .compare-label { color: var(--crown-gold); }
+.compare-list {
+  list-style: none; padding: 0; margin: 0;
+}
+.compare-list li {
+  padding: 6px 0 6px 22px;
+  position: relative;
+  font-size: 13.5px;
+  color: var(--ink-200);
+  line-height: 1.55;
+}
+.compare-side.bad .compare-list li::before {
+  content: '✗';
+  position: absolute; left: 0; top: 6px;
+  color: #F472B6;
+  font-weight: 700;
+}
+.compare-side.good .compare-list li::before {
+  content: '✓';
+  position: absolute; left: 0; top: 6px;
+  color: var(--crown-gold);
+  font-weight: 700;
+}
+.compare-vs {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--crown-light);
+  letter-spacing: 0.2em;
+  text-align: center;
+  opacity: 0.5;
+}
+
+/* ═══ AUDIENCES ═══ */
+.aud-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+.aud-card {
+  padding: 36px 32px 32px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--aud-color) 8%, transparent), transparent 50%),
+    rgba(10, 5, 32, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+.aud-card:hover {
+  border-color: var(--aud-color);
+  transform: translateY(-2px);
+}
+.aud-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--aud-color);
+}
+.aud-role {
+  display: inline-block;
+  padding: 5px 12px;
+  background: color-mix(in srgb, var(--aud-color) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--aud-color) 34%, transparent);
+  border-radius: 100px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--aud-color);
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+.aud-h {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink-50);
+  margin-bottom: 12px;
+  line-height: 1.25;
+}
+.aud-desc {
+  font-size: 14.5px;
+  color: var(--ink-300);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+.aud-uses {
+  list-style: none; padding: 0; margin: 0 0 24px;
+}
+.aud-uses li {
+  padding: 5px 0 5px 20px;
+  position: relative;
+  font-size: 13.5px;
+  color: var(--ink-200);
+  line-height: 1.55;
+}
+.aud-uses li::before {
+  content: '▸';
+  position: absolute; left: 0; top: 5px;
+  color: var(--aud-color);
+  font-size: 11px;
+}
+.aud-price {
+  padding: 12px 16px;
+  background: rgba(10, 5, 32, 0.5);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+.aud-price-big {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--aud-color);
+  letter-spacing: -0.02em;
+  font-family: var(--font-mono);
+}
+.aud-price-sub {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--ink-400);
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+.aud-cta {
+  display: block;
+  text-align: center;
+  padding: 12px 20px;
+  background: color-mix(in srgb, var(--aud-color) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--aud-color) 34%, transparent);
+  color: var(--aud-color);
+  font-weight: 600;
+  font-size: 13.5px;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.aud-cta:hover {
+  background: color-mix(in srgb, var(--aud-color) 20%, transparent);
+}
+
+/* ═══ PRICING ═══ */
+.price-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+}
+.price-card {
+  padding: 32px 22px 28px;
+  background: rgba(10, 5, 32, 0.5);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  position: relative;
+}
+.price-card.featured {
+  border: 2px solid var(--crown-gold);
+  background:
+    linear-gradient(180deg, rgba(253, 230, 138, 0.07), transparent 60%),
+    rgba(10, 5, 32, 0.7);
+  box-shadow: 0 14px 50px rgba(253, 230, 138, 0.18);
+  transform: scale(1.04);
+}
+.price-card.featured::before {
+  content: 'RECOMMENDED';
+  position: absolute;
+  top: -11px; left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 14px;
+  background: linear-gradient(135deg, var(--crown-gold), var(--crown-gold-deep));
+  color: var(--bg-void);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  border-radius: 100px;
+}
+.price-tier {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-300);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.price-card.featured .price-tier { color: var(--crown-gold); }
+.price-name {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--ink-50);
+  margin-bottom: 16px;
+}
+.price-big {
+  display: flex; align-items: baseline; gap: 4px;
+  margin-bottom: 6px;
+}
+.price-amount {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--ink-50);
+  letter-spacing: -0.035em;
+  font-family: var(--font-mono);
+  line-height: 1;
+}
+.price-unit {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink-400);
+}
+.price-bill {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-400);
+  margin-bottom: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.price-features {
+  list-style: none; padding: 0; margin: 0 0 22px;
+}
+.price-features li {
+  padding: 6px 0 6px 20px;
+  position: relative;
+  font-size: 13px;
+  color: var(--ink-200);
+  line-height: 1.5;
+}
+.price-features li::before {
+  content: '✓';
+  position: absolute; left: 0; top: 6px;
+  color: var(--ok);
+  font-weight: 700;
+}
+.price-cta {
+  display: block;
+  text-align: center;
+  padding: 11px 16px;
+  background: rgba(168, 85, 247, 0.08);
+  border: 1px solid var(--border);
+  color: var(--ink-100);
+  font-weight: 600;
+  font-size: 13px;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.price-cta:hover {
+  background: rgba(168, 85, 247, 0.16);
+  border-color: var(--border-strong);
+}
+.price-card.featured .price-cta {
+  background: linear-gradient(135deg, var(--crown-gold), var(--crown-gold-deep));
+  color: var(--bg-void);
+  font-weight: 700;
+  border: none;
+}
+
+/* ═══ ROADMAP TEASER ═══ */
+.roadmap-teaser {
+  background:
+    radial-gradient(ellipse at 20% 80%, rgba(168, 85, 247, 0.14), transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(253, 230, 138, 0.08), transparent 60%),
+    rgba(10, 5, 32, 0.7);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-strong);
+  border-radius: 22px;
+  padding: 48px 48px 44px;
+  position: relative;
+  overflow: hidden;
+}
+.rm-phases {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin: 32px 0;
+}
+.rm-phase {
+  padding: 16px 14px;
+  background: rgba(10, 5, 32, 0.5);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--rm-color);
+  border-radius: 10px;
+}
+.rm-phase-num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--rm-color);
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.rm-phase-count {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink-50);
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+.rm-phase-lbl {
+  font-size: 11px;
+  color: var(--ink-300);
+  line-height: 1.35;
+}
+
+/* ═══ FAQ ═══ */
+.faq-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.faq-item {
+  padding: 24px 26px;
+  background: rgba(10, 5, 32, 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.faq-q {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink-50);
+  margin-bottom: 10px;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.faq-q::before {
+  content: 'Q';
+  flex-shrink: 0;
+  width: 22px; height: 22px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--crown-gold) 14%, transparent);
+  color: var(--crown-gold);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  display: flex; align-items: center; justify-content: center;
+  margin-top: 2px;
+}
+.faq-a {
+  font-size: 14px;
+  color: var(--ink-300);
+  line-height: 1.65;
+  padding-left: 32px;
+}
+.faq-a strong { color: var(--ink-100); font-weight: 600; }
+
+/* ═══ FINAL CTA ═══ */
+.final-cta {
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(253, 230, 138, 0.14), transparent 55%),
+    radial-gradient(ellipse at 20% 80%, rgba(168, 85, 247, 0.16), transparent 55%),
+    rgba(10, 5, 32, 0.75);
+  backdrop-filter: blur(26px);
+  -webkit-backdrop-filter: blur(26px);
+  border: 1px solid var(--border-strong);
+  border-radius: 24px;
+  padding: 64px 48px 60px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.final-cta::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--L1), var(--L2), var(--L3), var(--L4), var(--L5), var(--L6));
+  opacity: 0.9;
+}
+.final-cta h2 {
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--ink-50);
+  margin-bottom: 18px;
+}
+.final-cta h2 em {
+  font-style: normal;
+  font-weight: 500;
+  background: linear-gradient(135deg, var(--crown-gold), var(--crown-light));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.final-cta p {
+  font-size: 17px;
+  color: var(--ink-200);
+  max-width: 680px;
+  margin: 0 auto 36px;
+  line-height: 1.6;
+}
+.final-form {
+  max-width: 500px;
+  margin: 0 auto;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.final-form input {
+  flex: 1;
+  min-width: 240px;
+  padding: 14px 18px;
+  background: rgba(10, 5, 32, 0.7);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 14.5px;
+  color: var(--ink-50);
+  outline: none;
+  transition: all 0.15s;
+}
+.final-form input::placeholder { color: var(--ink-400); }
+.final-form input:focus {
+  border-color: var(--crown-gold);
+  box-shadow: 0 0 0 3px rgba(253, 230, 138, 0.15);
+}
+.final-form input.error {
+  border-color: #F472B6;
+  box-shadow: 0 0 0 3px rgba(244, 114, 182, 0.15);
+}
+.form-msg {
+  margin-top: 16px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  min-height: 20px;
+}
+.form-msg.ok { color: var(--ok); }
+.form-msg.err { color: #F472B6; }
+
+/* ═══ FOOTER ═══ */
+.footer {
+  max-width: 1440px;
+  margin: 80px auto 0;
+  padding: 48px 40px 32px;
+  border-top: 1px solid var(--border-soft);
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 32px;
+}
+.footer-brand { max-width: 320px; }
+.footer-brand .brand { margin-bottom: 14px; }
+.footer-tag {
+  font-size: 13.5px;
+  color: var(--ink-300);
+  line-height: 1.6;
+  margin-bottom: 18px;
+}
+.footer-parent {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-500);
+  letter-spacing: 0.05em;
+}
+.footer-parent strong { color: var(--crown-gold); font-weight: 700; }
+.footer-col h5 {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--crown-light);
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+.footer-col a {
+  display: block;
+  font-size: 13.5px;
+  color: var(--ink-300);
+  text-decoration: none;
+  padding: 5px 0;
+  transition: color 0.15s;
+}
+.footer-col a:hover { color: var(--crown-gold); }
+.footer-bottom {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 20px 40px 40px;
+  border-top: 1px solid var(--border-soft);
+  display: flex; justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-500);
+  letter-spacing: 0.06em;
+}
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 1100px) {
+  .hero { grid-template-columns: 1fr; gap: 48px; }
+  .hero-visual.zeni-compass { max-width: 480px; order: -1; }
+  .hero h1 { font-size: 52px; }
+  .vp-grid, .layer-grid, .aud-grid { grid-template-columns: 1fr 1fr; }
+  .price-grid { grid-template-columns: 1fr 1fr; }
+  .price-card.featured { transform: none; }
+}
+@media (max-width: 760px) {
+  .topbar { padding: 0 20px; }
+  .topbar-nav { display: none; }
+  .hero { padding: 48px 20px 60px; }
+  .hero h1 { font-size: 38px; }
+  .hero-sub { font-size: 16px; }
+  .section { padding: 60px 20px; }
+  .sect-title { font-size: 32px; }
+  .vp-grid, .layer-grid, .aud-grid, .price-grid, .faq-grid { grid-template-columns: 1fr; }
+  .compare-grid { grid-template-columns: 1fr; }
+  .compare-vs { transform: rotate(90deg); }
+  .rm-phases { grid-template-columns: 1fr 1fr; }
+  .footer { grid-template-columns: 1fr; }
+  .final-cta { padding: 40px 24px; }
+  .final-cta h2 { font-size: 30px; }
+  .hero-visual.zeni-compass { max-width: 360px; }
+  .compass-core { width: 30%; }
+  .core-name { font-size: 10px; }
+  .core-tag { font-size: 6.5px; }
+  .core-icon { font-size: 28px; }
+  .layer-pill { padding: 6px 12px 7px; }
+  .pill-tag { font-size: 11px; }
+  .pill-name { font-size: 7px; }
+  .roadmap-teaser { padding: 32px 24px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════ TOPBAR ═══════ -->
+<header class="topbar">
+  <a class="brand" href="#top">
+    <div class="brand-logo">Z</div>
+    <div>
+      <div class="brand-name">Zeni<em>Cloud</em></div>
+      <div class="brand-sub">zenicloud.io</div>
+    </div>
+  </a>
+
+  <nav class="topbar-nav">
+    <!-- Nền tảng · 6-layer mega menu -->
+    <div class="nav-item" data-nav="platform">
+      <button class="nav-trigger" type="button" aria-expanded="false" data-i18n="nav.platform">Nền tảng</button>
+      <div class="mega-menu" role="menu">
+        <div class="mega-grid cols-2">
+          <a class="mega-link" href="#platform" style="--mega-color: var(--L1);">
+            <div class="mega-icon">L1</div>
+            <div class="mega-body">
+              <div class="mega-title" data-i18n="nav.l1.t">Compute</div>
+              <div class="mega-desc" data-i18n="nav.l1.d">Auto-scale containers · Edge functions · Preview environments</div>
+            </div>
+          </a>
+          <a class="mega-link" href="#platform" style="--mega-color: var(--L2);">
+            <div class="mega-icon">L2</div>
+            <div class="mega-body">
+              <div class="mega-title" data-i18n="nav.l2.t">Data</div>
+              <div class="mega-desc" data-i18n="nav.l2.d">Postgres · Vector DB · Object Storage · Data Pipelines VN</div>
+            </div>
+          </a>
+          <a class="mega-link" href="#platform" style="--mega-color: var(--L3);">
+            <div class="mega-icon">L3</div>
+            <div class="mega-body">
+              <div class="mega-title" data-i18n="nav.l3.t">AI</div>
+              <div class="mega-desc" data-i18n="nav.l3.d">6 model · Fine-tuning · AI Agents · RAG · Credits pool</div>
+            </div>
+          </a>
+          <a class="mega-link" href="#platform" style="--mega-color: var(--L4);">
+            <div class="mega-icon">L4</div>
+            <div class="mega-body">
+              <div class="mega-title" data-i18n="nav.l4.t">Automation</div>
+              <div class="mega-desc" data-i18n="nav.l4.d">16 VN connectors · Workflow builder · Queue · Cron</div>
+            </div>
+          </a>
+          <a class="mega-link" href="#platform" style="--mega-color: var(--L5);">
+            <div class="mega-icon">L5</div>
+            <div class="mega-body">
+              <div class="mega-title" data-i18n="nav.l5.t">Identity</div>
+              <div class="mega-desc" data-i18n="nav.l5.d">SSO · SCIM · OAuth · Unified Zeni ID · Audit log</div>
+            </div>
+          </a>
+          <a class="mega-link" href="#platform" style="--mega-color: var(--L6);">
+            <div class="mega-icon">L6</div>
+            <div class="mega-body">
+              <div class="mega-title" data-i18n="nav.l6.t">Web3</div>
+              <div class="mega-desc" data-i18n="nav.l6.d">Zeni Chain L2 · Smart contracts · Gasless UX · Custodial wallet</div>
+            </div>
+          </a>
+        </div>
+        <div class="mega-footer">
+          <span style="color: var(--ink-400); font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em;" data-i18n="nav.platform.tag">● 6 lớp · 1 hệ điều hành cloud</span>
+          <a href="#platform" data-i18n="nav.viewall">Xem đầy đủ nền tảng →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Đối tượng -->
+    <div class="nav-item" data-nav="audience">
+      <button class="nav-trigger" type="button" aria-expanded="false">
+        <span data-i18n="nav.audience">Đối tượng</span>
+        <svg class="chev" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 4.5 6 7.5 9 4.5"/></svg>
+      </button>
+      <div class="mega-menu" role="menu" style="min-width: 460px;">
+        <div class="mega-grid cols-1">
+          <a class="mega-link" href="#audience" style="--mega-color: var(--L1);">
+            <div class="mega-icon">DEV</div>
+            <div class="mega-body">
+              <div class="mega-title" data-i18n="nav.aud1.t">Developer · Explorer tier <span style="color:var(--ok); font-family:var(--font-mono); font-size:10px;">FREE</span></div>
+              <div class="mega-desc" data-i18n="nav.aud1.d">Prototype, hackathon, MVP startup. Không cần thẻ. Vĩnh viễn miễn phí.</div>
+            </div>
+          </a>
+          <a class="mega-link" href="#audience" style="--mega-color: var(--crown-gold);">
+            <div class="mega-icon">SME</div>
+            <div class="mega-body">
+              <div class="mega-title" data-i18n="nav.aud2.t">SME Việt Nam · Business tier <span style="color:var(--crown-gold); font-family:var(--font-mono); font-size:10px;">$499/mo</span></div>
+              <div class="mega-desc" data-i18n="nav.aud2.d">E-commerce multi-channel, spa, phòng khám, franchise. Gộp 5 vendor thành 1.</div>
+            </div>
+          </a>
+          <a class="mega-link" href="#audience" style="--mega-color: var(--crown);">
+            <div class="mega-icon">ENT</div>
+            <div class="mega-body">
+              <div class="mega-title" data-i18n="nav.aud3.t">Enterprise · White-label <span style="color:var(--crown-light); font-family:var(--font-mono); font-size:10px;">$50k+/năm</span></div>
+              <div class="mega-desc" data-i18n="nav.aud3.d">Ngân hàng, tập đoàn. Dedicated cloud, BYOK, SLA 99.95%, on-prem option.</div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bảng giá -->
+    <div class="nav-item" data-nav="pricing">
+      <button class="nav-trigger" type="button" aria-expanded="false">
+        <span data-i18n="nav.pricing">Bảng giá</span>
+        <svg class="chev" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 4.5 6 7.5 9 4.5"/></svg>
+      </button>
+      <div class="mega-menu" role="menu" style="min-width: 420px;">
+        <div class="mega-grid cols-1">
+          <a class="mega-link" href="#pricing" style="--mega-color: var(--ink-300);">
+            <div class="mega-icon" style="font-size: 13px;">$0</div>
+            <div class="mega-body">
+              <div class="mega-title">Explorer · <span style="color:var(--ok);" data-i18n="nav.price1.t">Free forever</span></div>
+              <div class="mega-desc" data-i18n="nav.price1.d">3 services · 5GB · 10k AI credits · Community</div>
+            </div>
+          </a>
+          <a class="mega-link" href="#pricing" style="--mega-color: var(--L1);">
+            <div class="mega-icon" style="font-size: 11px;">$49</div>
+            <div class="mega-body">
+              <div class="mega-title">Builder · <span data-i18n="nav.price2.t">Developer solo</span></div>
+              <div class="mega-desc" data-i18n="nav.price2.d">Unlimited services · 50GB · 100k credits · 2 connectors</div>
+            </div>
+          </a>
+          <a class="mega-link" href="#pricing" style="--mega-color: var(--crown-gold);">
+            <div class="mega-icon" style="font-size: 10px;">$499</div>
+            <div class="mega-body">
+              <div class="mega-title">Business · <span style="color:var(--crown-gold); font-family:var(--font-mono); font-size:10px; letter-spacing:0.1em;">★ MOST POPULAR</span></div>
+              <div class="mega-desc" data-i18n="nav.price3.d">500GB · 1M credits · Fine-tune · 10 connectors · NĐ13 pack</div>
+            </div>
+          </a>
+          <a class="mega-link" href="#pricing" style="--mega-color: var(--crown);">
+            <div class="mega-icon" style="font-size: 9.5px;">$1.9k</div>
+            <div class="mega-body">
+              <div class="mega-title">Scale · <span data-i18n="nav.price4.t">High volume</span></div>
+              <div class="mega-desc" data-i18n="nav.price4.d">5TB · 10M credits · Web3 full · SSO SAML · dedicated Slack</div>
+            </div>
+          </a>
+          <a class="mega-link" href="#pricing" style="--mega-color: #EC4899;">
+            <div class="mega-icon" style="font-size: 9.5px;">$50k</div>
+            <div class="mega-body">
+              <div class="mega-title">Enterprise · <span data-i18n="nav.price5.t">Custom contract</span></div>
+              <div class="mega-desc" data-i18n="nav.price5.d">Dedicated infra · on-prem · BYOK · 99.95% SLA · white-label</div>
+            </div>
+          </a>
+        </div>
+        <div class="mega-footer">
+          <span style="color: var(--ink-400); font-family: var(--font-mono); font-size: 11px;" data-i18n="nav.pricing.tag">● Transparent · cancel anytime</span>
+          <a href="#pricing" data-i18n="nav.comparepricing">So sánh chi tiết →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lộ trình -->
+    <div class="nav-item" data-nav="roadmap">
+      <button class="nav-trigger" type="button" aria-expanded="false">
+        <span data-i18n="nav.roadmap">Lộ trình</span>
+        <svg class="chev" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 4.5 6 7.5 9 4.5"/></svg>
+      </button>
+      <div class="mega-menu" role="menu" style="min-width: 480px;">
+        <div class="mega-grid cols-1">
+          <a class="mega-link" href="#roadmap" style="--mega-color: var(--L1);">
+            <div class="mega-icon">P0</div>
+            <div class="mega-body">
+              <div class="mega-title" data-i18n="nav.p0.t">Phase 0 · Foundation &amp; Architecture <span style="color:var(--ink-400); font-family:var(--font-mono); font-size:10px;">Q1/2024</span></div>
+              <div class="mega-desc" data-i18n="nav.p0.d">Nghiên cứu kiến trúc 6 lớp · Lựa chọn GCP làm nền tảng · Domain zenicloud.io · Brand identity</div>
+            </div>
+          </a>
+          <a class="mega-link" href="#roadmap" style="--mega-color: var(--crown-gold);">
+            <div class="mega-icon">P1</div>
+            <div class="mega-body">
+              <div class="mega-title" data-i18n="nav.p1.t">Phase 1 · Core Infrastructure <span style="color:var(--crown-gold); font-family:var(--font-mono); font-size:10px;">Q2-Q3/2024</span></div>
+              <div class="mega-desc" data-i18n="nav.p1.d">L1 Compute · L2 Cloud SQL + pgvector · L4 Cron + Webhook · L5 JWT/OAuth · L6 Polygon RPC</div>
+            </div>
+          </a>
+          <a class="mega-link" href="#roadmap" style="--mega-color: var(--aurora-cyan);">
+            <div class="mega-icon">P2</div>
+            <div class="mega-body">
+              <div class="mega-title" data-i18n="nav.p2.t">Phase 2 · AI Layer &amp; Smart Router <span style="color:var(--ink-400); font-family:var(--font-mono); font-size:10px;">Q4/2024</span></div>
+              <div class="mega-desc" data-i18n="nav.p2.d">ZeniRouter Smart Routing · LLM Gateway 4 providers · OCR · Translate · 50+ AI Agents Library</div>
+            </div>
+          </a>
+          <a class="mega-link" href="#roadmap" style="--mega-color: var(--crown);">
+            <div class="mega-icon">P3</div>
+            <div class="mega-body">
+              <div class="mega-title" data-i18n="nav.p3.t">Phase 3 · Identity · Web3 · Privacy <span style="color:var(--ink-400); font-family:var(--font-mono); font-size:10px;">Q1-Q2/2025</span></div>
+              <div class="mega-desc" data-i18n="nav.p3.d">MFA TOTP · OAuth Google/GitHub · CMEK · Smart Contract ZeniAccessControl · $ZENI Token · CAAA</div>
+            </div>
+          </a>
+          <a class="mega-link" href="#roadmap" style="--mega-color: #EC4899;">
+            <div class="mega-icon">P4</div>
+            <div class="mega-body">
+              <div class="mega-title" data-i18n="nav.p4.t">Phase 4 · Public GA &amp; Reseller <span style="color:var(--ok); font-family:var(--font-mono); font-size:10px;">Q1-Q2/2026 · LIVE</span></div>
+              <div class="mega-desc" data-i18n="nav.p4.d">VietQR · Zeni Pay Wallet · Multi-region · Backup/DR · Edge CDN · White-label Reseller · GA</div>
+            </div>
+          </a>
+        </div>
+        <div class="mega-footer">
+          <span style="color: var(--ok); font-family: var(--font-mono); font-size: 11px;" data-i18n="nav.roadmap.tag">● Production LIVE · 18 tháng phát triển · v1.0</span>
+          <a href="#roadmap" data-i18n="nav.viewroadmap">Xem hành trình chi tiết →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ — simple link -->
+    <div class="nav-item">
+      <a class="nav-trigger" href="#faq" data-i18n="nav.faq">FAQ</a>
+    </div>
+  </nav>
+
+  <!-- Language Switcher -->
+  <div class="lang-switch" id="langSwitch">
+    <button class="lang-btn" type="button" id="langBtn" aria-expanded="false" aria-label="Chọn ngôn ngữ">
+      <span class="flag" id="curFlag">🇻🇳</span>
+      <span id="curCode">VN</span>
+      <svg class="chev" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 4.5 6 7.5 9 4.5"/></svg>
+    </button>
+    <div class="lang-menu" role="menu">
+      <button class="lang-option active" data-lang="vi" type="button"><span class="flag">🇻🇳</span><span>Tiếng Việt</span><span class="code">VN</span></button>
+      <button class="lang-option" data-lang="en" type="button"><span class="flag">🇬🇧</span><span>English</span><span class="code">EN</span></button>
+      <button class="lang-option" data-lang="zh" type="button"><span class="flag">🇨🇳</span><span>中文</span><span class="code">ZH</span></button>
+      <button class="lang-option" data-lang="ja" type="button"><span class="flag">🇯🇵</span><span>日本語</span><span class="code">JA</span></button>
+      <button class="lang-option" data-lang="ko" type="button"><span class="flag">🇰🇷</span><span>한국어</span><span class="code">KO</span></button>
+      <button class="lang-option" data-lang="th" type="button"><span class="flag">🇹🇭</span><span>ไทย</span><span class="code">TH</span></button>
+    </div>
+  </div>
+
+  <div class="topbar-cta" id="topbar-cta-guest">
+    <a href="/app" class="btn btn-ghost" data-i18n="cta.signin">Đăng nhập</a>
+    <a href="/signup" class="btn btn-primary" data-i18n="cta.signup">Đăng ký miễn phí</a>
+  </div>
+  <div class="topbar-cta" id="topbar-cta-auth" style="display:none;">
+    <a href="/app" class="btn btn-primary" data-i18n="cta.dashboard">Vào Dashboard →</a>
+    <button onclick="window.zeniLogout()" class="btn btn-ghost" data-i18n="cta.logout">Đăng xuất</button>
+  </div>
+</header>
+
+<script>
+// Auth state detection — show Dashboard button when logged in
+(function(){
+  function hasAuth(){
+    try {
+      const t = localStorage.getItem('zeni.jwt.access') || localStorage.getItem('zeni_token') || localStorage.getItem('access_token');
+      if (t && t.length > 10) return true;
+      // Check cookie fallback
+      return document.cookie.includes('zeni_session=') || document.cookie.includes('access_token=');
+    } catch(e){ return false; }
+  }
+  function applyAuthUI(){
+    const guest = document.getElementById('topbar-cta-guest');
+    const auth  = document.getElementById('topbar-cta-auth');
+    if (!guest || !auth) return;
+    if (hasAuth()){
+      guest.style.display = 'none';
+      auth.style.display  = 'flex';
+    } else {
+      guest.style.display = 'flex';
+      auth.style.display  = 'none';
+    }
+  }
+  window.zeniLogout = function(){
+    try {
+      localStorage.removeItem('zeni.jwt.access');
+      localStorage.removeItem('zeni.jwt.refresh');
+      localStorage.removeItem('zeniCloud_session_v1');
+      localStorage.removeItem('zeni_token');
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user');
+      document.cookie = 'zeni_session=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+      document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+    } catch(e){}
+    location.href = '/';
+  };
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', applyAuthUI);
+  } else { applyAuthUI(); }
+})();
+</script>
+
+<!-- ═══════ HERO ═══════ -->
+<section class="hero" id="top">
+  <div>
+    <h1>Một nền tảng <em>minh triết</em><br>Một hành trình <em>trọn vẹn</em></h1>
+    <p class="hero-sub">
+      <span class="hero-sub-tagline">Một tài khoản · Sáu lớp hạ tầng · Toàn AI built-in</span>
+      Cloud của người Việt — <strong>tự chủ hạ tầng, không phụ thuộc</strong> AWS, Vercel hay bất kỳ nền tảng lớn nào. Smart AI Router tự động chọn lựa tối ưu giữa Claude, GPT, Gemini. Hoá đơn VAT, thanh toán VietQR, audit on-chain Polygon — tất cả trong một nền tảng.
+    </p>
+    <div class="hero-ctas">
+      <a href="/signup" class="btn btn-primary lg">Bắt đầu miễn phí</a>
+      <a href="/pricing" class="btn btn-ghost lg">Xem giá VND</a>
+    </div>
+    <div class="hero-assurance">
+      <span>Free forever 100K req</span>
+      <span>VAT VN tự động</span>
+      <span>VietQR thanh toán</span>
+      <span>On-chain audit</span>
+    </div>
+  </div>
+
+  <div class="hero-visual zeni-compass" aria-hidden="true">
+
+    <!-- ═══ Outer compass dial (rotating slowly) ═══ -->
+    <svg class="compass-dial" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <radialGradient id="dialBgGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"  stop-color="rgba(168, 85, 247, 0.18)"/>
+          <stop offset="55%" stop-color="rgba(99, 102, 241, 0.06)"/>
+          <stop offset="100%" stop-color="transparent"/>
+        </radialGradient>
+        <linearGradient id="ringGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#FDE68A" stop-opacity="0.55"/>
+          <stop offset="50%" stop-color="#A855F7" stop-opacity="0.40"/>
+          <stop offset="100%" stop-color="#6366F1" stop-opacity="0.30"/>
+        </linearGradient>
+        <linearGradient id="needleGrad" x1="0.5" y1="0" x2="0.5" y2="1">
+          <stop offset="0%" stop-color="#FDE68A" stop-opacity="0.95"/>
+          <stop offset="100%" stop-color="#A855F7" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Soft purple background glow -->
+      <circle cx="200" cy="200" r="195" fill="url(#dialBgGrad)"/>
+
+      <!-- 3 concentric rings -->
+      <g class="ring-static">
+        <circle cx="200" cy="200" r="190" fill="none" stroke="rgba(168, 139, 250, 0.16)" stroke-width="1"/>
+        <circle cx="200" cy="200" r="158" fill="none" stroke="rgba(216, 180, 254, 0.20)" stroke-width="1"/>
+        <circle cx="200" cy="200" r="120" fill="none" stroke="rgba(168, 139, 250, 0.30)" stroke-width="1" stroke-dasharray="2 4"/>
+      </g>
+
+      <!-- Rotating outer ring with degree ticks (every 5deg, longer at every 30deg) -->
+      <g class="ring-rotate">
+        <circle cx="200" cy="200" r="174" fill="none" stroke="url(#ringGrad)" stroke-width="1.2"/>
+        <!-- 72 small ticks, every 5 degrees -->
+        <g class="ticks-small">
+          <!-- generated below by repeating with rotation -->
+        </g>
+        <!-- 12 long ticks, every 30 degrees, between the small ones -->
+      </g>
+
+      <!-- Cross hair (vertical / horizontal lines through center) -->
+      <line x1="200" y1="20"  x2="200" y2="380" stroke="rgba(253, 230, 138, 0.18)" stroke-width="0.6" stroke-dasharray="3 4"/>
+      <line x1="20"  y1="200" x2="380" y2="200" stroke="rgba(253, 230, 138, 0.18)" stroke-width="0.6" stroke-dasharray="3 4"/>
+
+      <!-- Pulsing energy beams from center to 6 layer positions -->
+      <g class="beams">
+        <!-- 6 beams at 30, 90, 150, 210, 270, 330 degrees (between cardinal axes) -->
+        <line class="beam" x1="200" y1="200" x2="365" y2="105" stroke="url(#needleGrad)" stroke-width="2"/>
+        <line class="beam" x1="200" y1="200" x2="365" y2="295" stroke="url(#needleGrad)" stroke-width="2"/>
+        <line class="beam" x1="200" y1="200" x2="200" y2="20"  stroke="url(#needleGrad)" stroke-width="2"/>
+        <line class="beam" x1="200" y1="200" x2="200" y2="380" stroke="url(#needleGrad)" stroke-width="2"/>
+        <line class="beam" x1="200" y1="200" x2="35"  y2="105" stroke="url(#needleGrad)" stroke-width="2"/>
+        <line class="beam" x1="200" y1="200" x2="35"  y2="295" stroke="url(#needleGrad)" stroke-width="2"/>
+      </g>
+
+      <!-- Spinning needle (compass) -->
+      <g class="needle-spin">
+        <line x1="200" y1="200" x2="200" y2="50"  stroke="#FDE68A" stroke-width="1.5" stroke-linecap="round" opacity="0.85"/>
+        <line x1="200" y1="200" x2="200" y2="350" stroke="#A855F7" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+        <circle cx="200" cy="50" r="3" fill="#FDE68A"/>
+      </g>
+
+      <!-- 24 small ticks programmatically -->
+      <g class="ticks">
+        <g transform="rotate(0 200 200)">  <line x1="200" y1="22" x2="200" y2="32" stroke="rgba(253,230,138,0.6)" stroke-width="1.4"/></g>
+        <g transform="rotate(15 200 200)"> <line x1="200" y1="22" x2="200" y2="28" stroke="rgba(168,139,250,0.45)" stroke-width="1"/></g>
+        <g transform="rotate(30 200 200)"> <line x1="200" y1="22" x2="200" y2="32" stroke="rgba(253,230,138,0.6)" stroke-width="1.4"/></g>
+        <g transform="rotate(45 200 200)"> <line x1="200" y1="22" x2="200" y2="28" stroke="rgba(168,139,250,0.45)" stroke-width="1"/></g>
+        <g transform="rotate(60 200 200)"> <line x1="200" y1="22" x2="200" y2="32" stroke="rgba(253,230,138,0.6)" stroke-width="1.4"/></g>
+        <g transform="rotate(75 200 200)"> <line x1="200" y1="22" x2="200" y2="28" stroke="rgba(168,139,250,0.45)" stroke-width="1"/></g>
+        <g transform="rotate(90 200 200)"> <line x1="200" y1="22" x2="200" y2="32" stroke="rgba(253,230,138,0.6)" stroke-width="1.4"/></g>
+        <g transform="rotate(105 200 200)"><line x1="200" y1="22" x2="200" y2="28" stroke="rgba(168,139,250,0.45)" stroke-width="1"/></g>
+        <g transform="rotate(120 200 200)"><line x1="200" y1="22" x2="200" y2="32" stroke="rgba(253,230,138,0.6)" stroke-width="1.4"/></g>
+        <g transform="rotate(135 200 200)"><line x1="200" y1="22" x2="200" y2="28" stroke="rgba(168,139,250,0.45)" stroke-width="1"/></g>
+        <g transform="rotate(150 200 200)"><line x1="200" y1="22" x2="200" y2="32" stroke="rgba(253,230,138,0.6)" stroke-width="1.4"/></g>
+        <g transform="rotate(165 200 200)"><line x1="200" y1="22" x2="200" y2="28" stroke="rgba(168,139,250,0.45)" stroke-width="1"/></g>
+        <g transform="rotate(180 200 200)"><line x1="200" y1="22" x2="200" y2="32" stroke="rgba(253,230,138,0.6)" stroke-width="1.4"/></g>
+        <g transform="rotate(195 200 200)"><line x1="200" y1="22" x2="200" y2="28" stroke="rgba(168,139,250,0.45)" stroke-width="1"/></g>
+        <g transform="rotate(210 200 200)"><line x1="200" y1="22" x2="200" y2="32" stroke="rgba(253,230,138,0.6)" stroke-width="1.4"/></g>
+        <g transform="rotate(225 200 200)"><line x1="200" y1="22" x2="200" y2="28" stroke="rgba(168,139,250,0.45)" stroke-width="1"/></g>
+        <g transform="rotate(240 200 200)"><line x1="200" y1="22" x2="200" y2="32" stroke="rgba(253,230,138,0.6)" stroke-width="1.4"/></g>
+        <g transform="rotate(255 200 200)"><line x1="200" y1="22" x2="200" y2="28" stroke="rgba(168,139,250,0.45)" stroke-width="1"/></g>
+        <g transform="rotate(270 200 200)"><line x1="200" y1="22" x2="200" y2="32" stroke="rgba(253,230,138,0.6)" stroke-width="1.4"/></g>
+        <g transform="rotate(285 200 200)"><line x1="200" y1="22" x2="200" y2="28" stroke="rgba(168,139,250,0.45)" stroke-width="1"/></g>
+        <g transform="rotate(300 200 200)"><line x1="200" y1="22" x2="200" y2="32" stroke="rgba(253,230,138,0.6)" stroke-width="1.4"/></g>
+        <g transform="rotate(315 200 200)"><line x1="200" y1="22" x2="200" y2="28" stroke="rgba(168,139,250,0.45)" stroke-width="1"/></g>
+        <g transform="rotate(330 200 200)"><line x1="200" y1="22" x2="200" y2="32" stroke="rgba(253,230,138,0.6)" stroke-width="1.4"/></g>
+        <g transform="rotate(345 200 200)"><line x1="200" y1="22" x2="200" y2="28" stroke="rgba(168,139,250,0.45)" stroke-width="1"/></g>
+      </g>
+    </svg>
+
+    <!-- ═══ Compass center: ZENI CLOUD — đám mây + logo Zen ở giữa ═══ -->
+    <svg class="compass-cloud" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <defs>
+        <radialGradient id="cloudGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"  stop-color="rgba(255,255,255,0.85)"/>
+          <stop offset="40%" stop-color="rgba(216, 180, 254, 0.55)"/>
+          <stop offset="100%" stop-color="rgba(99, 102, 241, 0.20)"/>
+        </radialGradient>
+        <linearGradient id="cloudOutline" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%"  stop-color="#FDE68A"/>
+          <stop offset="50%" stop-color="#A855F7"/>
+          <stop offset="100%" stop-color="#22D3EE"/>
+        </linearGradient>
+        <filter id="cloudGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <!-- Glow mềm, không tạo "viền trắng" -->
+          <feGaussianBlur stdDeviation="3" result="b"/>
+          <feComponentTransfer in="b" result="b2">
+            <feFuncA type="linear" slope="0.6"/>
+          </feComponentTransfer>
+          <feMerge><feMergeNode in="b2"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <!-- Cloud shape — center ở (200,200), bbox x:80→320, y:140→260 -->
+      <!-- 2 lớp: 1 lớp nền mềm (no stroke) + 1 lớp viền gradient mảnh, opacity thấp -->
+      <g class="cloud-float">
+        <!-- Lớp nền: gradient fill, không stroke, glow nhẹ -->
+        <path d="M 100 250
+                 Q 75 248 75 222
+                 Q 72 192 105 188
+                 Q 110 162 145 165
+                 Q 168 145 200 150
+                 Q 232 145 255 165
+                 Q 290 162 295 192
+                 Q 328 195 325 222
+                 Q 322 250 295 252
+                 L 100 252
+                 Z"
+              fill="url(#cloudGrad)"
+              stroke="none"
+              opacity="0.95"
+              filter="url(#cloudGlow)"/>
+        <!-- Lớp viền: chỉ gradient outline mỏng, opacity thấp, KHÔNG có blur filter -->
+        <path d="M 100 250
+                 Q 75 248 75 222
+                 Q 72 192 105 188
+                 Q 110 162 145 165
+                 Q 168 145 200 150
+                 Q 232 145 255 165
+                 Q 290 162 295 192
+                 Q 328 195 325 222
+                 Q 322 250 295 252
+                 L 100 252
+                 Z"
+              fill="none"
+              stroke="url(#cloudOutline)"
+              stroke-width="0.6"
+              stroke-linejoin="round"
+              opacity="0.45"/>
+      </g>
+    </svg>
+
+    <!-- ═══ Logo Zeni gốc (PNG transparent) ở giữa cloud ═══ -->
+    <div class="compass-logo">
+      <img src="/static/zeni-logo.png" alt="Zeni — minh triết · cây sự sống" loading="eager">
+    </div>
+
+    <!-- 6 Lục Đạo orbit removed — quá nhiễu, mất bố cục hero -->
+
+    <!-- ═══ Cosmic dust (twinkling) ═══ -->
+    <div class="cosmic-dust"></div>
+  </div>
+</section>
+
+<!-- ═══════ TRUST BAR ═══════ -->
+<div class="trust">
+  <div class="trust-lbl">Đang vận hành cho hệ sinh thái Zeni Holdings · sẵn sàng phục vụ bạn</div>
+  <div class="trust-logos">
+    <div class="trust-logo">ANIMA<span class="tiny">CARE GLOBAL</span></div>
+    <div class="trust-logo">ZENIIPO<span class="tiny">IPO-READY OS</span></div>
+    <div class="trust-logo">WELLKOC<span class="tiny">SOCIAL COMMERCE</span></div>
+    <div class="trust-logo">NEXBUILD<span class="tiny">CONSTRUCTION PLATFORM</span></div>
+    <div class="trust-logo">BTHOME<span class="tiny">INTERIOR TECH</span></div>
+    <div class="trust-logo">BIOTEA84<span class="tiny">FERMENTED BEVERAGE</span></div>
+    <div class="trust-logo">ZENI HOLDINGS<span class="tiny">PARENT</span></div>
+  </div>
+</div>
+
+<!-- ═══════ 6 ĐIỂM MẠNH ═══════ -->
+<section class="section" id="strengths">
+  <div class="sect-head">
+    <div class="sect-kicker">6 điểm mạnh</div>
+    <h2 class="sect-title">Vì sao Zeni Cloud <em>khác biệt</em></h2>
+    <p class="sect-sub">Sáu lợi thế cốt lõi không một cloud nào ở Việt Nam đang có cùng lúc — tích hợp AI thông minh, thanh toán VND, Web3 native, vertical stack VN, deploy 1 click, tự chủ hoàn toàn không phụ thuộc nền tảng lớn.</p>
+  </div>
+
+  <div class="vp-grid">
+    <div class="vp-card" style="--vp-color: var(--L3);">
+      <div class="vp-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v.5A3.5 3.5 0 0 0 5.5 9 3.5 3.5 0 0 0 4 12.5 3.5 3.5 0 0 0 7.5 16H9v3a3 3 0 0 0 6 0v-3h1.5A3.5 3.5 0 0 0 20 12.5 3.5 3.5 0 0 0 18.5 9 3.5 3.5 0 0 0 15 5.5V5a3 3 0 0 0-3-3z"/><circle cx="12" cy="12" r="2"/></svg>
+      </div>
+      <h3 class="vp-title">AI-First Cloud</h3>
+      <p class="vp-desc">AI built-in vào platform. Smart routing tự động chọn model tối ưu cho từng tác vụ. <strong>Không cần đăng ký Anthropic/OpenAI riêng</strong> — Zeni manage tất cả.</p>
+      <div class="vp-metric">Smart router · Claude · GPT · Gemini</div>
+    </div>
+
+    <div class="vp-card" style="--vp-color: var(--crown-gold);">
+      <div class="vp-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 15h2M11 15h6"/></svg>
+      </div>
+      <h3 class="vp-title">VND Billing + VietQR</h3>
+      <p class="vp-desc">Trả tiền chuyển khoản VND, hoá đơn VAT VN. <strong>Không cần Visa/Mastercard</strong>. Tích hợp MISA tự động.</p>
+      <div class="vp-metric">VietQR · MoMo · MISA · VAT VN</div>
+    </div>
+
+    <div class="vp-card" style="--vp-color: var(--L6);">
+      <div class="vp-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5"/></svg>
+      </div>
+      <h3 class="vp-title">Web3 Native</h3>
+      <p class="vp-desc">Smart Contract deploy 1-click. On-chain audit log mỗi LLM call. Customer verify được trên Polygonscan — <strong>không 1 cloud nào khác có</strong>.</p>
+      <div class="vp-metric">Polygon · Zeni Chain · gasless UX</div>
+    </div>
+
+    <div class="vp-card" style="--vp-color: var(--L4);">
+      <div class="vp-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </div>
+      <h3 class="vp-title">Vietnamese Vertical Stack</h3>
+      <p class="vp-desc">Tích hợp sâu <strong>VietQR / VNPay / MoMo / MISA / Stringee / Zalo OA</strong>. Vertical Models VN: Legal, F&amp;B, Construction, Retail.</p>
+      <div class="vp-metric">16 connector VN · 4 vertical model</div>
+    </div>
+
+    <div class="vp-card" style="--vp-color: var(--ok);">
+      <div class="vp-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22 22 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+      </div>
+      <h3 class="vp-title">One-click Deploy</h3>
+      <p class="vp-desc">ZeniMake build app → 1 click deploy lên Zeni Cloud. <strong>60 giây có app LIVE</strong>. Auto domain, DB, AI, payment gateway.</p>
+      <div class="vp-metric">60s từ code đến production</div>
+    </div>
+
+    <div class="vp-card" style="--vp-color: var(--crown-light);">
+      <div class="vp-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2h0V5z"/><path d="M2 9v1c0 1.1.9 2 2 2h1"/><path d="M16 11h0"/></svg>
+      </div>
+      <h3 class="vp-title">Tự chủ &amp; Tối ưu</h3>
+      <p class="vp-desc">Hạ tầng tự chủ hoàn toàn — <strong>không phụ thuộc</strong> AWS, Vercel, Supabase. Một tài khoản gộp tất cả, vận hành tối ưu theo nhu cầu thật của doanh nghiệp Việt.</p>
+      <div class="vp-metric">Tự chủ hạ tầng · Tối ưu vận hành</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ COMPETITOR COMPARISON ═══════ -->
+<section class="section" id="comparison">
+  <div class="sect-head">
+    <div class="sect-kicker">Điểm so sánh với competitor</div>
+    <h2 class="sect-title">Zeni Cloud <em>vs</em> các nền tảng phổ biến</h2>
+    <p class="sect-sub">Bảng so sánh trực diện 5 tính năng cốt lõi mà doanh nghiệp Việt cần — Zeni Cloud là cloud duy nhất tích hợp đầy đủ AI built-in, VND billing, Web3, tiếng Việt và tự chủ hoàn toàn không lock-in vào bất kỳ nền tảng nào.</p>
+  </div>
+
+  <div class="comparison-wrap">
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th class="cmp-feature">Tính năng</th>
+          <th>Vercel</th>
+          <th>Supabase</th>
+          <th>AWS</th>
+          <th class="cmp-zeni">Zeni Cloud</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="cmp-feature">AI built-in</td>
+          <td><span class="cmp-x">✗</span></td>
+          <td><span class="cmp-x">✗</span></td>
+          <td><span class="cmp-partial">Bedrock thêm phí</span></td>
+          <td class="cmp-zeni"><span class="cmp-check">✓</span></td>
+        </tr>
+        <tr>
+          <td class="cmp-feature">VND billing</td>
+          <td><span class="cmp-x">✗</span></td>
+          <td><span class="cmp-x">✗</span></td>
+          <td><span class="cmp-x">✗</span></td>
+          <td class="cmp-zeni"><span class="cmp-check">✓</span></td>
+        </tr>
+        <tr>
+          <td class="cmp-feature">Web3 native</td>
+          <td><span class="cmp-x">✗</span></td>
+          <td><span class="cmp-x">✗</span></td>
+          <td><span class="cmp-x">✗</span></td>
+          <td class="cmp-zeni"><span class="cmp-check">✓</span></td>
+        </tr>
+        <tr>
+          <td class="cmp-feature">Tiếng Việt</td>
+          <td><span class="cmp-x">✗</span></td>
+          <td><span class="cmp-x">✗</span></td>
+          <td><span class="cmp-x">✗</span></td>
+          <td class="cmp-zeni"><span class="cmp-check">✓</span></td>
+        </tr>
+        <tr>
+          <td class="cmp-feature">Pro tier USD</td>
+          <td>$300</td>
+          <td>$300</td>
+          <td>$1,500+</td>
+          <td class="cmp-zeni"><strong>$200</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════ LỘ TRÌNH ĐƠN GIẢN ═══════ -->
+<section class="section" id="how-it-works">
+  <div class="sect-head">
+    <div class="sect-kicker">Lộ trình đơn giản</div>
+    <h2 class="sect-title">Từ đăng ký đến deploy — chỉ <em>3 bước</em></h2>
+    <p class="sect-sub">Không cần thẻ tín dụng. Không cần Visa. Không cần config phức tạp. 90 giây để bắt đầu xây sản phẩm tiếp theo của doanh nghiệp Việt.</p>
+  </div>
+
+  <div class="steps-grid">
+    <div class="step-card">
+      <div class="step-num">01</div>
+      <h3 class="step-title">Đăng ký miễn phí</h3>
+      <p class="step-desc">Tạo tài khoản trong <strong>30 giây</strong> bằng email công ty hoặc Google. Không cần thẻ tín dụng. Không cần xác minh phức tạp.</p>
+      <div class="step-time">~30 giây</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num">02</div>
+      <h3 class="step-title">Chọn gói phù hợp</h3>
+      <p class="step-desc">Chọn 1 trong 5 gói: <strong>Free / Starter / Pro / Business / Enterprise</strong>. Bắt đầu miễn phí, nâng cấp khi cần. Huỷ bất cứ lúc nào.</p>
+      <div class="step-time">~30 giây</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num">03</div>
+      <h3 class="step-title">Build + Deploy</h3>
+      <p class="step-desc">Dùng <strong>ZeniMake</strong> build app từ prompt → 1 click deploy lên Zeni Cloud. Tự động cấp domain, DB, AI, payment gateway.</p>
+      <div class="step-time">~60 giây</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ VALUE PROPS ═══════ -->
+<section class="section" id="why">
+  <div class="sect-head">
+    <div class="sect-kicker">Tại sao Zeni Cloud</div>
+    <h2 class="sect-title">6 lý do chọn Zeni thay vì <em>lắp ghép 5 dịch vụ</em></h2>
+    <p class="sect-sub">Stack truyền thống: AWS + Supabase + Vercel + Pinecone + Stripe = 5 hoá đơn, 5 dashboard, 5 SLA khác nhau, và không ai support tiếng Việt. Zeni Cloud gộp mọi thứ vào một nơi — rẻ hơn, nhanh hơn, đúng pháp lý VN.</p>
+  </div>
+
+  <div class="vp-grid">
+    <div class="vp-card" style="--vp-color: var(--crown-gold);">
+      <div class="vp-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      </div>
+      <h3 class="vp-title">Full-stack trong 1 tài khoản</h3>
+      <p class="vp-desc">Compute, database, AI, automation, identity, Web3 — <strong>6 layer</strong> trong một SSO duy nhất. Billing gộp. Audit log xuyên suốt. Không tốn thời gian ghép API giữa vendor.</p>
+      <div class="vp-metric">Thay thế 5+ dịch vụ · 1 hoá đơn</div>
+    </div>
+
+    <div class="vp-card" style="--vp-color: var(--L4);">
+      <div class="vp-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      </div>
+      <h3 class="vp-title">VN-first · 16 connector built-in</h3>
+      <p class="vp-desc">Shopee · Lazada · Tiki · Sendo · TikTok Shop · Zalo OA · Facebook · VNPay · MoMo · ZaloPay · KiotViet · Sapo · Haravan · Pancake · MISA · Fast Accounting. <strong>OAuth sẵn, mapping sẵn</strong>, AI transform sẵn.</p>
+      <div class="vp-metric">Đây là điều AWS không làm được</div>
+    </div>
+
+    <div class="vp-card" style="--vp-color: var(--L3);">
+      <div class="vp-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 5c0 1.66 4 3 9 3s9-1.34 9-3-4-3-9-3-9 1.34-9 3z"/></svg>
+      </div>
+      <h3 class="vp-title">AI-native · 6 model tích hợp</h3>
+      <p class="vp-desc">Claude Opus 4.7 · Sonnet 4.6 · GPT-4o · Gemini 2 · Llama 70B · Zeni Anima 7B (fine-tune riêng tiếng Việt). <strong>Fine-tuning service</strong>, <strong>AI Agents library</strong>, vector DB, RAG — tất cả built-in.</p>
+      <div class="vp-metric">1 API key · 6 model · auto-switch</div>
+    </div>
+
+    <div class="vp-card" style="--vp-color: var(--L6);">
+      <div class="vp-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      </div>
+      <h3 class="vp-title">Web3-ready · Zeni Chain L2</h3>
+      <p class="vp-desc">Deploy smart contract, NFT, voucher, escrow trên Zeni Chain — <strong>gasless UX</strong> cho end-user. Cũng support Polygon, Base, Arbitrum qua RPC gateway. Custodial, MPC hoặc self-custody đều được.</p>
+      <div class="vp-metric">On-chain sẵn · không cần Web3 dev</div>
+    </div>
+
+    <div class="vp-card" style="--vp-color: var(--ok);">
+      <div class="vp-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+      <h3 class="vp-title">Rẻ hơn 30%</h3>
+      <p class="vp-desc">Storage <strong>$0.018/GB</strong> (S3: $0.023). Egress <strong>$0.08/GB</strong>. Edge function <strong>$0.50/1M</strong> requests. Transparent pricing — không vendor lock-in, không egress trap như AWS.</p>
+      <div class="vp-metric">Tiết kiệm $8-20k/năm cho SME trung bình</div>
+    </div>
+
+    <div class="vp-card" style="--vp-color: var(--L5);">
+      <div class="vp-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <h3 class="vp-title">Compliance VN · NĐ13 + PDPA</h3>
+      <p class="vp-desc">Data Subject Rights, Consent Banner, DPA template, Breach Notification 72h, Audit Trail — <strong>đóng gói sẵn</strong> trong Compliance Pack. Khách Việt đang bị ép chặt NĐ13 — bạn không phải tự build.</p>
+      <div class="vp-metric">Compliance ra khỏi hộp · không cần DPO riêng</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ 6-LAYER PLATFORM ═══════ -->
+<section class="section" id="platform">
+  <div class="sect-head">
+    <div class="sect-kicker">Kiến trúc nền tảng</div>
+    <h2 class="sect-title">Sáu lớp · <em>một hệ điều hành cloud</em></h2>
+    <p class="sect-sub">Mỗi layer là 1 product độc lập có thể dùng riêng, nhưng xếp lại thành hệ thống hoàn chỉnh. Deploy 1 app mới → chạm tới cả 6 layer không cần config gì thêm.</p>
+  </div>
+
+  <div class="layer-grid">
+    <div class="layer-card" style="--layer-color: var(--L1);">
+      <div class="layer-head">
+        <span class="layer-num">L1</span>
+        <span class="layer-name">Compute</span>
+      </div>
+      <p class="layer-desc">Auto-scale containers · serverless functions · cron jobs. Deploy từ Git push trong 5 phút.</p>
+      <ul class="layer-features">
+        <li>Cloud Run-compatible · min 0 · max 1000 instances</li>
+        <li>Edge Functions V8 · cold start &lt; 5ms</li>
+        <li>Preview environment mỗi Pull Request</li>
+        <li>1-click rollback, canary, blue-green deploy</li>
+      </ul>
+    </div>
+
+    <div class="layer-card" style="--layer-color: var(--L2);">
+      <div class="layer-head">
+        <span class="layer-num">L2</span>
+        <span class="layer-name">Data</span>
+      </div>
+      <p class="layer-desc">Postgres · Vector DB · Object Storage · Managed Data Pipelines (Fivetran-VN). Một API duy nhất.</p>
+      <ul class="layer-features">
+        <li>Postgres 16 · auto-backup · point-in-time recovery</li>
+        <li>Vector HNSW · 10M vectors · hybrid search</li>
+        <li>Object Store S3-compat · <strong>$0.018/GB</strong></li>
+        <li>Auto-sync từ Shopee/TikTok/Zalo/VNPay vào warehouse</li>
+      </ul>
+    </div>
+
+    <div class="layer-card" style="--layer-color: var(--L3);">
+      <div class="layer-head">
+        <span class="layer-num">L3</span>
+        <span class="layer-name">AI</span>
+      </div>
+      <p class="layer-desc">6 model tích hợp. Fine-tuning. AI Agents. RAG. Prepaid credits pool.</p>
+      <ul class="layer-features">
+        <li>Claude Opus/Sonnet · GPT-4o · Gemini 2 · Llama 70B</li>
+        <li>Fine-tune trên dataset riêng · $500 training fee</li>
+        <li>AI Agents Library: Customer Care VN, KOC Sale, Invoice Parser</li>
+        <li>Streaming · function calling · vision · structured output</li>
+      </ul>
+    </div>
+
+    <div class="layer-card" style="--layer-color: var(--L4);">
+      <div class="layer-head">
+        <span class="layer-num">L4</span>
+        <span class="layer-name">Automation</span>
+      </div>
+      <p class="layer-desc">16 VN connector · visual workflow builder · queue · stream · cron. Zapier cho dân Việt.</p>
+      <ul class="layer-features">
+        <li>Connectors: Shopee, TikTok, Zalo OA, VNPay, MoMo, KiotViet...</li>
+        <li>Queue RabbitMQ · Stream Kafka-compat · Cron seconds-precise</li>
+        <li>Visual workflow canvas · drag-drop nodes</li>
+        <li>Retry, exponential backoff, dead-letter queue</li>
+      </ul>
+    </div>
+
+    <div class="layer-card" style="--layer-color: var(--L5);">
+      <div class="layer-head">
+        <span class="layer-num">L5</span>
+        <span class="layer-name">Identity</span>
+      </div>
+      <p class="layer-desc">SSO OIDC/SAML · SCIM · OAuth server · Unified Zeni ID. Quản lý user một chỗ.</p>
+      <ul class="layer-features">
+        <li>Zalo / Google / Apple / email/OTP · passkey ready</li>
+        <li>Multi-tenant workspace · RBAC fine-grained</li>
+        <li>SCIM provisioning cho enterprise IdP</li>
+        <li>Audit log every access · export SIEM</li>
+      </ul>
+    </div>
+
+    <div class="layer-card" style="--layer-color: var(--L6);">
+      <div class="layer-head">
+        <span class="layer-num">L6</span>
+        <span class="layer-name">Web3</span>
+      </div>
+      <p class="layer-desc">Smart contract deploy · NFT · voucher on-chain · gasless UX · custodial wallet.</p>
+      <ul class="layer-features">
+        <li>Zeni Chain L2 · Polygon · Base · Arbitrum</li>
+        <li>Gasless meta-transaction ra sẵn (ERC-4337)</li>
+        <li>Custodial · MPC · self-custody wallet · KYC tier</li>
+        <li>Template: NFT · Voucher · Escrow · Loyalty points</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ COMPARISON ═══════ -->
+<section class="section">
+  <div class="compare-card">
+    <div class="sect-head left" style="margin-bottom: 28px;">
+      <div class="sect-kicker">So sánh stack</div>
+      <h2 class="sect-title" style="font-size: 36px;">Một cái giá duy nhất <em>thay 5 vendor</em></h2>
+    </div>
+    <div class="compare-grid">
+      <div class="compare-side bad">
+        <div class="compare-label">Cách cũ · 5 vendor</div>
+        <ul class="compare-list">
+          <li>AWS (compute · storage · CDN)</li>
+          <li>Supabase (Postgres · auth)</li>
+          <li>Vercel (edge · frontend deploy)</li>
+          <li>Pinecone (vector DB)</li>
+          <li>Stripe (payment · chỉ Visa/Master, không VNPay)</li>
+          <li>Fivetran (data pipeline · $500+/tháng)</li>
+          <li>Mixpanel (analytics)</li>
+          <li style="color:#F472B6; font-weight:600; margin-top:10px;">Total: ~$2,400/tháng · 7 dashboard · 7 hoá đơn · 0 tích hợp VN</li>
+        </ul>
+      </div>
+      <div class="compare-vs">VS</div>
+      <div class="compare-side good">
+        <div class="compare-label">Zeni Cloud · 1 nền tảng</div>
+        <ul class="compare-list">
+          <li>Compute · Storage · CDN · Edge — L1</li>
+          <li>Postgres · Vector DB — L2</li>
+          <li>AI 6 model · Fine-tune — L3</li>
+          <li>16 VN connector · Workflow — L4</li>
+          <li>VNPay · MoMo · ZaloPay · Card — L5</li>
+          <li>Web3 · Smart contract — L6</li>
+          <li>Analytics · Compliance NĐ13 — Built-in</li>
+          <li style="color:var(--crown-gold); font-weight:600; margin-top:10px;">Total: ~$499/tháng · 1 dashboard · 1 hoá đơn · VN-native</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ AUDIENCES ═══════ -->
+<section class="section" id="audience">
+  <div class="sect-head">
+    <div class="sect-kicker">Dành cho</div>
+    <h2 class="sect-title">Mỗi đối tượng có <em>con đường riêng</em> trên Zeni</h2>
+    <p class="sect-sub">Dù bạn là developer solo đang thử prototype, SME đã có traffic thật, hay enterprise cần white-label — có một đường vào phù hợp.</p>
+  </div>
+
+  <div class="aud-grid">
+    <div class="aud-card" style="--aud-color: var(--L1);">
+      <div class="aud-role">Developer</div>
+      <h3 class="aud-h">Prototype nhanh. Ship trong một đêm.</h3>
+      <p class="aud-desc">Explorer tier miễn phí đủ dùng cho hackathon, side project, landing page. Không cần credit card. Free tier không bao giờ hết hạn.</p>
+      <ul class="aud-uses">
+        <li>Side project · hackathon · portfolio</li>
+        <li>MVP cho startup trước khi gọi vốn</li>
+        <li>Prototype AI agent bằng Claude/Llama</li>
+        <li>Học: deploy lần đầu qua zeni.yaml</li>
+      </ul>
+      <div class="aud-price">
+        <div class="aud-price-big">$0<span style="font-size:14px; color:var(--ink-400); font-weight:500;">/tháng</span></div>
+        <div class="aud-price-sub">Explorer tier · vĩnh viễn free</div>
+      </div>
+      <a href="#waitlist" class="aud-cta">Bắt đầu miễn phí →</a>
+    </div>
+
+    <div class="aud-card" style="--aud-color: var(--crown-gold);">
+      <div class="aud-role">SME Việt Nam</div>
+      <h3 class="aud-h">Doanh nghiệp đang chạy. Cần platform nghiêm túc.</h3>
+      <p class="aud-desc">Bạn đã có traffic thật, có khách hàng trả tiền, đang tốn $1,500-3,000/tháng cho 5 vendor rời rạc. Zeni gộp lại còn $499/tháng — và có sẵn connector VN.</p>
+      <ul class="aud-uses">
+        <li>E-commerce multi-channel (Shopee + TikTok + web)</li>
+        <li>Spa, salon, phòng khám, nhà hàng (booking + POS)</li>
+        <li>Franchise system (HQ + 10-500 chi nhánh)</li>
+        <li>Agency service cho khách hàng cuối</li>
+      </ul>
+      <div class="aud-price">
+        <div class="aud-price-big">$499<span style="font-size:14px; color:var(--ink-400); font-weight:500;">/tháng</span></div>
+        <div class="aud-price-sub">Business tier · gói phổ biến nhất</div>
+      </div>
+      <a href="#waitlist" class="aud-cta">Dùng thử 30 ngày →</a>
+    </div>
+
+    <div class="aud-card" style="--aud-color: var(--crown);">
+      <div class="aud-role">Enterprise</div>
+      <h3 class="aud-h">Ngân hàng · tập đoàn · cần private cloud.</h3>
+      <p class="aud-desc">Dedicated infrastructure, on-prem deploy option, BYOK encryption, SLA 99.95%, dedicated CSM, SSO SAML + SCIM. White-label brand riêng nếu cần.</p>
+      <ul class="aud-uses">
+        <li>Private cloud thay AWS/Azure cho internal apps</li>
+        <li>White-label SaaS bán lại cho khách cuối</li>
+        <li>Data sovereignty yêu cầu data ở VN + SG</li>
+        <li>Compliance SOC2, ISO27001, PCI-DSS</li>
+      </ul>
+      <div class="aud-price">
+        <div class="aud-price-big">$50k+<span style="font-size:14px; color:var(--ink-400); font-weight:500;">/năm</span></div>
+        <div class="aud-price-sub">Custom · theo scope &amp; SLA</div>
+      </div>
+      <a href="#demo" class="aud-cta">Đặt lịch với Sales →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ PRICING ═══════ -->
+<section class="section" id="pricing">
+  <div class="sect-head">
+    <div class="sect-kicker">Bảng giá VND · markup 4x</div>
+    <h2 class="sect-title">4 gói · <em>trả đúng những gì doanh nghiệp dùng</em></h2>
+    <p class="sect-sub">Markup 4× giá vốn GCP — minh bạch từng đồng. Subscription bao quota; vượt quota tính theo bảng giá Pay-as-you-go. Huỷ bất kỳ lúc nào.</p>
+  </div>
+
+  <div class="price-grid">
+    <div class="price-card">
+      <div class="price-tier">Free trial · 1 lần</div>
+      <div class="price-name">Explorer</div>
+      <div class="price-big">
+        <span class="price-amount">0đ</span>
+        <span class="price-unit">/tháng</span>
+      </div>
+      <div class="price-bill">50.000đ tín dụng tự động · không hết hạn</div>
+      <ul class="price-features">
+        <li>5 agent runs miễn phí</li>
+        <li>5 ảnh Imagen 3 / tháng</li>
+        <li>50K tokens text out</li>
+        <li>Pay-as-you-go khi vượt quota</li>
+        <li>Community support</li>
+      </ul>
+      <a href="/app" class="price-cta">Đăng ký miễn phí</a>
+    </div>
+
+    <div class="price-card">
+      <div class="price-tier">Khởi nghiệp</div>
+      <div class="price-name">Starter</div>
+      <div class="price-big">
+        <span class="price-amount">500.000đ</span>
+        <span class="price-unit">/tháng</span>
+      </div>
+      <div class="price-bill">Hợp doanh nghiệp nhỏ 1-5 nhân viên</div>
+      <ul class="price-features">
+        <li><strong>50</strong> agent runs (chuyên sâu) / tháng</li>
+        <li><strong>100</strong> ảnh Imagen 3 / tháng</li>
+        <li><strong>500K</strong> tokens text out / tháng</li>
+        <li>5 connectors · 3 cron jobs</li>
+        <li>Email support 24h</li>
+      </ul>
+      <a href="/app#subscribe?tier=starter" class="price-cta" data-subscribe="starter">Đăng ký Starter</a>
+    </div>
+
+    <div class="price-card featured">
+      <div class="price-tier">⭐ Recommended</div>
+      <div class="price-name">Pro</div>
+      <div class="price-big">
+        <span class="price-amount">2.000.000đ</span>
+        <span class="price-unit">/tháng</span>
+      </div>
+      <div class="price-bill">Doanh nghiệp 5-30 nhân viên · 14-day trial</div>
+      <ul class="price-features">
+        <li><strong>300</strong> agent runs / tháng</li>
+        <li><strong>500</strong> ảnh Imagen 3 / tháng</li>
+        <li><strong>5M</strong> tokens text out / tháng</li>
+        <li>Unlimited connectors · 30 cron jobs</li>
+        <li>Custom domain riêng</li>
+        <li>Priority support 4h SLA</li>
+        <li>Reference-guided generation</li>
+        <li>Multi-stage pipeline (đẹp 90%+ brief)</li>
+      </ul>
+      <a href="/app#subscribe?tier=pro" class="price-cta" data-subscribe="pro">Đăng ký Pro</a>
+    </div>
+
+    <div class="price-card">
+      <div class="price-tier">Doanh nghiệp lớn</div>
+      <div class="price-name">Business</div>
+      <div class="price-big">
+        <span class="price-amount">6.000.000đ</span>
+        <span class="price-unit">/tháng</span>
+      </div>
+      <div class="price-bill">30+ nhân viên · production scale</div>
+      <ul class="price-features">
+        <li><strong>1.500</strong> agent runs / tháng</li>
+        <li><strong>2.000</strong> ảnh Imagen 3 / tháng</li>
+        <li><strong>20M</strong> tokens text out / tháng</li>
+        <li>Dedicated Slack channel</li>
+        <li>SSO + SCIM (sắp ra)</li>
+        <li>Compliance NĐ13 included</li>
+        <li>Custom AI fine-tuning</li>
+      </ul>
+      <a href="/app#subscribe?tier=business" class="price-cta" data-subscribe="business">Đăng ký Business</a>
+    </div>
+
+    <div class="price-card">
+      <div class="price-tier">Custom contract</div>
+      <div class="price-name">Enterprise</div>
+      <div class="price-big">
+        <span class="price-amount">Liên hệ</span>
+        <span class="price-unit"></span>
+      </div>
+      <div class="price-bill">Tập đoàn · partner đặc biệt</div>
+      <ul class="price-features">
+        <li>Unlimited everything</li>
+        <li>Dedicated AI training</li>
+        <li>White-label brand riêng</li>
+        <li>99.95% SLA + refund clause</li>
+        <li>24/7 dedicated CSM</li>
+        <li>On-prem deploy option (GCP private)</li>
+        <li>BYOK · HSM · PCI-DSS</li>
+      </ul>
+      <a href="mailto:caotuanphat581@gmail.com?subject=Zeni Cloud Enterprise Contract" class="price-cta">Liên hệ Enterprise Sales</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ ROADMAP TEASER ═══════ -->
+<section class="section" id="roadmap">
+  <div class="roadmap-teaser">
+    <div class="sect-kicker">Lộ trình · locked v1.0</div>
+    <h2 style="font-size: 36px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.15; color: var(--ink-50); margin-bottom: 14px;">
+      23 tính năng · <span style="background: linear-gradient(135deg, var(--crown-gold), var(--crown-light)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-weight: 500;">5 phase · 18 tháng</span>
+    </h2>
+    <p style="font-size: 16px; color: var(--ink-200); max-width: 820px; line-height: 1.6;">
+      Đây không phải tổng thể 'sớm ra mắt'. Chúng tôi đã lock tài liệu spec v1.0 với 23 tính năng cụ thể · UI screens · API contract · acceptance test cho từng tính năng. Coder nhận task là build đúng 100% — không lan man, không delay.
+    </p>
+
+    <div class="rm-phases">
+      <div class="rm-phase" style="--rm-color: var(--L1);">
+        <div class="rm-phase-num">Phase 0</div>
+        <div class="rm-phase-count">✓</div>
+        <div class="rm-phase-lbl">Foundation &amp; Architecture<br><small>Q1/2024</small></div>
+      </div>
+      <div class="rm-phase" style="--rm-color: var(--crown-gold);">
+        <div class="rm-phase-num">Phase 1</div>
+        <div class="rm-phase-count">✓</div>
+        <div class="rm-phase-lbl">Core Infrastructure<br><small>Q2-Q3/2024</small></div>
+      </div>
+      <div class="rm-phase" style="--rm-color: var(--aurora-cyan);">
+        <div class="rm-phase-num">Phase 2</div>
+        <div class="rm-phase-count">✓</div>
+        <div class="rm-phase-lbl">AI Layer &amp; Smart Router<br><small>Q4/2024</small></div>
+      </div>
+      <div class="rm-phase" style="--rm-color: var(--crown);">
+        <div class="rm-phase-num">Phase 3</div>
+        <div class="rm-phase-count">✓</div>
+        <div class="rm-phase-lbl">Identity · Web3 · Privacy<br><small>Q1-Q2/2025</small></div>
+      </div>
+      <div class="rm-phase" style="--rm-color: var(--ok);">
+        <div class="rm-phase-num">Phase 4</div>
+        <div class="rm-phase-count">●</div>
+        <div class="rm-phase-lbl">Public GA &amp; Reseller<br><small>Q1-Q2/2026 · LIVE</small></div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 14px; flex-wrap: wrap; margin-top: 20px;">
+      <a href="#waitlist" class="btn btn-primary">Đăng ký Waitlist · nhận alpha invite</a>
+      <a href="#roadmap-doc" class="btn btn-ghost">Xem roadmap chi tiết (PDF)</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ FAQ ═══════ -->
+<section class="section" id="faq">
+  <div class="sect-head">
+    <div class="sect-kicker">Câu hỏi thường gặp</div>
+    <h2 class="sect-title">Những thắc mắc <em>trước khi quyết</em></h2>
+  </div>
+
+  <div class="faq-grid">
+    <div class="faq-item">
+      <div class="faq-q">Zeni Cloud có thay được AWS hoàn toàn không?</div>
+      <div class="faq-a">Cho 80% use case của SME Việt — <strong>có</strong>. Web app, API, mobile backend, data pipeline, AI — Zeni giải quyết đủ. Cho trường hợp enterprise đặc thù (HPC, GPU training cluster lớn, bare-metal) — bạn có thể vẫn giữ AWS cho phần đó và dùng Zeni cho phần còn lại.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Bao giờ launch? Tôi đăng ký waitlist thì được gì?</div>
+      <div class="faq-a">Zeni Cloud đã <strong>Public GA từ Q1-Q2/2026</strong>. Đăng ký miễn phí ngay tại trang chủ, kích hoạt tài khoản trong 30 giây và bắt đầu deploy app đầu tiên trong 60 giây.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Data của tôi lưu ở đâu? Có chuyển ra nước ngoài không?</div>
+      <div class="faq-a">Data center primary ở <strong>Singapore</strong> (asia-southeast1) với replica dự phòng tại <strong>Việt Nam</strong> (Hà Nội · TP.HCM). Khách chọn region lúc tạo workspace. Compliance Nghị định 13 về lưu trữ data được đóng gói sẵn — không cần bạn config.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Tôi đang dùng AWS/Vercel. Migrate khó không?</div>
+      <div class="faq-a">Zeni S3 API hoàn toàn <strong>S3-compatible</strong> — chỉ đổi endpoint. Postgres → dump + restore bình thường. Deploy: thay <code style="font-family:var(--font-mono); background:rgba(168,85,247,0.1); padding:1px 6px; border-radius:3px; color:var(--crown-light);">vercel.json</code> bằng <code style="font-family:var(--font-mono); background:rgba(168,85,247,0.1); padding:1px 6px; border-radius:3px; color:var(--crown-light);">zeni.yaml</code> là chạy. Đội Migration Engineering hỗ trợ miễn phí cho gói Business trở lên.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Tại sao nên tin một cloud mới thay vì AWS/GCP?</div>
+      <div class="faq-a">Zeni Cloud đang vận hành cho <strong>7 ventures của Zeni Holdings</strong> — ANIMA Care Global (34 tỉnh), Zeniipo, WellKOC, NexBuild, bthome, Biotea84, Zeni Capital. Nếu nó đủ vững để chạy production nội bộ, nó đủ vững cho khách. Tuy nhiên chúng tôi thẳng thắn: cho mission-critical &gt; $1M ARR, nên cân nhắc multi-cloud với cả AWS làm backup.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Vendor lock-in thế nào? Nếu sau này tôi muốn out?</div>
+      <div class="faq-a">Toàn bộ data export tự do bất kỳ lúc nào qua <strong>S3-compat API</strong>. Postgres dump bình thường. Code app của bạn không bị trói — <code style="font-family:var(--font-mono); background:rgba(168,85,247,0.1); padding:1px 6px; border-radius:3px; color:var(--crown-light);">zeni.yaml</code> nhỏ 10 dòng, chỉ cần rewrite thành Docker Compose là chạy chỗ khác. Không có egress penalty trừng phạt như AWS.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ FINAL HERO CTA — Đăng ký miễn phí ═══════ -->
+<section class="section" id="signup-cta">
+  <div class="final-hero-cta">
+    <h2>Bắt đầu xây dựng <em>tương lai</em><br>cho doanh nghiệp Việt</h2>
+    <p>Không cần thẻ tín dụng. Free tier forever. Nâng cấp khi cần. Huỷ bất cứ lúc nào.</p>
+    <div class="hero-ctas" style="justify-content:center;">
+      <a href="/signup" class="btn btn-primary lg">Đăng ký miễn phí — Không cần thẻ</a>
+      <a href="/pricing.html" class="btn btn-ghost lg">Xem bảng giá chi tiết</a>
+    </div>
+    <div class="hero-assurance" style="justify-content:center; margin-top:22px;">
+      <span>Setup 90 giây</span>
+      <span>VAT VN</span>
+      <span>Không vendor lock-in</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ FINAL CTA ═══════ -->
+<section class="section" id="waitlist">
+  <div class="final-cta">
+    <div class="sect-kicker" style="justify-content:center; display:inline-flex;">● Tham gia sớm · Ưu đãi Early Adopter</div>
+    <h2>Zeni Cloud <em>đã LIVE</em>.<br>Đăng ký miễn phí, deploy app trong 60 giây.</h2>
+    <p>100 khách waitlist đầu tiên nhận: <strong style="color:var(--crown-gold);">50% off Business plan trong năm đầu</strong> + onboarding 1-1 với founder + mặt trên website launch. Không spam. Chỉ email khi alpha mở.</p>
+
+    <form class="final-form" id="wl-form" novalidate>
+      <input type="email" placeholder="you@company.vn" id="wl-email" required aria-label="Email" autocomplete="email">
+      <button type="submit" class="btn btn-primary lg">Giữ chỗ →</button>
+    </form>
+    <div class="form-msg" id="wl-msg" role="status" aria-live="polite"></div>
+
+    <div style="margin-top:28px; font-family:var(--font-mono); font-size:11.5px; color:var(--ink-400); letter-spacing:0.04em;">
+      Đã có tài khoản? <a href="/app" style="color:var(--crown-gold); text-decoration:none; font-weight:600;">Đăng nhập</a>  ·  Cần demo cho team? <a href="mailto:caotuanphat581@gmail.com?subject=Yêu cầu demo Zeni Cloud" style="color:var(--crown-gold); text-decoration:none; font-weight:600;">Đặt lịch 30 phút</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ FOOTER ═══════ -->
+<footer class="footer">
+  <div class="footer-brand">
+    <a class="brand" href="#top">
+      <div class="brand-logo">Z</div>
+      <div>
+        <div class="brand-name">Zeni<em>Cloud</em></div>
+        <div class="brand-sub">zenicloud.io</div>
+      </div>
+    </a>
+    <p class="footer-tag">
+      Cloud platform toàn năng cho Việt Nam. Hạ tầng · Data · AI · Web3 · Thanh toán — trong một tài khoản.
+    </p>
+    <div class="footer-parent">
+      Sản phẩm của <strong>ZENI HOLDINGS</strong><br>
+      Founder &amp; Chairman: Thiên Mộc Đức
+    </div>
+  </div>
+
+  <div class="footer-col">
+    <h5>Sản phẩm</h5>
+    <a href="#platform">6-layer Platform</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#roadmap">Roadmap</a>
+    <a href="#marketplace">Marketplace</a>
+    <a href="#changelog">Changelog</a>
+  </div>
+
+  <div class="footer-col">
+    <h5>Công ty</h5>
+    <a href="#about">Về Zeni</a>
+    <a href="#philosophy">Thiên Mộc Đức</a>
+    <a href="#careers">Tuyển dụng</a>
+    <a href="#partners">Partner Program</a>
+    <a href="#press">Báo chí</a>
+  </div>
+
+  <div class="footer-col">
+    <h5>Hỗ trợ</h5>
+    <a href="#docs">Docs &amp; API</a>
+    <a href="#status">Status (status.zenicloud.io)</a>
+    <a href="#security">Security &amp; Compliance</a>
+    <a href="#terms">Điều khoản dịch vụ</a>
+    <a href="#privacy">Chính sách riêng tư (NĐ13)</a>
+  </div>
+</footer>
+
+<div class="footer-bottom">
+  <div>© 2026 Zeni Holdings · zenicloud.io · MST 01-XXXXXXX</div>
+  <div>Built with Zeni Cloud · Running on Zeni Chain L2</div>
+</div>
+
+<script>
+/* Zeni Cloud marketing v2 · mega menu + i18n 6 languages + L6 animation + form */
+(function() {
+  'use strict';
+
+  /* ═══ i18n DICTIONARY — 6 languages ═══ */
+  var DICT = {
+    vi: {
+      'nav.platform': 'Nền tảng',
+      'nav.audience': 'Đối tượng',
+      'nav.pricing': 'Bảng giá',
+      'nav.roadmap': 'Lộ trình',
+      'nav.faq': 'FAQ',
+      'nav.viewall': 'Xem đầy đủ nền tảng →',
+      'nav.viewroadmap': 'Xem roadmap chi tiết →',
+      'nav.comparepricing': 'So sánh chi tiết →',
+      'nav.platform.tag': '● 6 lớp · 1 hệ điều hành cloud',
+      'nav.pricing.tag': '● Minh bạch · huỷ bất kỳ lúc nào',
+      'nav.roadmap.tag': '● 23 tính năng · 18 tháng · locked v1.0',
+      'nav.l1.t': 'Compute', 'nav.l1.d': 'Auto-scale containers · Edge functions · Preview environments',
+      'nav.l2.t': 'Data', 'nav.l2.d': 'Postgres · Vector DB · Object Storage · Data Pipelines VN',
+      'nav.l3.t': 'AI', 'nav.l3.d': '6 model · Fine-tuning · AI Agents · RAG · Credits pool',
+      'nav.l4.t': 'Automation', 'nav.l4.d': '16 connector VN · Workflow builder · Queue · Cron',
+      'nav.l5.t': 'Identity', 'nav.l5.d': 'SSO · SCIM · OAuth · Unified Zeni ID · Audit log',
+      'nav.l6.t': 'Web3', 'nav.l6.d': 'Zeni Chain L2 · Smart contracts · Gasless UX · Custodial wallet',
+      'nav.aud1.t': 'Developer · Explorer tier FREE', 'nav.aud1.d': 'Prototype, hackathon, MVP startup. Không cần thẻ. Vĩnh viễn miễn phí.',
+      'nav.aud2.t': 'SME Việt Nam · Business tier $499/tháng', 'nav.aud2.d': 'E-commerce đa kênh, spa, phòng khám, franchise. Gộp 5 vendor thành 1.',
+      'nav.aud3.t': 'Enterprise · White-label $50k+/năm', 'nav.aud3.d': 'Ngân hàng, tập đoàn. Dedicated cloud, BYOK, SLA 99.95%, on-prem option.',
+      'nav.price1.t': 'Miễn phí vĩnh viễn', 'nav.price1.d': '3 services · 5GB · 10k AI credits · Cộng đồng',
+      'nav.price2.t': 'Developer solo', 'nav.price2.d': 'Unlimited services · 50GB · 100k credits · 2 connectors',
+      'nav.price3.d': '500GB · 1M credits · Fine-tune · 10 connectors · NĐ13 pack',
+      'nav.price4.t': 'High volume', 'nav.price4.d': '5TB · 10M credits · Web3 full · SSO SAML · Slack riêng',
+      'nav.price5.t': 'Hợp đồng tuỳ chỉnh', 'nav.price5.d': 'Dedicated infra · on-prem · BYOK · 99.95% SLA · white-label',
+      'nav.p0.t': 'Phase 0 · Foundation & Architecture', 'nav.p0.d': 'Nghiên cứu kiến trúc 6 lớp · Lựa chọn GCP · Domain zenicloud.io · Brand identity',
+      'nav.p1.t': 'Phase 1 · Core Infrastructure', 'nav.p1.d': 'L1 Compute · L2 Cloud SQL + pgvector · L4 Cron + Webhook · L5 JWT/OAuth · L6 Polygon RPC',
+      'nav.p2.t': 'Phase 2 · AI Layer & Smart Router', 'nav.p2.d': 'ZeniRouter · LLM Gateway 4 providers · OCR · Translate · 50+ AI Agents Library',
+      'nav.p3.t': 'Phase 3 · Identity · Web3 · Privacy', 'nav.p3.d': 'MFA TOTP · OAuth · CMEK · Smart Contract ZeniAccessControl · $ZENI Token · CAAA',
+      'nav.p4.t': 'Phase 4 · Public GA & Reseller', 'nav.p4.d': 'VietQR · Zeni Pay Wallet · Multi-region · Backup/DR · Edge CDN · White-label · GA',
+      'cta.signin': 'Đăng nhập',
+      'cta.waitlist': 'Tham gia Waitlist',
+      'form.invalid': '✗ Email chưa đúng định dạng. Vui lòng kiểm tra lại.',
+      'form.success': '✓ Cảm ơn bạn! Tài khoản {email} đã sẵn sàng. Vui lòng kiểm tra email để kích hoạt và bắt đầu sử dụng Zeni Cloud.'
+    },
+    en: {
+      'nav.platform': 'Platform',
+      'nav.audience': 'Who it\'s for',
+      'nav.pricing': 'Pricing',
+      'nav.roadmap': 'Roadmap',
+      'nav.faq': 'FAQ',
+      'nav.viewall': 'See full platform →',
+      'nav.viewroadmap': 'See detailed roadmap →',
+      'nav.comparepricing': 'Compare plans →',
+      'nav.platform.tag': '● 6 layers · 1 cloud OS',
+      'nav.pricing.tag': '● Transparent · cancel anytime',
+      'nav.roadmap.tag': '● 23 features · 18 months · locked v1.0',
+      'nav.l1.t': 'Compute', 'nav.l1.d': 'Auto-scale containers · Edge functions · Preview environments',
+      'nav.l2.t': 'Data', 'nav.l2.d': 'Postgres · Vector DB · Object Storage · VN Data Pipelines',
+      'nav.l3.t': 'AI', 'nav.l3.d': '6 models · Fine-tuning · AI Agents · RAG · Credits pool',
+      'nav.l4.t': 'Automation', 'nav.l4.d': '16 VN connectors · Workflow builder · Queue · Cron',
+      'nav.l5.t': 'Identity', 'nav.l5.d': 'SSO · SCIM · OAuth · Unified Zeni ID · Audit log',
+      'nav.l6.t': 'Web3', 'nav.l6.d': 'Zeni Chain L2 · Smart contracts · Gasless UX · Custodial wallet',
+      'nav.aud1.t': 'Developer · Explorer tier FREE', 'nav.aud1.d': 'Prototype, hackathon, startup MVP. No card. Free forever.',
+      'nav.aud2.t': 'SME Vietnam · Business tier $499/mo', 'nav.aud2.d': 'Multi-channel e-commerce, spa, clinic, franchise. Replace 5 vendors with one.',
+      'nav.aud3.t': 'Enterprise · White-label $50k+/yr', 'nav.aud3.d': 'Banks, conglomerates. Dedicated cloud, BYOK, 99.95% SLA, on-prem option.',
+      'nav.price1.t': 'Free forever', 'nav.price1.d': '3 services · 5GB · 10k AI credits · Community',
+      'nav.price2.t': 'Solo developer', 'nav.price2.d': 'Unlimited services · 50GB · 100k credits · 2 connectors',
+      'nav.price3.d': '500GB · 1M credits · Fine-tune · 10 connectors · NĐ13 compliance pack',
+      'nav.price4.t': 'High volume', 'nav.price4.d': '5TB · 10M credits · Full Web3 · SAML SSO · Dedicated Slack',
+      'nav.price5.t': 'Custom contract', 'nav.price5.d': 'Dedicated infra · on-prem · BYOK · 99.95% SLA · White-label',
+      'nav.p0.t': 'Phase 0 · Core Infrastructure', 'nav.p0.d': '6 items: Observability · Networking · Storage · Messaging · CI/CD · Monitoring',
+      'nav.p1.t': 'Phase 1 · Core Infrastructure', 'nav.p1.d': 'L1 Compute · L2 Cloud SQL + pgvector · L4 Cron + Webhook · L5 JWT/OAuth · L6 Polygon RPC',
+      'nav.p2.t': 'Phase 2 · AI Layer & Smart Router', 'nav.p2.d': 'ZeniRouter · LLM Gateway 4 providers · OCR · Translate · 50+ AI Agents Library',
+      'nav.p3.t': 'Phase 3 · Identity · Web3 · Privacy', 'nav.p3.d': 'MFA TOTP · OAuth · CMEK · Smart Contract ZeniAccessControl · $ZENI Token · CAAA',
+      'nav.p4.t': 'Phase 4 · Public GA & Reseller', 'nav.p4.d': 'VietQR · Zeni Pay Wallet · Multi-region · Backup/DR · Edge CDN · White-label · GA',
+      'cta.signin': 'Sign in',
+      'cta.waitlist': 'Join Waitlist',
+      'form.invalid': '✗ Email format is invalid. Please check again.',
+      'form.success': '✓ Thank you! Account {email} is ready. Please check your email to activate and start using Zeni Cloud.'
+    },
+    zh: {
+      'nav.platform': '平台',
+      'nav.audience': '适用对象',
+      'nav.pricing': '价格',
+      'nav.roadmap': '路线图',
+      'nav.faq': '常见问题',
+      'nav.viewall': '查看完整平台 →',
+      'nav.viewroadmap': '查看详细路线图 →',
+      'nav.comparepricing': '比较价格方案 →',
+      'nav.platform.tag': '● 6 层 · 1 个云操作系统',
+      'nav.pricing.tag': '● 透明计费 · 随时取消',
+      'nav.roadmap.tag': '● 23 功能 · 18 个月 · 锁定 v1.0',
+      'nav.l1.t': '计算', 'nav.l1.d': '自动扩展容器 · 边缘函数 · 预览环境',
+      'nav.l2.t': '数据', 'nav.l2.d': 'Postgres · 向量数据库 · 对象存储 · 越南数据管道',
+      'nav.l3.t': '人工智能', 'nav.l3.d': '6 个模型 · 微调 · AI 代理 · RAG · 积分池',
+      'nav.l4.t': '自动化', 'nav.l4.d': '16 个越南连接器 · 工作流构建器 · 队列 · Cron',
+      'nav.l5.t': '身份', 'nav.l5.d': 'SSO · SCIM · OAuth · 统一 Zeni ID · 审计日志',
+      'nav.l6.t': 'Web3', 'nav.l6.d': 'Zeni Chain L2 · 智能合约 · 无 Gas 体验 · 托管钱包',
+      'nav.aud1.t': '开发者 · Explorer 免费版', 'nav.aud1.d': '原型、黑客松、初创 MVP。无需信用卡。永久免费。',
+      'nav.aud2.t': '越南中小企业 · 商业版 $499/月', 'nav.aud2.d': '多渠道电商、水疗、诊所、加盟连锁。5 个供应商合为 1 个。',
+      'nav.aud3.t': '企业 · 白标 $50k+/年', 'nav.aud3.d': '银行、集团。专属云、BYOK、99.95% SLA、本地部署选项。',
+      'nav.price1.t': '永久免费', 'nav.price1.d': '3 个服务 · 5GB · 10k AI 积分 · 社区支持',
+      'nav.price2.t': '独立开发者', 'nav.price2.d': '无限服务 · 50GB · 100k 积分 · 2 个连接器',
+      'nav.price3.d': '500GB · 1M 积分 · 微调 · 10 个连接器 · NĐ13 合规包',
+      'nav.price4.t': '大流量', 'nav.price4.d': '5TB · 10M 积分 · 完整 Web3 · SAML SSO · 专属 Slack',
+      'nav.price5.t': '定制合同', 'nav.price5.d': '专属基础设施 · 本地部署 · BYOK · 99.95% SLA · 白标',
+      'nav.p0.t': 'Phase 0 · 核心基础设施', 'nav.p0.d': '6 项: 可观测性 · 网络 · 存储 · 消息 · CI/CD · 监控',
+      'nav.p1.t': 'Phase 1 · 快速收入', 'nav.p1.d': '6 功能: Marketplace · 微调 · AI 积分 · 数据管道 · 分析 · Edge',
+      'nav.p2.t': 'Phase 2 · 产品扩展', 'nav.p2.d': '4 功能: 向量 DB Premium · 风水 API · 合规包 · AI 代理库',
+      'nav.p3.t': 'Phase 3 · 生态与创新', 'nav.p3.d': '4 功能: Gas 赞助 · $ZENI 代币 · Zeni Studio · Zeni Payments',
+      'nav.p4.t': 'Phase 4 · 分销与企业', 'nav.p4.d': '3 功能: Zeni Academy · 合作伙伴计划 · 白标企业',
+      'cta.signin': '登录',
+      'cta.waitlist': '加入候补',
+      'form.invalid': '✗ 邮箱格式不正确。请再次检查。',
+      'form.success': '✓ 感谢!当 Phase 1 开启时 (2026 年第三季度),我们会将 alpha 邀请发送到 {email}。'
+    },
+    ja: {
+      'nav.platform': 'プラットフォーム',
+      'nav.audience': '対象ユーザー',
+      'nav.pricing': '料金',
+      'nav.roadmap': 'ロードマップ',
+      'nav.faq': 'よくある質問',
+      'nav.viewall': '完全なプラットフォームを見る →',
+      'nav.viewroadmap': '詳細なロードマップを見る →',
+      'nav.comparepricing': 'プランを比較する →',
+      'nav.platform.tag': '● 6 レイヤー · 1 つのクラウド OS',
+      'nav.pricing.tag': '● 透明 · いつでもキャンセル可',
+      'nav.roadmap.tag': '● 23 機能 · 18 か月 · locked v1.0',
+      'nav.l1.t': 'Compute', 'nav.l1.d': 'オートスケールコンテナ · Edge 関数 · プレビュー環境',
+      'nav.l2.t': 'Data', 'nav.l2.d': 'Postgres · Vector DB · オブジェクトストレージ · VN データパイプライン',
+      'nav.l3.t': 'AI', 'nav.l3.d': '6 モデル · ファインチューニング · AI エージェント · RAG · クレジットプール',
+      'nav.l4.t': 'Automation', 'nav.l4.d': '16 VN コネクター · ワークフロービルダー · キュー · Cron',
+      'nav.l5.t': 'Identity', 'nav.l5.d': 'SSO · SCIM · OAuth · 統合 Zeni ID · 監査ログ',
+      'nav.l6.t': 'Web3', 'nav.l6.d': 'Zeni Chain L2 · スマートコントラクト · ガスレス UX · 管理ウォレット',
+      'nav.aud1.t': '開発者 · Explorer 無料プラン', 'nav.aud1.d': 'プロトタイプ、ハッカソン、スタートアップ MVP。カード不要。永久無料。',
+      'nav.aud2.t': 'ベトナム中小企業 · Business $499/月', 'nav.aud2.d': 'マルチチャネル EC、スパ、クリニック、フランチャイズ。5 ベンダーを 1 つに。',
+      'nav.aud3.t': 'エンタープライズ · ホワイトラベル $50k+/年', 'nav.aud3.d': '銀行、企業グループ。専用クラウド、BYOK、99.95% SLA、オンプレオプション。',
+      'nav.price1.t': '永久無料', 'nav.price1.d': '3 サービス · 5GB · 10k AI クレジット · コミュニティ',
+      'nav.price2.t': 'ソロ開発者', 'nav.price2.d': '無制限サービス · 50GB · 100k クレジット · 2 コネクター',
+      'nav.price3.d': '500GB · 1M クレジット · ファインチューン · 10 コネクター · NĐ13 パック',
+      'nav.price4.t': '大容量', 'nav.price4.d': '5TB · 10M クレジット · 完全 Web3 · SAML SSO · 専用 Slack',
+      'nav.price5.t': 'カスタム契約', 'nav.price5.d': '専用インフラ · オンプレ · BYOK · 99.95% SLA · ホワイトラベル',
+      'nav.p0.t': 'Phase 0 · コアインフラ', 'nav.p0.d': '6 項目: 可観測性 · ネットワーク · ストレージ · メッセージング · CI/CD · 監視',
+      'nav.p1.t': 'Phase 1 · 収益クイックウィン', 'nav.p1.d': '6 機能: マーケットプレイス · ファインチューン · AI クレジット · データパイプライン · 分析 · Edge',
+      'nav.p2.t': 'Phase 2 · 製品拡張', 'nav.p2.d': '4 機能: Vector DB Premium · 風水 API · コンプライアンスパック · AI エージェントライブラリ',
+      'nav.p3.t': 'Phase 3 · エコシステム & イノベーション', 'nav.p3.d': '4 機能: Gas スポンサー · $ZENI トークン · Zeni Studio · Zeni Payments',
+      'nav.p4.t': 'Phase 4 · 配信 & エンタープライズ', 'nav.p4.d': '3 機能: Zeni Academy · パートナープログラム · ホワイトラベル',
+      'cta.signin': 'サインイン',
+      'cta.waitlist': 'ウェイトリストに参加',
+      'form.invalid': '✗ メールアドレスの形式が正しくありません。もう一度ご確認ください。',
+      'form.success': '✓ ありがとうございます!Phase 1 開始時 (2026 Q3) に {email} へアルファ招待を送信します。'
+    },
+    ko: {
+      'nav.platform': '플랫폼',
+      'nav.audience': '대상',
+      'nav.pricing': '요금제',
+      'nav.roadmap': '로드맵',
+      'nav.faq': 'FAQ',
+      'nav.viewall': '전체 플랫폼 보기 →',
+      'nav.viewroadmap': '자세한 로드맵 보기 →',
+      'nav.comparepricing': '요금제 비교 →',
+      'nav.platform.tag': '● 6 레이어 · 1 클라우드 OS',
+      'nav.pricing.tag': '● 투명한 요금 · 언제든 취소',
+      'nav.roadmap.tag': '● 23 기능 · 18 개월 · locked v1.0',
+      'nav.l1.t': 'Compute', 'nav.l1.d': '자동 스케일 컨테이너 · Edge 함수 · 프리뷰 환경',
+      'nav.l2.t': 'Data', 'nav.l2.d': 'Postgres · Vector DB · 객체 스토리지 · VN 데이터 파이프라인',
+      'nav.l3.t': 'AI', 'nav.l3.d': '6 모델 · 파인튜닝 · AI 에이전트 · RAG · 크레딧 풀',
+      'nav.l4.t': '자동화', 'nav.l4.d': '16 개 VN 커넥터 · 워크플로우 빌더 · 큐 · Cron',
+      'nav.l5.t': 'Identity', 'nav.l5.d': 'SSO · SCIM · OAuth · 통합 Zeni ID · 감사 로그',
+      'nav.l6.t': 'Web3', 'nav.l6.d': 'Zeni Chain L2 · 스마트 컨트랙트 · Gasless UX · Custodial 월렛',
+      'nav.aud1.t': '개발자 · Explorer 무료', 'nav.aud1.d': '프로토타입, 해커톤, 스타트업 MVP. 카드 불필요. 영구 무료.',
+      'nav.aud2.t': '베트남 중소기업 · Business $499/월', 'nav.aud2.d': '멀티채널 이커머스, 스파, 병원, 프랜차이즈. 5 벤더를 1 개로.',
+      'nav.aud3.t': '엔터프라이즈 · 화이트라벨 $50k+/년', 'nav.aud3.d': '은행, 대기업. 전용 클라우드, BYOK, 99.95% SLA, 온프레미스.',
+      'nav.price1.t': '영구 무료', 'nav.price1.d': '3 서비스 · 5GB · 10k AI 크레딧 · 커뮤니티',
+      'nav.price2.t': '솔로 개발자', 'nav.price2.d': '무제한 서비스 · 50GB · 100k 크레딧 · 2 커넥터',
+      'nav.price3.d': '500GB · 1M 크레딧 · 파인튜닝 · 10 커넥터 · NĐ13 팩',
+      'nav.price4.t': '대용량', 'nav.price4.d': '5TB · 10M 크레딧 · Web3 풀 · SAML SSO · 전용 Slack',
+      'nav.price5.t': '맞춤 계약', 'nav.price5.d': '전용 인프라 · 온프레미스 · BYOK · 99.95% SLA · 화이트라벨',
+      'nav.p0.t': 'Phase 0 · 코어 인프라', 'nav.p0.d': '6 항목: 관찰성 · 네트워킹 · 스토리지 · 메시징 · CI/CD · 모니터링',
+      'nav.p1.t': 'Phase 1 · 빠른 수익', 'nav.p1.d': '6 기능: 마켓플레이스 · 파인튜닝 · AI 크레딧 · 데이터 파이프라인 · Analytics · Edge',
+      'nav.p2.t': 'Phase 2 · 제품 확장', 'nav.p2.d': '4 기능: Vector DB Premium · 풍수 API · Compliance 팩 · AI 에이전트 라이브러리',
+      'nav.p3.t': 'Phase 3 · 에코시스템 & 혁신', 'nav.p3.d': '4 기능: Gas 스폰서십 · $ZENI 토큰 · Zeni Studio · Zeni Payments',
+      'nav.p4.t': 'Phase 4 · 유통 & 엔터프라이즈', 'nav.p4.d': '3 기능: Zeni Academy · 파트너 프로그램 · 화이트라벨 엔터프라이즈',
+      'cta.signin': '로그인',
+      'cta.waitlist': '대기자 명단 가입',
+      'form.invalid': '✗ 이메일 형식이 올바르지 않습니다. 다시 확인해 주세요.',
+      'form.success': '✓ 감사합니다! Phase 1 개시 (2026 Q3) 시 {email} 로 알파 초대를 보내드립니다.'
+    },
+    th: {
+      'nav.platform': 'แพลตฟอร์ม',
+      'nav.audience': 'สำหรับใคร',
+      'nav.pricing': 'ราคา',
+      'nav.roadmap': 'โรดแมป',
+      'nav.faq': 'คำถามที่พบบ่อย',
+      'nav.viewall': 'ดูแพลตฟอร์มทั้งหมด →',
+      'nav.viewroadmap': 'ดูโรดแมปละเอียด →',
+      'nav.comparepricing': 'เปรียบเทียบแผน →',
+      'nav.platform.tag': '● 6 ชั้น · 1 ระบบปฏิบัติการคลาวด์',
+      'nav.pricing.tag': '● โปร่งใส · ยกเลิกได้ทุกเมื่อ',
+      'nav.roadmap.tag': '● 23 ฟีเจอร์ · 18 เดือน · locked v1.0',
+      'nav.l1.t': 'Compute', 'nav.l1.d': 'คอนเทนเนอร์ auto-scale · Edge functions · Preview environments',
+      'nav.l2.t': 'Data', 'nav.l2.d': 'Postgres · Vector DB · Object Storage · VN Data Pipelines',
+      'nav.l3.t': 'AI', 'nav.l3.d': '6 โมเดล · Fine-tuning · AI Agents · RAG · Credits pool',
+      'nav.l4.t': 'Automation', 'nav.l4.d': '16 VN connectors · Workflow builder · Queue · Cron',
+      'nav.l5.t': 'Identity', 'nav.l5.d': 'SSO · SCIM · OAuth · Unified Zeni ID · Audit log',
+      'nav.l6.t': 'Web3', 'nav.l6.d': 'Zeni Chain L2 · Smart contracts · Gasless UX · Custodial wallet',
+      'nav.aud1.t': 'Developer · Explorer ฟรี', 'nav.aud1.d': 'ต้นแบบ, hackathon, MVP สตาร์ทอัพ. ไม่ต้องใช้บัตร. ฟรีตลอดกาล.',
+      'nav.aud2.t': 'SME เวียดนาม · Business $499/เดือน', 'nav.aud2.d': 'E-commerce หลายช่องทาง, สปา, คลินิก, แฟรนไชส์. รวม 5 vendor เป็น 1.',
+      'nav.aud3.t': 'องค์กร · White-label $50k+/ปี', 'nav.aud3.d': 'ธนาคาร, กลุ่มบริษัท. Dedicated cloud, BYOK, SLA 99.95%, on-prem.',
+      'nav.price1.t': 'ฟรีตลอดกาล', 'nav.price1.d': '3 services · 5GB · 10k AI credits · Community',
+      'nav.price2.t': 'Developer เดี่ยว', 'nav.price2.d': 'บริการไม่จำกัด · 50GB · 100k credits · 2 connectors',
+      'nav.price3.d': '500GB · 1M credits · Fine-tune · 10 connectors · NĐ13 pack',
+      'nav.price4.t': 'High volume', 'nav.price4.d': '5TB · 10M credits · Web3 เต็ม · SAML SSO · Slack เฉพาะ',
+      'nav.price5.t': 'สัญญาแบบกำหนดเอง', 'nav.price5.d': 'Dedicated infra · on-prem · BYOK · 99.95% SLA · white-label',
+      'nav.p0.t': 'Phase 0 · โครงสร้างพื้นฐานหลัก', 'nav.p0.d': '6 รายการ: Observability · Networking · Storage · Messaging · CI/CD · Monitoring',
+      'nav.p1.t': 'Phase 1 · รายได้เร็ว', 'nav.p1.d': '6 ฟีเจอร์: Marketplace · Fine-tune · AI Credits · Data Pipelines · Analytics · Edge',
+      'nav.p2.t': 'Phase 2 · ส่วนขยายผลิตภัณฑ์', 'nav.p2.d': '4 ฟีเจอร์: Vector DB Premium · Feng Shui API · Compliance Pack · AI Agents Library',
+      'nav.p3.t': 'Phase 3 · ระบบนิเวศ & นวัตกรรม', 'nav.p3.d': '4 ฟีเจอร์: Gas Sponsorship · $ZENI Token · Zeni Studio · Zeni Payments',
+      'nav.p4.t': 'Phase 4 · การกระจาย & องค์กร', 'nav.p4.d': '3 ฟีเจอร์: Zeni Academy · Partner Program · White-label Enterprise',
+      'cta.signin': 'เข้าสู่ระบบ',
+      'cta.waitlist': 'เข้าร่วม Waitlist',
+      'form.invalid': '✗ รูปแบบอีเมลไม่ถูกต้อง โปรดตรวจสอบอีกครั้ง',
+      'form.success': '✓ ขอบคุณ! บัญชี {email} พร้อมใช้งานแล้ว กรุณาตรวจสอบอีเมลเพื่อเปิดใช้งาน Zeni Cloud'
+    }
+  };
+
+  var LANG_META = {
+    vi: { flag: '🇻🇳', code: 'VN' },
+    en: { flag: '🇬🇧', code: 'EN' },
+    zh: { flag: '🇨🇳', code: 'ZH' },
+    ja: { flag: '🇯🇵', code: 'JA' },
+    ko: { flag: '🇰🇷', code: 'KO' },
+    th: { flag: '🇹🇭', code: 'TH' }
+  };
+
+  var currentLang = 'vi';
+
+  function applyLang(lang) {
+    if (!DICT[lang]) return;
+    currentLang = lang;
+    var dict = DICT[lang];
+    // update all data-i18n text nodes
+    var nodes = document.querySelectorAll('[data-i18n]');
+    nodes.forEach(function(n) {
+      var key = n.getAttribute('data-i18n');
+      if (dict[key]) {
+        // Preserve inline HTML spans (e.g. inner <span> in mega titles)
+        // Use textContent unless key has known HTML markers
+        n.textContent = dict[key];
+      }
+    });
+    // update html lang
+    document.documentElement.lang = lang;
+    // update switcher display
+    var meta = LANG_META[lang];
+    var curFlag = document.getElementById('curFlag');
+    var curCode = document.getElementById('curCode');
+    if (curFlag) curFlag.textContent = meta.flag;
+    if (curCode) curCode.textContent = meta.code;
+    // update active state
+    document.querySelectorAll('.lang-option').forEach(function(opt) {
+      opt.classList.toggle('active', opt.getAttribute('data-lang') === lang);
+    });
+  }
+
+  try {
+    /* ═══ MEGA MENU — click support (hover still works via CSS) ═══ */
+    document.querySelectorAll('.nav-item[data-nav]').forEach(function(item) {
+      var trigger = item.querySelector('.nav-trigger');
+      if (!trigger) return;
+      trigger.addEventListener('click', function(e) {
+        e.preventDefault();
+        var wasOpen = item.classList.contains('open');
+        document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('open'); });
+        if (!wasOpen) item.classList.add('open');
+      });
+    });
+
+    /* ═══ LANGUAGE SWITCH ═══ */
+    var langSwitch = document.getElementById('langSwitch');
+    var langBtn = document.getElementById('langBtn');
+    if (langBtn && langSwitch) {
+      langBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        langSwitch.classList.toggle('open');
+      });
+      document.querySelectorAll('.lang-option').forEach(function(opt) {
+        opt.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var code = opt.getAttribute('data-lang');
+          applyLang(code);
+          langSwitch.classList.remove('open');
+        });
+      });
+    }
+
+    /* Close any dropdown on outside click */
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.nav-item')) {
+        document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('open'); });
+      }
+      if (!e.target.closest('.lang-switch') && langSwitch) {
+        langSwitch.classList.remove('open');
+      }
+    });
+
+    /* Escape closes all */
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('open'); });
+        if (langSwitch) langSwitch.classList.remove('open');
+      }
+    });
+
+    /* ═══ WAITLIST FORM ═══ */
+    var form = document.getElementById('wl-form');
+    var emailIn = document.getElementById('wl-email');
+    var msg = document.getElementById('wl-msg');
+
+    if (form && emailIn && msg) {
+      form.addEventListener('submit', function(ev) {
+        ev.preventDefault();
+        var email = (emailIn.value || '').trim();
+        var re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        var dict = DICT[currentLang] || DICT.vi;
+        if (!re.test(email)) {
+          emailIn.classList.add('error');
+          msg.className = 'form-msg err';
+          msg.textContent = dict['form.invalid'];
+          return;
+        }
+        emailIn.classList.remove('error');
+        msg.className = 'form-msg';
+        msg.textContent = '⏳ Đang gửi...';
+        var submitBtn = form.querySelector('button[type=submit]');
+        if (submitBtn) submitBtn.disabled = true;
+
+        fetch('/api/v1/waitlist/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({
+            email: email,
+            source: 'landing',
+            lang: currentLang || 'vi',
+            referrer: document.referrer || '',
+            user_agent: navigator.userAgent || ''
+          })
+        }).then(function(res) {
+          return res.json().then(function(body) {
+            if (res.ok) {
+              msg.className = 'form-msg ok';
+              msg.textContent = (dict['form.success'] || '✓ Đã đăng ký waitlist với {email}').replace('{email}', email);
+              emailIn.value = '';
+            } else {
+              msg.className = 'form-msg err';
+              msg.textContent = body.detail || 'Có lỗi xảy ra, vui lòng thử lại';
+            }
+          });
+        }).catch(function(err) {
+          msg.className = 'form-msg err';
+          msg.textContent = 'Không kết nối được máy chủ. Vui lòng thử lại sau.';
+          if (typeof console !== 'undefined') console.error('[waitlist]', err);
+        }).finally(function() {
+          if (submitBtn) submitBtn.disabled = false;
+        });
+      });
+    }
+
+    /* ═══ NAV ACTIVE HIGHLIGHTING on scroll ═══ */
+    var navTriggers = document.querySelectorAll('.nav-trigger');
+    var sections = document.querySelectorAll('section[id]');
+    if (typeof IntersectionObserver !== 'undefined' && sections.length > 0 && navTriggers.length > 0) {
+      var obs = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            var id = entry.target.getAttribute('id');
+            navTriggers.forEach(function(link) {
+              if (link.tagName === 'A') {
+                link.style.color = (link.getAttribute('href') === '#' + id)
+                  ? 'var(--crown-gold)'
+                  : '';
+              }
+            });
+          }
+        });
+      }, { rootMargin: '-40% 0px -55% 0px' });
+      sections.forEach(function(s) { obs.observe(s); });
+    }
+
+    if (typeof console !== 'undefined' && console.log) {
+      console.log('[zenicloud.io] Marketing v2.0 loaded · mega menu + 6 lang i18n + L6 energy node');
+    }
+  } catch (e) {
+    /* Fail-open: page must remain usable even if JS errors */
+    if (typeof console !== 'undefined' && console.error) console.error(e);
+  }
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "name": "zeni-access-control",
+  "version": "1.0.0",
+  "description": "Zeni Cloud on-chain access control (UUPS upgradeable, Polygon).",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "coverage": "hardhat coverage",
+    "deploy:mumbai": "hardhat run scripts/deploy.js --network polygonMumbai",
+    "deploy:polygon": "hardhat run scripts/deploy.js --network polygon",
+    "verify:mumbai": "hardhat verify --network polygonMumbai",
+    "verify:polygon": "hardhat verify --network polygon"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@openzeppelin/contracts-upgradeable": "^5.0.0",
+    "@openzeppelin/hardhat-upgrades": "^3.0.0",
+    "dotenv": "^16.4.5",
+    "hardhat": "^2.22.0"
+  }
+}

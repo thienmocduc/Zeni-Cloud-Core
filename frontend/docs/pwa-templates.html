@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PWA Templates · Zeni Cloud Docs</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0a0a14; color: #e5e7eb; max-width: 880px; margin: 0 auto; padding: 40px 24px; line-height: 1.7; }
+  h1 { color: #fde68a; font-size: 32px; margin-bottom: 8px; }
+  h2 { color: #a855f7; margin-top: 36px; border-bottom: 1px solid rgba(168,85,247,0.2); padding-bottom: 8px; }
+  h3 { color: #22d3ee; margin-top: 24px; }
+  code { background: #14142a; color: #fde68a; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+  pre { background: #14142a; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; border: 1px solid rgba(125,104,255,0.2); }
+  .note { background: rgba(34,211,238,0.08); border-left: 3px solid #22d3ee; padding: 12px 16px; margin: 16px 0; border-radius: 4px; }
+  .warn { background: rgba(253,230,138,0.08); border-left: 3px solid #fde68a; padding: 12px 16px; margin: 16px 0; border-radius: 4px; }
+  a { color: #7d68ff; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+  th, td { border: 1px solid rgba(125,104,255,0.2); padding: 8px 12px; text-align: left; }
+  th { background: rgba(168,85,247,0.1); }
+</style>
+</head>
+<body>
+
+<h1>📱 Zeni PWA Templates</h1>
+<p style="color:#a1a1aa">Khách hàng deploy app web → tự động có "Install-able" PWA. Người dùng cuối click 1 nút "Install" trên Chrome/Edge/Safari = app icon trên màn hình desktop / mobile, chạy như native app.</p>
+
+<div class="note">
+<strong>💡 Tại sao PWA?</strong> Thay thế Tauri / Electron / .exe trong 90% use case — không cần customer cài rustc, MSVC, Xcode. Customer code 1 lần (Next.js / Vite) → Zeni tự inject manifest + service worker → app install-able trên mọi thiết bị.
+</div>
+
+<h2>Khi nào dùng PWA?</h2>
+<table>
+  <tr><th>Use case</th><th>Recommend</th></tr>
+  <tr><td>Web app cần "icon trên desktop / mobile"</td><td>✅ <strong>PWA</strong> (Zeni Templates)</td></tr>
+  <tr><td>Offline-capable web app</td><td>✅ <strong>PWA</strong> (auto-cache + offline.html)</td></tr>
+  <tr><td>App cần file system access đầy đủ (đọc/ghi mọi nơi)</td><td>❌ Tauri / Electron (dùng <a href="/docs/build-farm.html">Zeni Build Farm</a>)</td></tr>
+  <tr><td>App cần native API (Bluetooth, USB, NFC)</td><td>❌ Tauri / Electron</td></tr>
+  <tr><td>Mobile app App Store / Play Store</td><td>❌ Flutter / React Native (dùng Zeni Build Farm)</td></tr>
+</table>
+
+<h2>2 Templates Available</h2>
+
+<h3>1. Next.js PWA</h3>
+<pre>framework: <code>nextjs-pwa</code>
+detect_files: next.config.js / next.config.mjs / next.config.ts
+auto-inject: next-pwa plugin + manifest.webmanifest + sw.js + offline.html
+default_port: 3000</pre>
+
+<h3>2. Vite + React PWA</h3>
+<pre>framework: <code>vite-pwa</code>
+detect_files: vite.config.js / vite.config.ts
+auto-inject: vite-plugin-pwa + workbox + manifest.webmanifest + sw.js
+default_port: 80 (nginx serve build)</pre>
+
+<h2>Cách deploy</h2>
+
+<h3>Cách 1: Click 1 nút trên Dashboard</h3>
+<ol>
+  <li>Đăng nhập <a href="https://zenicloud.io">zenicloud.io</a></li>
+  <li>Click "🎯 Templates"</li>
+  <li>Chọn "📱 Next.js PWA" hoặc "⚛️ Vite + React PWA"</li>
+  <li>App live trong ~60s với install button trên browser</li>
+</ol>
+
+<h3>Cách 2: CLI</h3>
+<pre>cd my-nextjs-app
+npm install -g @zenicloud/cli
+zeni init           <span style="color:#22d3ee"># auto-detect Next.js PWA</span>
+zeni deploy</pre>
+
+<h3>Cách 3: API trực tiếp (cho AI agent)</h3>
+<pre>curl -X POST https://zenicloud.io/api/v1/deploy/quick?ws=myws \
+  -H "Authorization: Bearer $ZENI_TOKEN" \
+  -d '{"zip_base64":"...","name":"my-pwa","framework":"nextjs-pwa","port":3000}'</pre>
+
+<h2>Khi nào PWA tự động kích hoạt</h2>
+<p>Zeni Cloud auto-inject PWA assets nếu:</p>
+<ul>
+  <li>Framework là <code>nextjs-pwa</code> hoặc <code>vite-pwa</code></li>
+  <li>Hoặc <code>zeni init</code> tự detect (nếu package.json có <code>next-pwa</code> / <code>vite-plugin-pwa</code>)</li>
+</ul>
+
+<h2>File auto-injected</h2>
+<table>
+  <tr><th>File</th><th>Chức năng</th></tr>
+  <tr><td><code>public/manifest.webmanifest</code></td><td>Tên app, icon, theme color, display=standalone</td></tr>
+  <tr><td><code>public/sw.js</code></td><td>Service worker — cache offline + runtime cache</td></tr>
+  <tr><td><code>public/offline.html</code></td><td>Trang fallback khi mất kết nối</td></tr>
+  <tr><td><code>public/zeni-pwa-register.js</code></td><td>Auto-register service worker</td></tr>
+</table>
+
+<div class="warn">
+<strong>⚠️ Customer giữ quyền override:</strong> Nếu file đã tồn tại trong source code (manifest.webmanifest, sw.js...), Zeni KHÔNG ghi đè — tôn trọng config của customer.
+</div>
+
+<p style="margin-top:40px;color:#71717a;font-size:13px">Zeni Cloud · <a href="https://zenicloud.io">zenicloud.io</a> · 100% Google Cloud Platform</p>
+
+</body>
+</html>

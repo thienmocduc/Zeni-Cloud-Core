@@ -1,0 +1,224 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {"type": "grafana", "uid": "-- Grafana --"},
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Zeni Cloud Core — operational dashboard. HTTP, latency, AI cost, cache, alerts.",
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "tags": ["zenicloud", "observability"],
+  "templating": {
+    "list": [
+      {
+        "name": "workspace",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+        "query": "label_values(http_request_total, workspace)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": false,
+        "label": "Workspace"
+      }
+    ]
+  },
+  "time": {"from": "now-6h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Zeni Cloud Core — Observability",
+  "uid": "zenicloud-observability",
+  "version": 1,
+  "schemaVersion": 38,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "HTTP Requests / sec",
+      "id": 1,
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "targets": [
+        {
+          "expr": "sum(rate(http_request_total{workspace=~\"$workspace\"}[5m]))",
+          "refId": "A"
+        }
+      ],
+      "options": {"colorMode": "value", "graphMode": "area"},
+      "fieldConfig": {"defaults": {"unit": "reqps", "decimals": 2}}
+    },
+    {
+      "type": "stat",
+      "title": "Error Rate (5xx)",
+      "id": 2,
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "targets": [
+        {
+          "expr": "sum(rate(http_request_error_total{workspace=~\"$workspace\"}[5m])) / clamp_min(sum(rate(http_request_total{workspace=~\"$workspace\"}[5m])), 1)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 0.01},
+              {"color": "red", "value": 0.05}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Cache Hit Ratio",
+      "id": 3,
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "targets": [
+        {
+          "expr": "sum(rate(cache_hit_total{workspace=~\"$workspace\"}[5m])) / clamp_min(sum(rate(cache_request_total{workspace=~\"$workspace\"}[5m])), 1)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "percentunit", "decimals": 3}}
+    },
+    {
+      "type": "stat",
+      "title": "AI Cost / hour (USD)",
+      "id": 4,
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "targets": [
+        {
+          "expr": "sum(increase(router_call_cost_usd_sum{workspace=~\"$workspace\"}[1h]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "currencyUSD", "decimals": 4}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency (p50 / p95 / p99)",
+      "id": 5,
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(http_request_duration_ms_bucket{workspace=~\"$workspace\"}[5m])))",
+          "legendFormat": "p50", "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_ms_bucket{workspace=~\"$workspace\"}[5m])))",
+          "legendFormat": "p95", "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(http_request_duration_ms_bucket{workspace=~\"$workspace\"}[5m])))",
+          "legendFormat": "p99", "refId": "C"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "ms"}}
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP Requests by Status Class",
+      "id": 6,
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "targets": [
+        {
+          "expr": "sum by (status_class) (rate(http_request_total{workspace=~\"$workspace\"}[5m]))",
+          "legendFormat": "{{status_class}}", "refId": "A"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "reqps"}}
+    },
+    {
+      "type": "table",
+      "title": "Top 10 Endpoints by Request Count",
+      "id": 7,
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "targets": [
+        {
+          "expr": "topk(10, sum by (endpoint) (rate(http_request_total{workspace=~\"$workspace\"}[5m])))",
+          "format": "table", "instant": true, "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "AI Cost (USD) over time",
+      "id": 8,
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "targets": [
+        {
+          "expr": "sum by (model) (rate(router_call_cost_usd_sum{workspace=~\"$workspace\"}[5m]))",
+          "legendFormat": "{{model}}", "refId": "A"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "currencyUSD"}}
+    },
+    {
+      "type": "timeseries",
+      "title": "In-flight HTTP Requests",
+      "id": 9,
+      "gridPos": {"h": 6, "w": 12, "x": 0, "y": 20},
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "targets": [
+        {
+          "expr": "sum by (endpoint) (http_request_in_flight_inc{workspace=~\"$workspace\"} - http_request_in_flight_dec{workspace=~\"$workspace\"})",
+          "legendFormat": "{{endpoint}}", "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Open Alerts",
+      "id": 10,
+      "gridPos": {"h": 6, "w": 12, "x": 12, "y": 20},
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "targets": [
+        {
+          "expr": "sum(alert_open_total{workspace=~\"$workspace\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "orange", "value": 1},
+              {"color": "red", "value": 5}
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "Prometheus data source scraping the Zeni Cloud /metrics endpoint",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ]
+}

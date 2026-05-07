@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hướng dẫn toàn diện — Zeni Cloud</title>
+<meta name="description" content="Hướng dẫn toàn diện Zeni Cloud — 6 lục đạo hạ tầng, ZeniRouter AI, Web3, Edge CDN, Backup DR, Multi-Region.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-void: #0a0a14;
+  --bg-elev: #11111d;
+  --bg-card: #14142a;
+  --border: rgba(168, 139, 250, 0.15);
+  --border-strong: rgba(168, 139, 250, 0.3);
+  --ink-50: #faf5ff;
+  --ink-100: #e5e7eb;
+  --ink-200: #c4b5fd;
+  --ink-300: #9e8be5;
+  --ink-400: #7c6bb0;
+  --gold: #fde68a;
+  --indigo: #7d68ff;
+  --crown: #a855f7;
+  --aurora: #22d3ee;
+  --emerald: #34d399;
+  --rose: #fb7185;
+  --code-bg: #0d1117;
+  --L1: #fde68a;
+  --L2: #34d399;
+  --L3: #22d3ee;
+  --L4: #818cf8;
+  --L5: #a855f7;
+  --L6: #fb7185;
+  --font: 'Inter', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+body { font-family: var(--font); background: var(--bg-void); color: var(--ink-100); font-size: 15px; line-height: 1.7; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(ellipse 1000px 700px at 80% 5%, rgba(168, 85, 247, 0.08), transparent 55%), radial-gradient(ellipse 900px 600px at 5% 90%, rgba(99, 102, 241, 0.06), transparent 55%); z-index: -1; pointer-events: none; }
+a { color: var(--indigo); text-decoration: none; transition: color .2s; }
+a:hover { color: var(--gold); }
+
+header.topbar { position: sticky; top: 0; z-index: 100; background: rgba(10, 10, 20, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+.topbar-inner { max-width: 1400px; margin: 0 auto; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; color: var(--ink-100); }
+.logo-mark { width: 32px; height: 32px; background: linear-gradient(135deg, var(--indigo), var(--crown)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white; }
+nav.header-nav { display: flex; align-items: center; gap: 20px; font-size: 14px; }
+nav.header-nav a { color: var(--ink-200); }
+nav.header-nav a.cta { background: var(--indigo); color: white; padding: 8px 16px; border-radius: 8px; font-weight: 600; }
+
+.layout { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 240px 1fr; gap: 36px; padding: 28px 24px; }
+@media (max-width: 1100px) { .layout { grid-template-columns: 220px 1fr; gap: 24px; } }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; gap: 0; } aside.sidebar { display: none; } }
+
+aside.sidebar {
+  position: sticky;
+  top: 72px;
+  align-self: start;
+  max-height: calc(100vh - 92px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168,139,250,0.25) transparent;
+}
+aside.sidebar::-webkit-scrollbar { width: 6px; }
+aside.sidebar::-webkit-scrollbar-track { background: transparent; }
+aside.sidebar::-webkit-scrollbar-thumb { background: rgba(168,139,250,0.2); border-radius: 3px; }
+aside.sidebar::-webkit-scrollbar-thumb:hover { background: rgba(168,139,250,0.4); }
+
+.sidebar h4 { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-300); margin: 16px 0 6px; font-weight: 700; padding-left: 4px; }
+.sidebar h4:first-child { margin-top: 0; }
+.sidebar ul { list-style: none; padding: 0; margin: 0; }
+.sidebar li { margin: 0; }
+.sidebar li a {
+  display: block;
+  padding: 5px 10px;
+  border-radius: 6px;
+  color: var(--ink-200);
+  font-size: 12.5px;
+  line-height: 1.35;
+  transition: all .15s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar li a:hover { background: var(--bg-elev); color: var(--gold); }
+.sidebar li a.active { background: rgba(125,104,255,0.12); color: var(--gold); border-left: 2px solid var(--gold); padding-left: 8px; }
+.sidebar li.layer-link a { display: flex; align-items: center; gap: 8px; }
+.sidebar li.layer-link a::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--layer-color, var(--gold)); flex-shrink: 0; }
+
+main.content { min-width: 0; }
+.hero-block { padding: 32px; background: linear-gradient(135deg, rgba(125,104,255,0.08), rgba(168,85,247,0.04)); border: 1px solid var(--border-strong); border-radius: 16px; margin-bottom: 32px; }
+.hero-block h1 { font-size: 36px; font-weight: 800; margin-bottom: 12px; background: linear-gradient(135deg, var(--gold), var(--indigo)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.hero-block p { font-size: 16px; color: var(--ink-200); margin-bottom: 16px; }
+.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 8px; font-weight: 600; font-size: 14px; transition: all .2s; }
+.btn-primary { background: var(--indigo); color: white; }
+.btn-primary:hover { background: var(--crown); color: white; }
+.btn-ghost { border: 1px solid var(--border-strong); color: var(--ink-100); }
+.btn-ghost:hover { background: var(--bg-elev); color: var(--gold); }
+
+section.doc-section { margin-bottom: 56px; padding-top: 24px; }
+section.doc-section > h2 { font-size: 28px; font-weight: 800; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid var(--border-strong); display: flex; align-items: center; gap: 12px; }
+section.doc-section > h2 .layer-badge { font-size: 12px; padding: 4px 10px; border-radius: 6px; background: var(--layer-color, var(--indigo)); color: var(--bg-void); font-weight: 800; letter-spacing: 0.05em; }
+section.doc-section > p.lead { font-size: 16px; color: var(--ink-200); margin-bottom: 24px; }
+section.doc-section h3 { font-size: 20px; font-weight: 700; margin-top: 32px; margin-bottom: 12px; color: var(--ink-50); }
+section.doc-section h4 { font-size: 16px; font-weight: 700; margin-top: 20px; margin-bottom: 8px; color: var(--gold); }
+section.doc-section p { margin-bottom: 14px; color: var(--ink-100); }
+section.doc-section ul, section.doc-section ol { margin-left: 24px; margin-bottom: 16px; color: var(--ink-100); }
+section.doc-section li { margin-bottom: 6px; }
+section.doc-section strong { color: var(--gold); font-weight: 600; }
+
+pre.code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin: 16px 0; font-family: var(--mono); font-size: 13px; line-height: 1.55; overflow-x: auto; color: #e5e7eb; }
+pre.code .c-comment { color: #6e7681; }
+pre.code .c-string { color: #a5d6ff; }
+pre.code .c-key { color: #ff7b72; }
+pre.code .c-fn { color: #d2a8ff; }
+code.inline { background: var(--code-bg); border: 1px solid var(--border); padding: 2px 8px; border-radius: 4px; font-family: var(--mono); font-size: 13px; color: var(--gold); }
+
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 16px 0; }
+.feature-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; transition: all .2s; }
+.feature-card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+.feature-card .fc-icon { font-size: 24px; margin-bottom: 8px; }
+.feature-card h4 { color: var(--ink-50); margin-top: 0; margin-bottom: 6px; font-size: 15px; }
+.feature-card p { font-size: 13px; color: var(--ink-300); margin-bottom: 0; }
+
+.callout { padding: 16px 20px; border-radius: 10px; margin: 16px 0; border-left: 4px solid var(--indigo); background: rgba(125,104,255,0.06); }
+.callout.warn { border-left-color: var(--gold); background: rgba(253,230,138,0.06); }
+.callout.danger { border-left-color: var(--rose); background: rgba(251,113,133,0.06); }
+.callout.success { border-left-color: var(--emerald); background: rgba(52,211,153,0.06); }
+.callout strong { display: block; margin-bottom: 4px; }
+
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+table th, table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+table th { color: var(--gold); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(168,139,250,0.05); }
+table tr:hover { background: rgba(168,139,250,0.03); }
+
+.tabs-bar { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-top: 16px; }
+.tab-btn { padding: 8px 16px; cursor: pointer; color: var(--ink-300); border-bottom: 2px solid transparent; font-size: 13px; font-weight: 600; transition: all .15s; }
+.tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+.tab-content { display: none; padding: 16px 0; }
+.tab-content.active { display: block; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="/" class="logo">
+      <span class="logo-mark">⚡</span>
+      <span>Zeni Cloud Docs</span>
+    </a>
+    <nav class="header-nav">
+      <a href="/">Trang chủ</a>
+      <a href="/app">Dashboard</a>
+      <a href="/pricing">Giá</a>
+      <a href="/docs/">Docs</a>
+      <a href="/signup" class="cta">Đăng ký</a>
+    </nav>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <h4>Bắt đầu</h4>
+    <ul>
+      <li><a href="#quickstart">⚡ Quick Start (5 phút)</a></li>
+      <li><a href="#concepts">📚 Khái niệm cốt lõi</a></li>
+      <li><a href="#first-call">🎯 API call đầu tiên</a></li>
+    </ul>
+    <h4>6 Lục Đạo</h4>
+    <ul>
+      <li class="layer-link" style="--layer-color:var(--L1)"><a href="#l1">L1 — Compute & Hosting</a></li>
+      <li class="layer-link" style="--layer-color:var(--L2)"><a href="#l2">L2 — Data Lake</a></li>
+      <li class="layer-link" style="--layer-color:var(--L3)"><a href="#l3">L3 — AI Engine</a></li>
+      <li class="layer-link" style="--layer-color:var(--L4)"><a href="#l4">L4 — Automation</a></li>
+      <li class="layer-link" style="--layer-color:var(--L5)"><a href="#l5">L5 — Identity</a></li>
+      <li class="layer-link" style="--layer-color:var(--L6)"><a href="#l6">L6 — Web3</a></li>
+    </ul>
+    <h4>Premium</h4>
+    <ul>
+      <li><a href="#edge-cdn">🌐 Edge CDN</a></li>
+      <li><a href="#backup-dr">💾 Backup & DR</a></li>
+      <li><a href="#multi-region">🗺️ Multi-Region</a></li>
+      <li><a href="#reseller">🤝 White-label</a></li>
+      <li><a href="#compliance">📜 Compliance</a></li>
+    </ul>
+    <h4>Apps</h4>
+    <ul>
+      <li><a href="#zeni-pay">💳 ZeniPay (VietQR)</a></li>
+      <li><a href="#zeni-mail">📧 ZeniMail</a></li>
+      <li><a href="#zeni-voice">📞 ZeniVoice</a></li>
+    </ul>
+    <h4>Workflows</h4>
+    <ul>
+      <li><a href="#wf-chatbot">🤖 Build chatbot</a></li>
+      <li><a href="#wf-rag">📖 RAG Pipeline</a></li>
+      <li><a href="#migrate-railway">🚂 Migrate Railway</a></li>
+      <li><a href="#migrate-vercel">▲ Migrate Vercel</a></li>
+    </ul>
+    <h4>Hỗ trợ</h4>
+    <ul>
+      <li><a href="#troubleshooting">🔧 Troubleshooting</a></li>
+      <li><a href="#pricing-info">💰 Giá & Quota</a></li>
+      <li><a href="#api-reference">📋 API Reference</a></li>
+      <li><a href="#contact">✉️ Liên hệ</a></li>
+    </ul>
+  </aside>
+
+  <main class="content">
+
+    <!-- HERO -->
+    <div class="hero-block">
+      <h1>Hướng dẫn toàn diện Zeni Cloud</h1>
+      <p>Một tài khoản. Sáu lớp hạ tầng. AI built-in. Mọi thứ cần để build & scale app — tự chủ trên hạ tầng Việt Nam, không phụ thuộc AWS hay Vercel.</p>
+      <div class="hero-actions">
+        <a href="#quickstart" class="btn btn-primary">⚡ Bắt đầu trong 5 phút</a>
+        <a href="/app" class="btn btn-ghost">Vào Dashboard</a>
+        <a href="/api/v1/openapi.json" class="btn btn-ghost">OpenAPI Spec</a>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ QUICK START ═══════════════════ -->
+    <section class="doc-section" id="quickstart">
+      <h2>⚡ Quick Start — 5 phút từ 0 → API call</h2>
+      <p class="lead">Đăng ký, tạo API token, gọi AI request đầu tiên — tất cả trong 5 phút. Không cần thẻ tín dụng. 50.000 VND credit miễn phí.</p>
+
+      <h3>Bước 1: Đăng ký tài khoản</h3>
+      <ol>
+        <li>Mở <a href="/signup">zenicloud.io/signup</a></li>
+        <li>Nhập email công ty + mật khẩu (≥8 ký tự, có hoa/thường/số/ký tự đặc biệt)</li>
+        <li>Tên công ty + Workspace ID (chỉ chữ thường + dấu gạch ngang, ví dụ <code class="inline">acme-corp</code>)</li>
+        <li>Click "Tạo tài khoản" — workspace tự tạo + 50K VND credit miễn phí</li>
+      </ol>
+
+      <div class="callout success">
+        <strong>✅ Sau khi đăng ký:</strong>
+        Bạn được redirect ngay vào Dashboard. Không cần verify email (có thể bật MFA sau ở Settings).
+      </div>
+
+      <h3>Bước 2: Tạo API Token</h3>
+      <ol>
+        <li>Vào Dashboard → tab <strong>"API Tokens"</strong> (sidebar)</li>
+        <li>Click <strong>"+ New Token"</strong></li>
+        <li>Đặt tên (ví dụ <code class="inline">My App Production</code>) + chọn scope:
+          <ul>
+            <li><strong>full</strong>: tất cả tính năng (recommend cho dev)</li>
+            <li><strong>ai</strong>: chỉ AI/Router</li>
+            <li><strong>data</strong>: chỉ vector/cache/storage</li>
+            <li><strong>automation</strong>: chỉ workflow/cron</li>
+            <li><strong>web3</strong>: chỉ smart contract</li>
+          </ul>
+        </li>
+        <li>Click "Create" → COPY TOKEN NGAY (chỉ hiện 1 lần)</li>
+      </ol>
+
+      <pre class="code"><span class="c-comment"># Token format: zeni_pat_XXXXXXXXXXXXXXXXXXX</span>
+<span class="c-comment"># Lưu vào env var an toàn:</span>
+export ZENI_TOKEN=zeni_pat_xxx...
+export ZENI_WS=acme-corp</pre>
+
+      <h3 id="first-call">Bước 3: API call đầu tiên (gọi AI)</h3>
+      <p>ZeniRouter tự chọn model tối ưu (Claude Haiku 4.5 / GPT / Gemini Flash / Gemma):</p>
+
+      <pre class="code"><span class="c-comment"># cURL:</span>
+curl -X POST <span class="c-string">https://zenicloud.io/api/v1/router/route?ws=$ZENI_WS</span> \
+  -H <span class="c-string">"Authorization: Bearer $ZENI_TOKEN"</span> \
+  -H <span class="c-string">"Content-Type: application/json"</span> \
+  -d <span class="c-string">'{
+    "messages": [{"role":"user","content":"Xin chào, bạn là ai?"}],
+    "max_tokens": 100
+  }'</span></pre>
+
+      <pre class="code"><span class="c-comment"># Python:</span>
+<span class="c-key">import</span> requests, os
+r = requests.post(
+    <span class="c-string">f"https://zenicloud.io/api/v1/router/route?ws={os.environ['ZENI_WS']}"</span>,
+    headers={<span class="c-string">"Authorization"</span>: <span class="c-string">f"Bearer {os.environ['ZENI_TOKEN']}"</span>},
+    json={<span class="c-string">"messages"</span>: [{<span class="c-string">"role"</span>: <span class="c-string">"user"</span>, <span class="c-string">"content"</span>: <span class="c-string">"Xin chào"</span>}], <span class="c-string">"max_tokens"</span>: 100}
+)
+<span class="c-fn">print</span>(r.json())</pre>
+
+      <pre class="code"><span class="c-comment">// Node.js:</span>
+<span class="c-key">const</span> r = <span class="c-key">await</span> <span class="c-fn">fetch</span>(<span class="c-string">`https://zenicloud.io/api/v1/router/route?ws=${process.env.ZENI_WS}`</span>, {
+  method: <span class="c-string">'POST'</span>,
+  headers: { <span class="c-string">'Authorization'</span>: <span class="c-string">`Bearer ${process.env.ZENI_TOKEN}`</span>, <span class="c-string">'Content-Type'</span>: <span class="c-string">'application/json'</span> },
+  body: <span class="c-fn">JSON.stringify</span>({ messages: [{role:<span class="c-string">'user'</span>,content:<span class="c-string">'Xin chào'</span>}], max_tokens: 100 })
+});
+console.<span class="c-fn">log</span>(<span class="c-key">await</span> r.<span class="c-fn">json</span>());</pre>
+    </section>
+
+    <!-- ═══════════════════ CONCEPTS ═══════════════════ -->
+    <section class="doc-section" id="concepts">
+      <h2>📚 Khái niệm cốt lõi</h2>
+      <p class="lead">Hiểu 5 khái niệm này — biết cách dùng cả nền tảng.</p>
+
+      <table>
+        <tr><th>Khái niệm</th><th>Mô tả</th><th>Ví dụ</th></tr>
+        <tr><td><strong>Workspace</strong></td><td>Đơn vị phân tách dữ liệu (multi-tenant). 1 user = 1 workspace.</td><td><code class="inline">nexbuild</code></td></tr>
+        <tr><td><strong>API Token (PAT)</strong></td><td>Bearer token để gọi API. Có scope phân quyền.</td><td><code class="inline">zeni_pat_xxx</code></td></tr>
+        <tr><td><strong>Project</strong></td><td>Đơn vị deploy app/service. Mỗi project có URL riêng.</td><td><code class="inline">nexbuild-api</code></td></tr>
+        <tr><td><strong>Layer</strong></td><td>1 trong 6 lớp hạ tầng (L1 Compute → L6 Web3).</td><td><code class="inline">L1, L2, L3...</code></td></tr>
+        <tr><td><strong>Quota</strong></td><td>Giới hạn tài nguyên theo plan (Free/Starter/Pro/Business/Enterprise).</td><td><code class="inline">100K req/tháng</code></td></tr>
+      </table>
+
+      <h3>Cấu trúc URL chuẩn</h3>
+      <pre class="code">https://zenicloud.io/api/v1/<span class="c-string">{LAYER}</span>/<span class="c-string">{RESOURCE}</span>?ws=<span class="c-string">{WORKSPACE_ID}</span>
+
+<span class="c-comment"># Ví dụ:</span>
+https://zenicloud.io/api/v1/projects?ws=acme-corp        <span class="c-comment"># L1: list deployments</span>
+https://zenicloud.io/api/v1/vector/collections?ws=acme   <span class="c-comment"># L2: vector DB</span>
+https://zenicloud.io/api/v1/router/route?ws=acme         <span class="c-comment"># L3: AI router</span>
+https://zenicloud.io/api/v1/automation/crons?ws=acme     <span class="c-comment"># L4: cron jobs</span>
+https://zenicloud.io/api/v1/api-tokens?ws=acme           <span class="c-comment"># L5: token management</span>
+https://zenicloud.io/api/v1/zeni-token/stack             <span class="c-comment"># L6: $ZENI token info</span></pre>
+
+      <div class="callout warn">
+        <strong>⚠️ Quan trọng:</strong>
+        Mọi endpoint đều cần <code class="inline">?ws=YOUR_WORKSPACE</code> + <code class="inline">Authorization: Bearer YOUR_TOKEN</code>. Không có 2 điều này → 401/403.
+      </div>
+    </section>
+
+    <!-- ═══════════════════ L1 COMPUTE ═══════════════════ -->
+    <section class="doc-section" id="l1">
+      <h2><span class="layer-badge" style="--layer-color:var(--L1)">L1</span> Compute & Hosting</h2>
+      <p class="lead">Deploy web/API/worker/agent — auto-scale 0 → triệu request, zero-config TLS, 30s từ push tới live.</p>
+
+      <div class="grid-2">
+        <div class="feature-card"><div class="fc-icon">🚀</div><h4>Container deploy</h4><p>Push Docker image → Cloud Run auto-deploy</p></div>
+        <div class="feature-card"><div class="fc-icon">🌐</div><h4>Custom domain</h4><p>CNAME + auto SSL (Let's Encrypt)</p></div>
+        <div class="feature-card"><div class="fc-icon">📈</div><h4>Auto-scale 0→∞</h4><p>0 traffic = 0 phí; spike = scale ngay</p></div>
+        <div class="feature-card"><div class="fc-icon">🔧</div><h4>Env vars + Secrets</h4><p>Plain env hoặc Secret Manager</p></div>
+      </div>
+
+      <h3>Tạo project (deploy app)</h3>
+      <pre class="code">POST /api/v1/projects?ws=$WS
+
+{
+  <span class="c-string">"name"</span>: <span class="c-string">"my-api"</span>,                    <span class="c-comment">// chỉ chữ thường + dấu gạch (3-48 chars)</span>
+  <span class="c-string">"type"</span>: <span class="c-string">"api"</span>,                        <span class="c-comment">// web | api | worker | agent</span>
+  <span class="c-string">"runtime"</span>: <span class="c-string">"container"</span>,                <span class="c-comment">// container | node20 | python312 | bun | go121</span>
+  <span class="c-string">"size"</span>: <span class="c-string">"s"</span>,                           <span class="c-comment">// xs (256MB) | s (512MB) | m (2GB) | l (4GB)</span>
+  <span class="c-string">"region"</span>: <span class="c-string">"asia-southeast1"</span>,           <span class="c-comment">// us-central1 | asia-southeast1 | europe-west1</span>
+  <span class="c-string">"image"</span>: <span class="c-string">"gcr.io/zeni-cloud-core/my-api:v1"</span>, <span class="c-comment">// Artifact Registry / Docker Hub library / GCR samples</span>
+  <span class="c-string">"port"</span>: 8080,
+  <span class="c-string">"env_vars"</span>: { <span class="c-string">"NODE_ENV"</span>: <span class="c-string">"production"</span>, <span class="c-string">"DB_URL"</span>: <span class="c-string">"..."</span> },
+  <span class="c-string">"secrets"</span>: { <span class="c-string">"API_KEY"</span>: <span class="c-string">"my-secret:latest"</span> }, <span class="c-comment">// from Secret Manager</span>
+  <span class="c-string">"allow_unauthenticated"</span>: true,
+  <span class="c-string">"git_ref"</span>: <span class="c-string">"main"</span>
+}</pre>
+
+      <h3>Quản lý project</h3>
+      <table>
+        <tr><th>Action</th><th>Endpoint</th></tr>
+        <tr><td>List</td><td><code class="inline">GET /projects?ws=...</code></td></tr>
+        <tr><td>Detail</td><td><code class="inline">GET /projects/{id}?ws=...</code></td></tr>
+        <tr><td>Update + redeploy</td><td><code class="inline">POST /projects?ws=...</code> (same name = redeploy)</td></tr>
+        <tr><td>Custom domain</td><td><code class="inline">POST /projects/{id}/domain</code></td></tr>
+        <tr><td>Delete</td><td><code class="inline">DELETE /projects/{id}?ws=...</code></td></tr>
+      </table>
+
+      <div class="callout">
+        <strong>💡 Tips:</strong>
+        Deploy chạy background, trả 202 ngay lập tức. Check status bằng <code class="inline">GET /projects/{id}</code> đến khi <code class="inline">status === "running"</code>.
+      </div>
+    </section>
+
+    <!-- ═══════════════════ L2 DATA ═══════════════════ -->
+    <section class="doc-section" id="l2">
+      <h2><span class="layer-badge" style="--layer-color:var(--L2)">L2</span> Data Lake & Vector</h2>
+      <p class="lead">Postgres, Redis, Object Storage, Vector DB (pgvector) — managed hoàn toàn. RAG pipeline built-in.</p>
+
+      <div class="grid-2">
+        <div class="feature-card"><div class="fc-icon">🗄️</div><h4>Postgres 16</h4><p>Cloud SQL HA + auto-backup</p></div>
+        <div class="feature-card"><div class="fc-icon">⚡</div><h4>Redis cache</h4><p>Memorystore — sub-ms latency</p></div>
+        <div class="feature-card"><div class="fc-icon">📦</div><h4>Object Storage</h4><p>GCS-compatible API (S3 wire)</p></div>
+        <div class="feature-card"><div class="fc-icon">🔍</div><h4>Vector DB</h4><p>pgvector + hybrid search + RAG</p></div>
+      </div>
+
+      <h3>Vector DB — Tạo collection + insert</h3>
+      <pre class="code"><span class="c-comment"># 1. Tạo collection (768 dims = text-embedding-004)</span>
+POST /api/v1/vector/collections?ws=$WS
+{ <span class="c-string">"name"</span>: <span class="c-string">"docs"</span>, <span class="c-string">"dim"</span>: 768 }
+
+<span class="c-comment"># 2. Embed + insert văn bản (Zeni tự gọi text-embedding-004)</span>
+POST /api/v1/vector/collections/docs/upsert?ws=$WS
+{
+  <span class="c-string">"items"</span>: [
+    {<span class="c-string">"id"</span>:<span class="c-string">"doc1"</span>, <span class="c-string">"text"</span>:<span class="c-string">"Zeni Cloud là PaaS Việt Nam"</span>, <span class="c-string">"metadata"</span>:{<span class="c-string">"lang"</span>:<span class="c-string">"vi"</span>}}
+  ]
+}
+
+<span class="c-comment"># 3. Search semantic</span>
+POST /api/v1/vector/collections/docs/search?ws=$WS
+{ <span class="c-string">"query"</span>: <span class="c-string">"hosting Việt Nam"</span>, <span class="c-string">"top_k"</span>: 5 }</pre>
+
+      <h3>Cache (Redis)</h3>
+      <pre class="code"><span class="c-comment"># Set</span>
+POST /api/v1/cache?ws=$WS
+{ <span class="c-string">"key"</span>: <span class="c-string">"user:123"</span>, <span class="c-string">"value"</span>: {<span class="c-string">"name"</span>:<span class="c-string">"Tuấn"</span>}, <span class="c-string">"ttl"</span>: 3600 }
+
+<span class="c-comment"># Get</span>
+GET /api/v1/cache/user:123?ws=$WS</pre>
+
+      <h3>Vector Premium — Hybrid Search + RAG Pipeline</h3>
+      <pre class="code"><span class="c-comment"># Tạo RAG pipeline (lưu config: collection + embedding + LLM + system prompt)</span>
+POST /api/v1/vector-premium/rag/pipelines?ws=$WS
+{
+  <span class="c-string">"name"</span>: <span class="c-string">"customer-support"</span>,
+  <span class="c-string">"collection_id"</span>: 1,
+  <span class="c-string">"hybrid_alpha"</span>: 0.5,                  <span class="c-comment">// 0=BM25 only, 1=vector only, 0.5=hybrid</span>
+  <span class="c-string">"top_k"</span>: 5,
+  <span class="c-string">"rerank_enabled"</span>: true,
+  <span class="c-string">"system_prompt"</span>: <span class="c-string">"Bạn là trợ lý..."</span>,
+  <span class="c-string">"llm_model"</span>: <span class="c-string">"gemini-2.5-flash"</span>
+}
+
+<span class="c-comment"># Query (tự động embed + retrieve + LLM)</span>
+POST /api/v1/vector-premium/rag/pipelines/customer-support/query?ws=$WS
+{ <span class="c-string">"question"</span>: <span class="c-string">"Cách deploy app trên Zeni Cloud?"</span> }</pre>
+    </section>
+
+    <!-- ═══════════════════ L3 AI ═══════════════════ -->
+    <section class="doc-section" id="l3">
+      <h2><span class="layer-badge" style="--layer-color:var(--L3)">L3</span> AI Engine — ZeniRouter</h2>
+      <p class="lead">Smart router truy cập <strong>20+ models top-tier</strong> từ 4 nhà cung cấp AI hàng đầu thế giới: Anthropic Claude (Opus 4.7 / Sonnet 4.6), OpenAI (GPT-5 / GPT-4o / o1), Google Gemini (2.5 Pro / 2.5 Flash), AWS Bedrock (Nova). Tự động chọn model phù hợp nhất theo task — tiết kiệm 30-60% chi phí so với gọi trực tiếp.</p>
+
+      <div class="callout success">
+        <strong>💎 100% top-tier — không có model "rẻ tiền":</strong>
+        Frontier (Opus 4.7, GPT-5, Gemini Ultra) cho reasoning. Premium (Sonnet 4.6, GPT-4o) cho production. Fast (Haiku 4.5, Gemini Flash) cho high-volume. Tất cả đều là model SOTA mới nhất 2026, không phải open-source nhỏ.
+      </div>
+
+      <h3>5 Tier — Auto-route theo task</h3>
+      <table>
+        <tr>
+          <th>Tier</th>
+          <th>Use case</th>
+          <th>Model auto-select (failover chain)</th>
+          <th>Quality</th>
+          <th>Khách trả</th>
+        </tr>
+        <tr>
+          <td><strong>🧠 Frontier</strong></td>
+          <td>Phân tích pháp lý, IPO advisor, deep research, agent autonomous</td>
+          <td>Claude <strong>Opus 4.7</strong> → GPT-<strong>5</strong> → Gemini <strong>2.5 Pro</strong></td>
+          <td>SOTA nhất thế giới</td>
+          <td>~660K VND / 1M tokens</td>
+        </tr>
+        <tr>
+          <td><strong>🚀 Reasoning</strong></td>
+          <td>Code complex, math, multi-step planning</td>
+          <td>OpenAI <strong>o1</strong> → DeepSeek R1 → Claude Sonnet 4.6 thinking</td>
+          <td>Reasoning chain-of-thought</td>
+          <td>~360K VND / 1M tokens</td>
+        </tr>
+        <tr>
+          <td><strong>💎 Premium</strong></td>
+          <td>Customer support, content gen, RAG production</td>
+          <td>Claude <strong>Sonnet 4.6</strong> → <strong>GPT-4o</strong> → Gemini 2.5 Pro</td>
+          <td>Production-grade</td>
+          <td>~84K VND / 1M tokens</td>
+        </tr>
+        <tr>
+          <td><strong>⚡ Balanced</strong></td>
+          <td>Code review, summarize, classify, extract</td>
+          <td>Claude <strong>Haiku 4.5</strong> → GPT-4o mini → Gemini 2.5 Flash</td>
+          <td>Fast + accurate</td>
+          <td>~12K VND / 1M tokens</td>
+        </tr>
+        <tr>
+          <td><strong>🏎 Fast</strong></td>
+          <td>Chat, Q&A đơn giản, high-volume bulk processing</td>
+          <td>Gemini <strong>2.5 Flash-Lite</strong> → Haiku 4.5 → Gemma 3</td>
+          <td>Fast tier (50-100ms)</td>
+          <td>~2.4K VND / 1M tokens</td>
+        </tr>
+      </table>
+
+      <h3>💰 Pricing minh bạch — Không markup ẩn</h3>
+      <p>Zeni Cloud cộng <strong>15% margin</strong> để cover infra + smart routing + multi-provider failover. Toàn bộ raw cost từ Anthropic/OpenAI/Google đều public — anh có thể verify:</p>
+      <table>
+        <tr><th>Model</th><th>Provider raw cost (input)</th><th>Provider raw cost (output)</th><th>Zeni Cloud (đã +15%)</th></tr>
+        <tr><td>Claude Opus 4.7</td><td>$15/1M</td><td>$75/1M</td><td>$17.25 in / $86.25 out per 1M</td></tr>
+        <tr><td>Claude Sonnet 4.6</td><td>$3/1M</td><td>$15/1M</td><td>$3.45 in / $17.25 out per 1M</td></tr>
+        <tr><td>Claude Haiku 4.5</td><td>$0.25/1M</td><td>$1.25/1M</td><td>$0.29 in / $1.44 out per 1M</td></tr>
+        <tr><td>GPT-5</td><td>$10/1M</td><td>$40/1M</td><td>$11.50 in / $46 out per 1M</td></tr>
+        <tr><td>GPT-4o</td><td>$2.5/1M</td><td>$10/1M</td><td>$2.88 in / $11.50 out per 1M</td></tr>
+        <tr><td>Gemini 2.5 Pro</td><td>$1.25/1M</td><td>$5/1M</td><td>$1.44 in / $5.75 out per 1M</td></tr>
+        <tr><td>Gemini 2.5 Flash</td><td>$0.075/1M</td><td>$0.30/1M</td><td>$0.086 in / $0.345 out per 1M</td></tr>
+      </table>
+      <p style="font-size:13px;color:var(--ink-300);">⚖️ <strong>Vì sao Zeni vẫn rẻ hơn dù +15%?</strong> Smart routing tự chọn model RẺ NHẤT đáp ứng task. Khách dùng Gemini Flash cho 80% Q&A đơn giản (rẻ 200x Opus) → tổng chi phí thấp 30-60% so với khách hardcode Sonnet/GPT-4 cho mọi task.</p>
+
+      <div class="callout">
+        <strong>🎯 Ví dụ thực:</strong> Chatbot CSKH 100K message/tháng, mỗi msg ~500 input + 200 output tokens.
+        <ul>
+          <li><strong>Khách tự gọi Sonnet 4.6 trực tiếp:</strong> 100K × (500×$3 + 200×$15) / 1M = $450/tháng</li>
+          <li><strong>Qua ZeniRouter (auto-route):</strong> 80% Flash + 20% Sonnet = ~$110/tháng (đã +15% Zeni)</li>
+          <li><strong>Tiết kiệm:</strong> $340/tháng (~76%) — vẫn dùng Sonnet cho câu phức tạp</li>
+        </ul>
+      </div>
+
+      <h3>Endpoint chính</h3>
+      <pre class="code">POST /api/v1/router/route?ws=$WS
+Authorization: Bearer $TOKEN
+
+{
+  <span class="c-string">"messages"</span>: [
+    {<span class="c-string">"role"</span>: <span class="c-string">"system"</span>, <span class="c-string">"content"</span>: <span class="c-string">"Bạn là trợ lý..."</span>},
+    {<span class="c-string">"role"</span>: <span class="c-string">"user"</span>, <span class="c-string">"content"</span>: <span class="c-string">"Cho tôi hỏi..."</span>}
+  ],
+  <span class="c-string">"max_tokens"</span>: 500,
+  <span class="c-string">"temperature"</span>: 0.7,
+  <span class="c-string">"model_hint"</span>: <span class="c-string">"flash"</span>,            <span class="c-comment">// optional: fast | flash | balanced | premium | reasoning</span>
+  <span class="c-string">"task_type"</span>: <span class="c-string">"qa_simple"</span>,         <span class="c-comment">// optional: qa_simple | code | analysis | creative | agent</span>
+  <span class="c-string">"failover"</span>: true                 <span class="c-comment">// auto-retry với chain fallback nếu fail</span>
+}</pre>
+
+      <h3>Agents — 16 loại agent built-in</h3>
+      <pre class="code"><span class="c-comment"># List 16 agent kinds</span>
+GET /api/v1/agents/kinds
+
+<span class="c-comment"># Trả về: ['chat','rag','code','sql','support','translation','summarize',</span>
+<span class="c-comment">#         'extract','classify','review','planner','writer','researcher',</span>
+<span class="c-comment">#         'data_analyst','customer_support','agent_orchestrator']</span>
+
+<span class="c-comment"># Run agent (structured output)</span>
+POST /api/v1/agents/{kind}/run-structured?ws=$WS
+{
+  <span class="c-string">"input"</span>: <span class="c-string">"Phân tích đoạn văn bản này..."</span>,
+  <span class="c-string">"params"</span>: { ... }
+}</pre>
+
+      <h3>Agents Library — Catalog 50+ template sẵn</h3>
+      <pre class="code"><span class="c-comment"># List catalog</span>
+GET /api/v1/agents-library/catalog
+
+<span class="c-comment"># Install template (tự copy config + prompt vào workspace)</span>
+POST /api/v1/agents-library/catalog/{id}/install?ws=$WS</pre>
+    </section>
+
+    <!-- ═══════════════════ L4 AUTOMATION ═══════════════════ -->
+    <section class="doc-section" id="l4">
+      <h2><span class="layer-badge" style="--layer-color:var(--L4)">L4</span> Automation</h2>
+      <p class="lead">Workflows, Crons, Webhooks, Connectors (Slack/Email/SMS/Stripe) — tự động hóa mọi pipeline.</p>
+
+      <div class="grid-2">
+        <div class="feature-card"><div class="fc-icon">🔄</div><h4>Workflows</h4><p>Trigger → step1 → step2 → branch</p></div>
+        <div class="feature-card"><div class="fc-icon">⏰</div><h4>Crons</h4><p>Cloud Scheduler — cron expression</p></div>
+        <div class="feature-card"><div class="fc-icon">🔗</div><h4>Webhooks</h4><p>Receiver + signed verification</p></div>
+        <div class="feature-card"><div class="fc-icon">🔌</div><h4>Connectors</h4><p>Slack/Email/SMS/Stripe/HTTP</p></div>
+      </div>
+
+      <h3>Tạo Cron Job</h3>
+      <pre class="code">POST /api/v1/automation/crons?ws=$WS
+{
+  <span class="c-string">"name"</span>: <span class="c-string">"daily-report"</span>,
+  <span class="c-string">"schedule"</span>: <span class="c-string">"0 8 * * *"</span>,           <span class="c-comment">// 8 sáng mỗi ngày (cron expression)</span>
+  <span class="c-string">"timezone"</span>: <span class="c-string">"Asia/Ho_Chi_Minh"</span>,
+  <span class="c-string">"http_target"</span>: {
+    <span class="c-string">"url"</span>: <span class="c-string">"https://my-api.com/cron/daily"</span>,
+    <span class="c-string">"method"</span>: <span class="c-string">"POST"</span>,
+    <span class="c-string">"headers"</span>: { <span class="c-string">"X-Cron-Secret"</span>: <span class="c-string">"..."</span> }
+  }
+}</pre>
+
+      <h3>Tạo Workflow (chain steps)</h3>
+      <pre class="code">POST /api/v1/automation/flows?ws=$WS
+{
+  <span class="c-string">"name"</span>: <span class="c-string">"new-signup-flow"</span>,
+  <span class="c-string">"trigger"</span>: { <span class="c-string">"type"</span>: <span class="c-string">"webhook"</span>, <span class="c-string">"path"</span>: <span class="c-string">"/signup"</span> },
+  <span class="c-string">"steps"</span>: [
+    { <span class="c-string">"id"</span>:<span class="c-string">"send_welcome_email"</span>, <span class="c-string">"type"</span>:<span class="c-string">"connector"</span>, <span class="c-string">"connector"</span>:<span class="c-string">"email"</span>, <span class="c-string">"params"</span>: { <span class="c-string">"to"</span>:<span class="c-string">"{{trigger.email}}"</span>, <span class="c-string">"template"</span>:<span class="c-string">"welcome"</span> } },
+    { <span class="c-string">"id"</span>:<span class="c-string">"create_zenipay"</span>, <span class="c-string">"type"</span>:<span class="c-string">"http"</span>, <span class="c-string">"url"</span>:<span class="c-string">"https://...api/zeni-pay/wallet"</span> },
+    { <span class="c-string">"id"</span>:<span class="c-string">"notify_slack"</span>, <span class="c-string">"type"</span>:<span class="c-string">"connector"</span>, <span class="c-string">"connector"</span>:<span class="c-string">"slack"</span>, <span class="c-string">"params"</span>: { <span class="c-string">"channel"</span>:<span class="c-string">"#growth"</span> } }
+  ]
+}</pre>
+    </section>
+
+    <!-- ═══════════════════ L5 IDENTITY ═══════════════════ -->
+    <section class="doc-section" id="l5">
+      <h2><span class="layer-badge" style="--layer-color:var(--L5)">L5</span> Identity & Auth</h2>
+      <p class="lead">Auth, MFA, OAuth, API Tokens, CMEK, Smart Contract ZeniAccessControl, CAAA (Customer-Approved Admin Access).</p>
+
+      <h3>Email + Password</h3>
+      <pre class="code"><span class="c-comment"># Signup</span>
+POST /api/v1/auth/signup
+{ <span class="c-string">"email"</span>:<span class="c-string">"..."</span>, <span class="c-string">"password"</span>:<span class="c-string">"..."</span>, <span class="c-string">"full_name"</span>:<span class="c-string">"..."</span>, <span class="c-string">"company_name"</span>:<span class="c-string">"..."</span>, <span class="c-string">"workspace_id"</span>:<span class="c-string">"acme"</span> }
+
+<span class="c-comment"># Login</span>
+POST /api/v1/auth/login
+{ <span class="c-string">"email"</span>:<span class="c-string">"..."</span>, <span class="c-string">"password"</span>:<span class="c-string">"..."</span> }
+<span class="c-comment"># → returns { access_token, refresh_token, token_type: "Bearer", expires_in: 3600 }</span></pre>
+
+      <h3>OAuth (Google / GitHub / Zeni Digital)</h3>
+      <p>Click nút OAuth trên trang login → redirect về Google/GitHub → callback tự exchange token.</p>
+      <pre class="code">GET /api/v1/auth/oauth/google/authorize?return_to=/app
+GET /api/v1/auth/oauth/github/authorize?return_to=/app
+GET /api/v1/auth/oauth/zenidigital/authorize?return_to=/app
+
+<span class="c-comment"># Check provider availability:</span>
+GET /api/v1/auth/oauth/providers
+<span class="c-comment"># → returns { providers: [{ name, ready: true|false, ... }] }</span></pre>
+
+      <h3>MFA (TOTP — Google Authenticator)</h3>
+      <pre class="code"><span class="c-comment"># Setup MFA</span>
+POST /api/v1/auth/mfa/setup
+<span class="c-comment"># → returns { secret, qr_code_url } — scan QR vào Authenticator</span>
+
+<span class="c-comment"># Verify enrollment</span>
+POST /api/v1/auth/mfa/verify
+{ <span class="c-string">"code"</span>: <span class="c-string">"123456"</span> }
+
+<span class="c-comment"># Login với MFA enabled</span>
+POST /api/v1/auth/mfa/login
+{ <span class="c-string">"email"</span>:<span class="c-string">"..."</span>, <span class="c-string">"password"</span>:<span class="c-string">"..."</span>, <span class="c-string">"code"</span>:<span class="c-string">"123456"</span> }</pre>
+
+      <h3>API Tokens (PAT)</h3>
+      <pre class="code"><span class="c-comment"># Tạo token</span>
+POST /api/v1/api-tokens?ws=$WS
+{ <span class="c-string">"name"</span>:<span class="c-string">"My App"</span>, <span class="c-string">"scopes"</span>:<span class="c-string">"full"</span>, <span class="c-string">"ttl_days"</span>:365 }
+<span class="c-comment"># → returns { token: "zeni_pat_xxx" } — chỉ hiện 1 lần!</span>
+
+<span class="c-comment"># Scopes: full | ai | data | automation | web3</span>
+<span class="c-comment"># List, revoke, rotate qua /api-tokens/{id}</span></pre>
+
+      <h3>Customer OAuth (Zalo/Apple/Facebook/Line/Kakao/TikTok/LinkedIn)</h3>
+      <p>Khách của bạn build app → muốn người dùng login bằng Zalo? Bạn cài key Zalo của HỌ trên Zeni Cloud → Zeni làm OAuth middleware:</p>
+      <pre class="code"><span class="c-comment"># 1. Đăng ký app Zalo tại developers.zalo.me</span>
+<span class="c-comment"># 2. Lấy App ID + Secret Key</span>
+<span class="c-comment"># 3. Add provider vào Zeni:</span>
+
+POST /api/v1/identity/oauth-providers?ws=$WS
+{
+  <span class="c-string">"provider"</span>: <span class="c-string">"zalo"</span>,
+  <span class="c-string">"display_name"</span>: <span class="c-string">"Đăng nhập Zalo"</span>,
+  <span class="c-string">"client_id"</span>: <span class="c-string">"your_zalo_app_id"</span>,
+  <span class="c-string">"client_secret"</span>: <span class="c-string">"your_zalo_secret_key"</span>,
+  <span class="c-string">"redirect_uri"</span>: <span class="c-string">"https://zenicloud.io/auth/zalo/$WS/callback"</span>,
+  <span class="c-string">"app_callback_url"</span>: <span class="c-string">"https://your-app.com/auth/callback"</span>
+}
+
+<span class="c-comment"># Endpoint dành cho user app:</span>
+GET https://zenicloud.io/auth/zalo/$WS/login
+<span class="c-comment"># → redirect về Zalo, callback về app của bạn với access token</span></pre>
+    </section>
+
+    <!-- ═══════════════════ L6 WEB3 ═══════════════════ -->
+    <section class="doc-section" id="l6">
+      <h2><span class="layer-badge" style="--layer-color:var(--L6)">L6</span> Web3 — $ZENI Token + Polygon</h2>
+      <p class="lead">Token $ZENI deployed Polygon mainnet, smart contract integration, ZeniBadge SBT, AffiliateCommission.</p>
+
+      <table>
+        <tr><th>Contract</th><th>Address</th></tr>
+        <tr><td>$ZENI Token</td><td><code class="inline">0x2d0Ec889F3889F0a364b82039db9F8Bef78f5EC1</code></td></tr>
+        <tr><td>AffiliateCommission</td><td><code class="inline">0x1d5963FcCfC548275293e51f0F6C7aC482E0b714</code></td></tr>
+        <tr><td>ZeniBadge SBT</td><td><code class="inline">0xB157c83beEeA7c7ebDB2CEa305135e3deCAeD79D</code></td></tr>
+      </table>
+
+      <h3>Endpoints chính</h3>
+      <pre class="code"><span class="c-comment"># Token info</span>
+GET /api/v1/zeni-token/stack          <span class="c-comment"># Tokenomics, supply, vesting</span>
+GET /api/v1/zeni-token/exchange-rate  <span class="c-comment"># 1 ZENI = ? VND</span>
+POST /api/v1/zeni-token/quote         <span class="c-comment"># Quote swap ZENI ↔ VND</span>
+
+<span class="c-comment"># Web3 chain</span>
+GET /api/v1/web3/chains               <span class="c-comment"># Polygon mainnet info</span>
+POST /api/v1/web3/read                <span class="c-comment"># Call contract method (read-only)</span>
+POST /api/v1/web3/write               <span class="c-comment"># Send tx (cần wallet signed)</span></pre>
+    </section>
+
+    <!-- ═══════════════════ EDGE CDN ═══════════════════ -->
+    <section class="doc-section" id="edge-cdn">
+      <h2>🌐 Edge CDN — Cloudflare integration</h2>
+      <p class="lead">CDN global, auto SSL, DDoS protection, WAF rules, Bot Fight Mode.</p>
+      <pre class="code">POST /api/v1/edge/zones?ws=$WS
+{ <span class="c-string">"hostname"</span>: <span class="c-string">"my-app.com"</span>, <span class="c-string">"origin_url"</span>: <span class="c-string">"https://...zenicloud.app"</span> }
+
+GET /api/v1/edge/zones?ws=$WS
+POST /api/v1/edge/zones/{id}/verify
+POST /api/v1/edge/zones/{id}/routes  <span class="c-comment"># Route rules</span></pre>
+    </section>
+
+    <!-- ═══════════════════ BACKUP DR ═══════════════════ -->
+    <section class="doc-section" id="backup-dr">
+      <h2>💾 Backup & Disaster Recovery</h2>
+      <p class="lead">Backup policies, PITR (Point-in-Time Recovery), DR site failover.</p>
+      <pre class="code"><span class="c-comment"># Tạo backup policy</span>
+POST /api/v1/backup/policies?ws=$WS
+{
+  <span class="c-string">"name"</span>: <span class="c-string">"daily-1am"</span>,
+  <span class="c-string">"schedule"</span>: <span class="c-string">"0 1 * * *"</span>,
+  <span class="c-string">"retention_days"</span>: 30,
+  <span class="c-string">"target"</span>: { <span class="c-string">"type"</span>:<span class="c-string">"postgres"</span>, <span class="c-string">"datasource_id"</span>: 1 }
+}
+
+<span class="c-comment"># PITR restore (rollback đến giây bất kỳ trong 7 ngày)</span>
+POST /api/v1/backup/pitr?ws=$WS
+{ <span class="c-string">"datasource_id"</span>: 1, <span class="c-string">"restore_to"</span>: <span class="c-string">"2026-04-30T15:30:00Z"</span> }</pre>
+    </section>
+
+    <!-- ═══════════════════ MULTI-REGION ═══════════════════ -->
+    <section class="doc-section" id="multi-region">
+      <h2>🗺️ Multi-Region & Auto-Scaling</h2>
+      <p class="lead">Deploy đa vùng (asia/eu/us), auto-scale theo load, canary release, blue/green deploy.</p>
+      <pre class="code">GET /api/v1/multi-region/regions    <span class="c-comment"># 12 regions available</span>
+POST /api/v1/multi-region/projects/{id}/regions
+{ <span class="c-string">"region"</span>:<span class="c-string">"us-central1"</span>, <span class="c-string">"min_instances"</span>:1, <span class="c-string">"max_instances"</span>:50 }
+
+POST /api/v1/multi-region/projects/{id}/scaling
+{ <span class="c-string">"cpu_target"</span>:60, <span class="c-string">"concurrency_target"</span>:80, <span class="c-string">"canary_percent"</span>:10 }</pre>
+    </section>
+
+    <!-- ═══════════════════ RESELLER ═══════════════════ -->
+    <section class="doc-section" id="reseller">
+      <h2>🤝 White-label Reseller</h2>
+      <p class="lead">Bán Zeni Cloud dưới brand của bạn. Custom domain, logo, color scheme. Hoa hồng 30%.</p>
+      <pre class="code"><span class="c-comment"># Apply để trở thành reseller</span>
+POST /api/v1/reseller/apply
+{ <span class="c-string">"company"</span>:<span class="c-string">"My Cloud Co"</span>, <span class="c-string">"website"</span>:<span class="c-string">"..."</span>, <span class="c-string">"target_market"</span>:<span class="c-string">"VN/TH/ID"</span> }
+
+<span class="c-comment"># Branding (sau khi approved)</span>
+PATCH /api/v1/reseller/brand
+{ <span class="c-string">"name"</span>:<span class="c-string">"My Cloud"</span>, <span class="c-string">"primary_color"</span>:<span class="c-string">"#ff0080"</span>, <span class="c-string">"logo_url"</span>:<span class="c-string">"..."</span>, <span class="c-string">"custom_domain"</span>:<span class="c-string">"cloud.mycompany.com"</span> }</pre>
+    </section>
+
+    <!-- ═══════════════════ COMPLIANCE ═══════════════════ -->
+    <section class="doc-section" id="compliance">
+      <h2>📜 Compliance — SOC2 / GDPR / PCI / ISO 27001</h2>
+      <p class="lead">5 framework built-in: SOC2 Type II, GDPR, PCI-DSS, ISO 27001, NIST CSF. Audit log immutable.</p>
+      <pre class="code">GET /api/v1/compliance/frameworks         <span class="c-comment"># 5 frameworks</span>
+GET /api/v1/compliance/frameworks/{id}/controls
+POST /api/v1/compliance/assessments       <span class="c-comment"># Self-assessment</span>
+GET /api/v1/audit?ws=$WS&limit=100        <span class="c-comment"># Audit log</span>
+GET /api/v1/privacy/preferences?ws=$WS    <span class="c-comment"># GDPR consent</span></pre>
+    </section>
+
+    <!-- ═══════════════════ ZENI PAY ═══════════════════ -->
+    <section class="doc-section" id="zeni-pay">
+      <h2>💳 ZeniPay — VietQR Direct</h2>
+      <p class="lead">Thanh toán VietQR trực tiếp qua NAPAS — không qua trung gian. Hỗ trợ tất cả ngân hàng VN.</p>
+      <pre class="code"><span class="c-comment"># Tạo intent thanh toán</span>
+POST /api/v1/zeni-pay/intent?ws=$WS
+{
+  <span class="c-string">"amount_vnd"</span>: 4900000,
+  <span class="c-string">"description"</span>: <span class="c-string">"Pro plan tháng 5"</span>,
+  <span class="c-string">"reference"</span>: <span class="c-string">"INV-2026-001"</span>
+}
+<span class="c-comment"># → returns { intent_code, qr_image_base64, expires_at, bank_info }</span>
+
+<span class="c-comment"># Check status</span>
+GET /api/v1/zeni-pay/intent/{intent_code}
+<span class="c-comment"># → status: pending | paid | expired | cancelled</span></pre>
+    </section>
+
+    <!-- ═══════════════════ ZENI MAIL ═══════════════════ -->
+    <section class="doc-section" id="zeni-mail">
+      <h2>📧 ZeniMail — Mailing Lists</h2>
+      <p class="lead">Tạo mailing list, quản lý subscriber, gửi campaign, track open/click rate.</p>
+      <pre class="code">POST /api/v1/mail/lists?ws=$WS         <span class="c-comment"># Tạo list</span>
+POST /api/v1/mail/subscribers?ws=$WS   <span class="c-comment"># Add subscriber</span>
+POST /api/v1/mail/campaigns?ws=$WS     <span class="c-comment"># Send campaign</span></pre>
+    </section>
+
+    <!-- ═══════════════════ ZENI VOICE ═══════════════════ -->
+    <section class="doc-section" id="zeni-voice">
+      <h2>📞 ZeniVoice — Số điện thoại + Voice AI</h2>
+      <p class="lead">Mua số VN/quốc tế, voice agent (AI auto trả lời), call recording, transcribe.</p>
+      <pre class="code">GET /api/v1/voice/numbers?ws=$WS       <span class="c-comment"># List numbers</span>
+POST /api/v1/voice/numbers/buy         <span class="c-comment"># Mua số mới</span>
+POST /api/v1/voice/agents              <span class="c-comment"># Tạo voice AI agent</span></pre>
+    </section>
+
+    <!-- ═══════════════════ WORKFLOWS ═══════════════════ -->
+    <section class="doc-section" id="wf-chatbot">
+      <h2>🤖 Workflow: Build chatbot trong 30 phút</h2>
+      <ol>
+        <li><strong>Tạo collection vector</strong> để lưu knowledge base</li>
+        <li><strong>Upload docs</strong> vào collection (PDF/MD/HTML — auto chunk + embed)</li>
+        <li><strong>Tạo RAG pipeline</strong> với prompt template</li>
+        <li><strong>Build webhook receiver</strong> tại <code class="inline">POST /webhooks/chatbot</code></li>
+        <li><strong>Connect frontend</strong> (chat widget) đến webhook</li>
+      </ol>
+      <pre class="code"><span class="c-comment"># Webhook handler:</span>
+<span class="c-key">async function</span> <span class="c-fn">handleChat</span>(req) {
+  <span class="c-key">const</span> { question, sessionId } = req.body;
+  <span class="c-key">const</span> answer = <span class="c-key">await</span> <span class="c-fn">fetch</span>(<span class="c-string">'https://zenicloud.io/api/v1/vector-premium/rag/pipelines/{id}/query?ws=...'</span>, {
+    method: <span class="c-string">'POST'</span>,
+    headers: { <span class="c-string">'Authorization'</span>: <span class="c-string">`Bearer ${ZENI_TOKEN}`</span> },
+    body: <span class="c-fn">JSON.stringify</span>({ question, session_id: sessionId })
+  });
+  <span class="c-key">return</span> answer.<span class="c-fn">json</span>();
+}</pre>
+    </section>
+
+    <section class="doc-section" id="wf-rag">
+      <h2>📖 Workflow: RAG Pipeline production</h2>
+      <p>Use case: Bot trả lời câu hỏi về tài liệu công ty.</p>
+      <ol>
+        <li><strong>L2</strong>: Tạo collection <code class="inline">company-docs</code> (768 dims)</li>
+        <li><strong>L4</strong>: Cron job chạy mỗi tối, scan Google Drive → chunk → embed → upsert</li>
+        <li><strong>L3</strong>: RAG pipeline với <code class="inline">hybrid_alpha=0.5</code> + rerank</li>
+        <li><strong>L1</strong>: Deploy chatbot frontend (Next.js) → connect API</li>
+        <li><strong>L5</strong>: Restrict access bằng MFA cho nhân viên nội bộ</li>
+        <li><strong>Edge CDN</strong>: Cache static assets</li>
+      </ol>
+    </section>
+
+    <section class="doc-section" id="migrate-railway">
+      <h2>🚂 Migrate từ Railway → Zeni Cloud</h2>
+      <ol>
+        <li><strong>Container image</strong>: Push image lên Artifact Registry hoặc Docker Hub</li>
+        <li><strong>Database</strong>: <code class="inline">pg_dump</code> từ Railway → restore vào Cloud SQL via <code class="inline">POST /data/datasources/{id}/restore</code></li>
+        <li><strong>Redis</strong>: Provision Memorystore via Zeni → migrate keys (KEYS pattern + DUMP/RESTORE)</li>
+        <li><strong>Env vars</strong>: Copy từ Railway → paste vào <code class="inline">env_vars</code> + <code class="inline">secrets</code> khi deploy project</li>
+        <li><strong>DNS</strong>: Point CNAME từ Railway domain → Zeni Cloud hostname</li>
+        <li><strong>AI keys</strong>: <strong>Bỏ</strong> Anthropic/OpenAI/Gemini — dùng <code class="inline">ZENI_TOKEN</code> qua ZeniRouter</li>
+      </ol>
+      <div class="callout success">
+        <strong>💰 Tiết kiệm:</strong>
+        Thay 5+ subscription (Railway + AI keys) bằng 1 plan Zeni Cloud + 1 ZENI_TOKEN.
+      </div>
+    </section>
+
+    <section class="doc-section" id="migrate-vercel">
+      <h2>▲ Migrate từ Vercel → Zeni Cloud</h2>
+      <ol>
+        <li><strong>Build app</strong>: Next.js → standalone build → Docker image</li>
+        <li><strong>Deploy</strong>: <code class="inline">POST /projects</code> với image Docker</li>
+        <li><strong>Edge CDN</strong>: Setup zone qua <code class="inline">POST /edge/zones</code></li>
+        <li><strong>Functions/API routes</strong>: Cùng codebase, chạy native trên L1 Compute</li>
+        <li><strong>KV/Edge Config</strong>: Dùng L2 Redis cache</li>
+      </ol>
+    </section>
+
+    <!-- ═══════════════════ TROUBLESHOOTING ═══════════════════ -->
+    <section class="doc-section" id="troubleshooting">
+      <h2>🔧 Troubleshooting</h2>
+
+      <h3>❌ "Email hoặc mật khẩu không đúng" khi login</h3>
+      <p>Có thể do:</p>
+      <ul>
+        <li><strong>Sai password</strong> — thử reset qua "Quên mật khẩu" trên trang login</li>
+        <li><strong>Account bị disabled</strong> — liên hệ <a href="mailto:support@zenicloud.io">support@zenicloud.io</a></li>
+        <li><strong>Workspace bị xóa</strong> — đăng ký workspace mới</li>
+      </ul>
+
+      <h3>❌ HTTP 401 "missing bearer token"</h3>
+      <p>Header <code class="inline">Authorization: Bearer YOUR_TOKEN</code> chưa set. Kiểm tra:</p>
+      <ul>
+        <li>Token đã có prefix <code class="inline">zeni_pat_</code> hoặc là JWT từ login</li>
+        <li>Token chưa hết hạn (default 365 ngày cho PAT, 1h cho JWT)</li>
+        <li>Token chưa bị revoke (check tại <code class="inline">/api-tokens?ws=...</code>)</li>
+      </ul>
+
+      <h3>❌ HTTP 403 "workspace_id mismatch"</h3>
+      <p>Bạn đang dùng token của workspace A để gọi resource workspace B. Mỗi token chỉ cho 1 workspace.</p>
+
+      <h3>❌ HTTP 429 "Too Many Requests" (quota exceeded)</h3>
+      <p>Đã vượt quota plan hiện tại:</p>
+      <ul>
+        <li>Free: 100K req/tháng, 5 agent runs, 50K tokens out</li>
+        <li>Starter: 1M req, 100 agent runs, 500K tokens</li>
+        <li>Pro: 10M req, 1K agent runs, 5M tokens</li>
+      </ul>
+      <p>Upgrade tại <a href="/pricing">/pricing</a> hoặc top-up wallet.</p>
+
+      <h3>❌ HTTP 500 "Internal Server Error"</h3>
+      <p>Bug platform — check status page <a href="https://status.zenicloud.io">status.zenicloud.io</a> hoặc báo support kèm <code class="inline">request_id</code> trong response header.</p>
+
+      <h3>❌ Deploy thất bại (status: failed)</h3>
+      <p>Check <code class="inline">GET /projects/{id}</code> để xem error message. Lý do thường gặp:</p>
+      <ul>
+        <li><strong>Image không pull được</strong>: image private hoặc tên sai</li>
+        <li><strong>Container không listen port</strong>: check <code class="inline">port</code> param khớp với app</li>
+        <li><strong>Out of memory</strong>: tăng <code class="inline">size</code> từ <code class="inline">s</code> → <code class="inline">m</code> hoặc <code class="inline">l</code></li>
+      </ul>
+    </section>
+
+    <!-- ═══════════════════ PRICING ═══════════════════ -->
+    <section class="doc-section" id="pricing-info">
+      <h2>💰 Giá & Quota</h2>
+      <table>
+        <tr><th>Plan</th><th>VND/tháng</th><th>Compute</th><th>AI Tokens out/tháng</th><th>Vector dims</th><th>Storage</th></tr>
+        <tr><td>Free</td><td>0</td><td>100K req</td><td>50K</td><td>768</td><td>1GB</td></tr>
+        <tr><td>Starter</td><td>490K</td><td>1M req</td><td>500K</td><td>1536</td><td>10GB</td></tr>
+        <tr><td>Pro</td><td>4.9M</td><td>10M req</td><td>5M</td><td>3072</td><td>100GB</td></tr>
+        <tr><td>Business</td><td>14.9M</td><td>50M req</td><td>25M</td><td>3072</td><td>500GB</td></tr>
+        <tr><td>Enterprise</td><td>Custom</td><td>Unlimited</td><td>100B</td><td>3072+</td><td>Custom</td></tr>
+      </table>
+      <p>Top-up wallet để vượt quota tạm thời mà không upgrade plan.</p>
+    </section>
+
+    <!-- ═══════════════════ API REFERENCE ═══════════════════ -->
+    <section class="doc-section" id="api-reference">
+      <h2>📋 API Reference</h2>
+      <p>OpenAPI spec đầy đủ với 387+ endpoints:</p>
+      <ul>
+        <li><a href="/api/v1/openapi.json">JSON Spec</a></li>
+        <li><a href="/docs/swagger">Swagger UI</a> (interactive)</li>
+        <li><a href="/docs/redoc">ReDoc</a> (clean reference)</li>
+      </ul>
+    </section>
+
+    <!-- ═══════════════════ CONTACT ═══════════════════ -->
+    <section class="doc-section" id="contact">
+      <h2>✉️ Liên hệ</h2>
+      <ul>
+        <li>📧 <a href="mailto:support@zenicloud.io">support@zenicloud.io</a></li>
+        <li>📧 <a href="mailto:sales@zenicloud.io">sales@zenicloud.io</a> (Enterprise / Reseller)</li>
+        <li>💬 <a href="https://t.me/zenicloud">Telegram @zenicloud</a></li>
+        <li>🐛 <a href="https://github.com/zenicloud/issues">Bug report GitHub</a></li>
+      </ul>
+    </section>
+
+  </main>
+</div>
+
+<footer style="text-align:center;padding:40px 24px;color:var(--ink-400);font-size:13px;border-top:1px solid var(--border);margin-top:40px;">
+  © 2024-2026 Zeni Cloud · Một sản phẩm của <a href="https://zenidigital.com">Zeni Digital</a> · <a href="/legal/terms.html">Terms</a> · <a href="/legal/privacy.html">Privacy</a>
+</footer>
+
+<script>
+// Highlight active section in sidebar
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const id = e.target.id;
+      document.querySelectorAll('aside.sidebar a').forEach(a => a.classList.remove('active'));
+      const link = document.querySelector(`aside.sidebar a[href="#${id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-100px 0px -70% 0px' });
+document.querySelectorAll('section.doc-section').forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>

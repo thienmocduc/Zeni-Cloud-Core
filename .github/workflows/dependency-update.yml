@@ -1,0 +1,89 @@
+# ══════════════════════════════════════════════════════════════════
+#  Zeni Cloud Core — Weekly dependency update
+#  Every Monday 03:00 UTC: refresh requirements.txt with latest
+#  compatible versions and open a PR for review.
+# ══════════════════════════════════════════════════════════════════
+
+name: Dependency update
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"   # Mon 03:00 UTC
+  workflow_dispatch:       # also runnable manually
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    name: Update Python dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pip-tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-tools==7.4.1
+
+      - name: Upgrade dependencies (compile)
+        id: upgrade
+        run: |
+          set -euo pipefail
+          cd backend
+          cp requirements.txt requirements.txt.bak
+          # Generate a temporary .in from the current requirements (strip pins)
+          sed 's/==.*//' requirements.txt | grep -v '^#' | grep -v '^$' > requirements.in
+          pip-compile --upgrade --resolver=backtracking --output-file=requirements.txt requirements.in
+          rm requirements.in
+          if diff -q requirements.txt.bak requirements.txt > /dev/null; then
+            echo "no_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "no_changes=false" >> $GITHUB_OUTPUT
+          fi
+          rm -f requirements.txt.bak
+
+      - name: Run safety check on new deps
+        if: steps.upgrade.outputs.no_changes == 'false'
+        run: |
+          pip install safety==3.2.11
+          safety check --file backend/requirements.txt --json || echo "::warning::safety found issues — review PR carefully"
+        continue-on-error: true
+
+      - name: Open PR
+        if: steps.upgrade.outputs.no_changes == 'false'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: deps/weekly-update
+          base: main
+          delete-branch: true
+          commit-message: "chore(deps): weekly Python dependency update"
+          title: "chore(deps): weekly Python dependency update"
+          body: |
+            ## Weekly dependency refresh
+
+            Automated by `.github/workflows/dependency-update.yml` — `pip-compile --upgrade` ran against `backend/requirements.txt`.
+
+            ### Review checklist
+            - [ ] CI passes (lint + security + tests)
+            - [ ] No security advisories from `safety`
+            - [ ] No breaking changes in major-version bumps
+            - [ ] Smoke-deploy to staging if available
+
+            **Auto-merge is disabled** — a human reviewer must approve.
+          labels: |
+            dependencies
+            automated
+
+      - name: No changes summary
+        if: steps.upgrade.outputs.no_changes == 'true'
+        run: echo "✓ All dependencies already at latest compatible versions — no PR needed"

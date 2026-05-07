@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tài liệu Zeni Cloud — Bắt đầu trong 5 phút</title>
+<meta name="description" content="Tài liệu chính thức của Zeni Cloud — hướng dẫn triển khai hạ tầng, AI, Web3 và tự động hoá cho lập trình viên Việt Nam.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-void: #0a0a14;
+  --bg-elev: #11111d;
+  --bg-card: #14142a;
+  --border: rgba(168, 139, 250, 0.15);
+  --border-strong: rgba(168, 139, 250, 0.3);
+  --ink-100: #e5e7eb;
+  --ink-200: #c4b5fd;
+  --ink-300: #9e8be5;
+  --ink-400: #7c6bb0;
+  --gold: #fde68a;
+  --indigo: #7d68ff;
+  --crown: #a855f7;
+  --aurora: #22d3ee;
+  --code-bg: #0d1117;
+  --font: 'Inter', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+body {
+  font-family: var(--font);
+  background: var(--bg-void);
+  color: var(--ink-100);
+  font-size: 15px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 1000px 700px at 80% 5%, rgba(168, 85, 247, 0.1), transparent 55%),
+    radial-gradient(ellipse 900px 600px at 5% 90%, rgba(99, 102, 241, 0.08), transparent 55%);
+  z-index: -1;
+  pointer-events: none;
+}
+a { color: var(--indigo); text-decoration: none; transition: color .2s; }
+a:hover { color: var(--gold); }
+
+header.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(10, 10, 20, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.topbar-inner {
+  max-width: 1400px; margin: 0 auto;
+  padding: 16px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 24px;
+}
+.logo {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 800; font-size: 18px;
+  color: var(--ink-100);
+}
+.logo-mark {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--indigo), var(--crown));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: white;
+}
+.breadcrumb {
+  color: var(--ink-300); font-size: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.breadcrumb-sep { opacity: .4; }
+.search-bar {
+  flex: 1; max-width: 400px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 14px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--ink-300);
+  font-size: 14px;
+}
+.search-bar input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: var(--ink-100); font-family: var(--font); font-size: 14px;
+}
+.search-bar kbd {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 4px; padding: 2px 6px;
+  font-family: var(--mono); font-size: 11px;
+  color: var(--ink-300);
+}
+nav.header-nav {
+  display: flex; align-items: center; gap: 20px;
+  font-size: 14px;
+}
+nav.header-nav a { color: var(--ink-200); }
+nav.header-nav a.cta {
+  background: var(--indigo); color: white;
+  padding: 8px 16px; border-radius: 8px;
+  font-weight: 600;
+}
+nav.header-nav a.cta:hover { background: var(--crown); color: white; }
+
+.layout {
+  max-width: 1400px; margin: 0 auto;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 32px;
+  padding: 32px 24px;
+}
+
+aside.sidebar {
+  position: sticky; top: 80px;
+  height: calc(100vh - 100px);
+  overflow-y: auto;
+  padding-right: 12px;
+}
+.sidebar h4 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-300);
+  margin: 24px 0 8px;
+  font-weight: 700;
+}
+.sidebar h4:first-child { margin-top: 0; }
+.sidebar ul { list-style: none; }
+.sidebar li a {
+  display: block;
+  padding: 7px 12px;
+  border-radius: 6px;
+  color: var(--ink-200);
+  font-size: 14px;
+  transition: all .15s;
+}
+.sidebar li a:hover {
+  background: var(--bg-elev);
+  color: var(--gold);
+}
+.sidebar li a.active {
+  background: rgba(125, 104, 255, 0.12);
+  color: var(--gold);
+  border-left: 2px solid var(--gold);
+  padding-left: 10px;
+}
+
+main.content { min-width: 0; }
+
+.hero {
+  padding: 48px 0 32px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+.hero-eyebrow {
+  display: inline-block;
+  background: rgba(253, 230, 138, 0.1);
+  border: 1px solid rgba(253, 230, 138, 0.3);
+  color: var(--gold);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px; font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-bottom: 20px;
+}
+.hero h1 {
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, var(--ink-100) 0%, var(--ink-200) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.hero p.lead {
+  font-size: 18px;
+  color: var(--ink-200);
+  max-width: 720px;
+  margin-bottom: 24px;
+}
+.hero-actions {
+  display: flex; gap: 12px; flex-wrap: wrap;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600; font-size: 14px;
+  transition: all .2s;
+  border: 1px solid transparent;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--indigo), var(--crown));
+  color: white;
+}
+.btn-primary:hover { transform: translateY(-2px); color: white; }
+.btn-secondary {
+  background: var(--bg-elev);
+  border-color: var(--border-strong);
+  color: var(--ink-100);
+}
+.btn-secondary:hover { border-color: var(--gold); color: var(--gold); }
+
+section.section { margin-bottom: 48px; }
+section.section h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink-100);
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+section.section h2::before {
+  content: '';
+  width: 4px; height: 22px;
+  background: linear-gradient(180deg, var(--gold), var(--indigo));
+  border-radius: 2px;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px;
+  transition: all .25s;
+  position: relative;
+  overflow: hidden;
+}
+.card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 32px rgba(125, 104, 255, 0.15);
+}
+.card-icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  margin-bottom: 14px;
+  background: rgba(125, 104, 255, 0.12);
+  color: var(--gold);
+  font-weight: 700;
+  font-family: var(--mono);
+}
+.card h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink-100);
+  margin-bottom: 8px;
+}
+.card p {
+  font-size: 14px;
+  color: var(--ink-300);
+  margin-bottom: 12px;
+}
+.card .read-time {
+  font-size: 12px;
+  color: var(--ink-400);
+  font-family: var(--mono);
+}
+
+.layer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.layer-card {
+  padding: 16px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  border-left: 3px solid var(--indigo);
+}
+.layer-card.l1 { border-left-color: #a5b4fc; }
+.layer-card.l2 { border-left-color: #6366f1; }
+.layer-card.l3 { border-left-color: var(--aurora); }
+.layer-card.l4 { border-left-color: var(--gold); }
+.layer-card.l5 { border-left-color: var(--crown); }
+.layer-card.l6 { border-left-color: #d8b4fe; }
+.layer-card .tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-300);
+  letter-spacing: 0.05em;
+}
+.layer-card .name {
+  font-weight: 700;
+  font-size: 15px;
+  margin-top: 4px;
+}
+.layer-card .desc {
+  font-size: 12px;
+  color: var(--ink-300);
+  margin-top: 4px;
+}
+
+footer.footer {
+  margin-top: 64px;
+  padding: 32px 0 24px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  color: var(--ink-300);
+  font-size: 13px;
+}
+footer.footer a { color: var(--ink-200); margin: 0 12px; }
+footer .version {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-400);
+  margin-top: 12px;
+  padding: 4px 10px;
+  background: var(--bg-elev);
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; padding: 20px 16px; }
+  aside.sidebar { position: static; height: auto; max-height: none; }
+  .topbar-inner { flex-wrap: wrap; }
+  .search-bar { order: 3; max-width: 100%; flex-basis: 100%; }
+  nav.header-nav { gap: 10px; font-size: 13px; }
+  .breadcrumb { display: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="/" class="logo">
+      <span class="logo-mark">Z</span>
+      <span>Zeni Cloud</span>
+    </a>
+    <div class="breadcrumb">
+      <a href="/">Home</a>
+      <span class="breadcrumb-sep">/</span>
+      <span>Docs</span>
+    </div>
+    <div class="search-bar">
+      <span>Tìm trong tài liệu...</span>
+      <input type="text" placeholder="" aria-label="Search" disabled style="display:none">
+      <kbd>Ctrl K</kbd>
+    </div>
+    <nav class="header-nav">
+      <a href="/">Trang chủ</a>
+      <a href="/docs/">Docs</a>
+      <a href="/pricing">Giá</a>
+      <a href="/login">Đăng nhập</a>
+      <a href="/signup" class="cta">Đăng ký</a>
+    </nav>
+  </div>
+</header>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <h4>Bắt đầu</h4>
+    <ul>
+      <li><a href="quickstart.html">Quickstart 5 phút</a></li>
+      <li><a href="ai-call.html">Authentication & API</a></li>
+      <li><a href="quickstart.html#first-app">First app</a></li>
+    </ul>
+
+    <h4>Hạ tầng</h4>
+    <ul>
+      <li><a href="custom-domain.html">Custom Domain</a></li>
+      <li><a href="vector.html">Database & Vector</a></li>
+      <li><a href="cost-dashboard.html">Cost & Quota</a></li>
+    </ul>
+
+    <h4>AI & Tự động hoá</h4>
+    <ul>
+      <li><a href="ai-call.html">AI Router</a></li>
+      <li><a href="ocr.html">OCR Tiếng Việt</a></li>
+      <li><a href="translate.html">Dịch thuật</a></li>
+      <li><a href="vector.html">Vector Search</a></li>
+      <li><a href="cron.html">Cron Job</a></li>
+      <li><a href="webhook.html">Webhook</a></li>
+    </ul>
+
+    <h4>Bảo mật & Pháp lý</h4>
+    <ul>
+      <li><a href="../legal/privacy.html">Chính sách Bảo mật</a></li>
+      <li><a href="../legal/dpa.html">DPA — Xử lý dữ liệu</a></li>
+      <li><a href="faq.html">FAQ</a></li>
+    </ul>
+  </aside>
+
+  <main class="content">
+
+    <section class="hero">
+      <span class="hero-eyebrow">Tài liệu · Phiên bản 0.4 · Tiếng Việt</span>
+      <h1>Tài liệu Zeni Cloud — Bắt đầu trong 5 phút</h1>
+      <p class="lead">Cloud SaaS toàn năng cho lập trình viên Việt Nam. Triển khai code, gọi AI, sync dữ liệu, ký smart contract — tất cả trong một dashboard duy nhất, hoá đơn VAT đỏ và tích hợp cổng nội địa.</p>
+      <div class="hero-actions">
+        <a href="quickstart.html" class="btn btn-primary">Quickstart 5 phút →</a>
+        <a href="ai-call.html" class="btn btn-secondary">Gọi AI ngay</a>
+        <a href="https://zenicloud.io/signup" class="btn btn-secondary">Tạo tài khoản miễn phí</a>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Kiến trúc 6 lớp Zeni Cloud</h2>
+      <p style="color:var(--ink-300); margin-bottom:16px;">Toàn bộ nền tảng được xây trên 6 lớp tiêu chuẩn — mỗi lớp dùng độc lập, kết hợp tự do qua một API token duy nhất.</p>
+      <div class="layer-grid">
+        <div class="layer-card l1">
+          <div class="tag">L1 · COMPUTE</div>
+          <div class="name">Cloud Run</div>
+          <div class="desc">Container serverless, tự scale 0 → 1000.</div>
+        </div>
+        <div class="layer-card l2">
+          <div class="tag">L2 · DATA</div>
+          <div class="name">Cloud SQL + pgvector</div>
+          <div class="desc">Postgres managed, hỗ trợ vector embedding.</div>
+        </div>
+        <div class="layer-card l3">
+          <div class="tag">L3 · AI</div>
+          <div class="name">ZeniRouter</div>
+          <div class="desc">Gemini, Anthropic, Imagen, OCR, dịch thuật.</div>
+        </div>
+        <div class="layer-card l4">
+          <div class="tag">L4 · AUTOMATION</div>
+          <div class="name">Cron + Webhook</div>
+          <div class="desc">Tự động hoá quy trình, SMS, Slack, retry.</div>
+        </div>
+        <div class="layer-card l5">
+          <div class="tag">L5 · IDENTITY</div>
+          <div class="name">JWT + OAuth + MFA</div>
+          <div class="desc">Đăng nhập một lần, phân quyền rõ ràng.</div>
+        </div>
+        <div class="layer-card l6">
+          <div class="tag">L6 · WEB3</div>
+          <div class="name">Polygon</div>
+          <div class="desc">Smart contract, NFT, ZENI token.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Hướng dẫn nổi bật</h2>
+      <div class="cards-grid">
+        <a href="quickstart.html" class="card">
+          <div class="card-icon">01</div>
+          <h3>Quickstart 5 phút</h3>
+          <p>Đăng ký, lấy token và gọi API đầu tiên. Hello World cho ai mới bắt đầu.</p>
+          <span class="read-time">Đọc · 5 phút</span>
+        </a>
+        <a href="ai-call.html" class="card">
+          <div class="card-icon">02</div>
+          <h3>Gọi AI từ app của bạn</h3>
+          <p>Smart routing 80/15/5 — tiết kiệm 70% chi phí so với gọi trực tiếp Anthropic.</p>
+          <span class="read-time">Đọc · 12 phút</span>
+        </a>
+        <a href="ocr.html" class="card">
+          <div class="card-icon">03</div>
+          <h3>OCR hoá đơn tiếng Việt</h3>
+          <p>Upload ảnh hoá đơn VAT, nhận lại số HĐ, MST, tổng tiền dạng JSON.</p>
+          <span class="read-time">Đọc · 8 phút</span>
+        </a>
+        <a href="vector.html" class="card">
+          <div class="card-icon">04</div>
+          <h3>Vector Search RAG</h3>
+          <p>Xây chatbot biết trả lời theo tài liệu công ty bằng vector database.</p>
+          <span class="read-time">Đọc · 15 phút</span>
+        </a>
+        <a href="cron.html" class="card">
+          <div class="card-icon">05</div>
+          <h3>Cron job định kỳ</h3>
+          <p>Lập lịch chạy task hằng ngày, tuần, tháng — múi giờ Asia/Ho_Chi_Minh.</p>
+          <span class="read-time">Đọc · 6 phút</span>
+        </a>
+        <a href="cost-dashboard.html" class="card">
+          <div class="card-icon">06</div>
+          <h3>Hiểu chi phí Zeni</h3>
+          <p>Bốn metrics quan trọng và cách tối ưu thông qua chiến lược 80/15/5.</p>
+          <span class="read-time">Đọc · 10 phút</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Tự động hoá & Bảo mật</h2>
+      <div class="cards-grid">
+        <a href="webhook.html" class="card">
+          <div class="card-icon">07</div>
+          <h3>Webhook & Retry</h3>
+          <p>HMAC verify, exponential backoff, dead-letter queue cho events fail.</p>
+          <span class="read-time">Đọc · 9 phút</span>
+        </a>
+        <a href="translate.html" class="card">
+          <div class="card-icon">08</div>
+          <h3>Dịch EN ↔ VI</h3>
+          <p>Auto-detect, hỗ trợ 7 ngôn ngữ — chỉ 20 USD cho 1 triệu ký tự.</p>
+          <span class="read-time">Đọc · 7 phút</span>
+        </a>
+        <a href="custom-domain.html" class="card">
+          <div class="card-icon">09</div>
+          <h3>Custom Domain</h3>
+          <p>Map domain riêng vào Cloud Run, SSL tự động bởi Let's Encrypt.</p>
+          <span class="read-time">Đọc · 8 phút</span>
+        </a>
+        <a href="faq.html" class="card">
+          <div class="card-icon">10</div>
+          <h3>Câu hỏi thường gặp</h3>
+          <p>Free tier, hoá đơn VAT, compliance, support — tám câu trả lời nhanh.</p>
+          <span class="read-time">Đọc · 5 phút</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Cộng đồng & hỗ trợ</h2>
+      <p style="color: var(--ink-300); max-width: 720px;">
+        Bạn cần giúp đỡ? Đội ngũ Zeni Cloud trả lời tiếng Việt qua email
+        <a href="mailto:support@zenicloud.io">support@zenicloud.io</a>
+        trong vòng 24 giờ ngày làm việc. Khách hàng từ gói Priority được hỗ trợ qua chat realtime,
+        gói Enterprise có hotline riêng.
+      </p>
+    </section>
+
+  </main>
+</div>
+
+<footer class="footer">
+  <div>
+    <a href="https://zenicloud.io/">Trang chủ</a>
+    <a href="https://zenicloud.io/pricing">Giá</a>
+    <a href="https://zenicloud.io/legal/privacy.html">Bảo mật</a>
+    <a href="https://zenicloud.io/legal/terms.html">Điều khoản</a>
+    <a href="mailto:support@zenicloud.io">Liên hệ</a>
+  </div>
+  <p style="margin-top:12px;">Zeni Cloud Co., Ltd. — Mã số thuế 0317XXXXXX — TPHCM, Việt Nam</p>
+  <span class="version">v0.4.0 · Cập nhật 30/04/2026</span>
+</footer>
+
+</body>
+</html>

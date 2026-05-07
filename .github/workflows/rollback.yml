@@ -1,0 +1,120 @@
+# ══════════════════════════════════════════════════════════════════
+#  Zeni Cloud Core — Manual Rollback
+#  Routes 100% production traffic to a previously-good revision
+# ══════════════════════════════════════════════════════════════════
+
+name: Rollback Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      to_revision:
+        description: "Revision name to rollback to (e.g. zeni-backend-00050-k5b). List with: gcloud run revisions list --service=zeni-backend --region=us-central1"
+        required: true
+      reason:
+        description: "Why are you rolling back? (logged in audit)"
+        required: true
+        default: "Production incident"
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+env:
+  GCP_PROJECT_ID: zeni-cloud-core
+  GCP_REGION: us-central1
+  CLOUD_RUN_SERVICE: zeni-backend
+  PRODUCTION_URL: https://zenicloud.io
+
+jobs:
+  rollback:
+    name: Rollback to ${{ github.event.inputs.to_revision }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Auth to GCP (Workload Identity)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github/providers/github-provider
+          service_account: github-deployer@zeni-cloud-core.iam.gserviceaccount.com
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Verify revision exists
+        run: |
+          set -euo pipefail
+          gcloud run revisions describe ${{ github.event.inputs.to_revision }} \
+            --region=${GCP_REGION} \
+            --format='value(metadata.name,status.conditions[0].status)' \
+          || (echo "::error::Revision ${{ github.event.inputs.to_revision }} not found"; exit 1)
+
+      - name: Snapshot current traffic state (for audit)
+        id: snapshot
+        run: |
+          PREV=$(gcloud run services describe ${CLOUD_RUN_SERVICE} \
+            --region=${GCP_REGION} \
+            --format='value(status.traffic[0].revisionName)')
+          echo "prev_revision=$PREV" >> $GITHUB_OUTPUT
+          echo "→ current revision (will be replaced): $PREV"
+
+      - name: Update traffic — 100% to target revision
+        run: |
+          set -euo pipefail
+          gcloud run services update-traffic ${CLOUD_RUN_SERVICE} \
+            --region=${GCP_REGION} \
+            --to-revisions=${{ github.event.inputs.to_revision }}=100 \
+            --quiet
+          echo "✓ traffic now routed to ${{ github.event.inputs.to_revision }}"
+
+      - name: Smoke test rolled-back service
+        run: |
+          set -euo pipefail
+          sleep 15
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "${PRODUCTION_URL}/health" || echo "000")
+          if [ "$CODE" != "200" ]; then
+            echo "::error::/health returned $CODE after rollback"
+            exit 1
+          fi
+          echo "✓ /health → $CODE (rolled-back service responding)"
+
+      - name: Notify Slack
+        if: env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": ":rewind: Zeni Cloud rolled back",
+              "blocks": [
+                {"type":"header","text":{"type":"plain_text","text":":rewind: Production rollback completed"}},
+                {"type":"section","fields":[
+                  {"type":"mrkdwn","text":"*From:*\n${{ steps.snapshot.outputs.prev_revision }}"},
+                  {"type":"mrkdwn","text":"*To:*\n${{ github.event.inputs.to_revision }}"},
+                  {"type":"mrkdwn","text":"*Reason:*\n${{ github.event.inputs.reason }}"},
+                  {"type":"mrkdwn","text":"*By:*\n${{ github.actor }}"}
+                ]}
+              ]
+            }
+
+      - name: Rollback summary
+        if: always()
+        run: |
+          echo "## Rollback summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Previous revision | \`${{ steps.snapshot.outputs.prev_revision }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Rolled back to | \`${{ github.event.inputs.to_revision }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Reason | ${{ github.event.inputs.reason }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Operator | @${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY

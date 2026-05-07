@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Webhook & Retry — Zeni Cloud Docs</title>
+<meta name="description" content="Webhook event-driven với HMAC signature, exponential backoff, dead-letter queue.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root { --bg-void:#0a0a14; --bg-elev:#11111d; --bg-card:#14142a; --border:rgba(168,139,250,0.15); --border-strong:rgba(168,139,250,0.3); --ink-100:#e5e7eb; --ink-200:#c4b5fd; --ink-300:#9e8be5; --ink-400:#7c6bb0; --gold:#fde68a; --indigo:#7d68ff; --crown:#a855f7; --aurora:#22d3ee; --code-bg:#0d1117; --font:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace; }
+* { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior:smooth; scroll-padding-top:80px; }
+body { font-family:var(--font); background:var(--bg-void); color:var(--ink-100); font-size:15px; line-height:1.7; min-height:100vh; }
+body::before { content:''; position:fixed; inset:0; background: radial-gradient(ellipse 1000px 700px at 80% 5%, rgba(168,85,247,0.08), transparent 55%), radial-gradient(ellipse 900px 600px at 5% 90%, rgba(99,102,241,0.06), transparent 55%); z-index:-1; pointer-events:none; }
+a { color:var(--indigo); text-decoration:none; }
+a:hover { color:var(--gold); }
+header.topbar { position:sticky; top:0; z-index:100; background:rgba(10,10,20,0.85); backdrop-filter:blur(12px); border-bottom:1px solid var(--border); }
+.topbar-inner { max-width:1400px; margin:0 auto; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:24px; }
+.logo { display:flex; align-items:center; gap:10px; font-weight:800; font-size:18px; color:var(--ink-100); }
+.logo-mark { width:32px; height:32px; background:linear-gradient(135deg, var(--indigo), var(--crown)); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; color:white; }
+.breadcrumb { color:var(--ink-300); font-size:14px; display:flex; align-items:center; gap:8px; }
+.breadcrumb-sep { opacity:.4; }
+nav.header-nav { display:flex; align-items:center; gap:20px; font-size:14px; }
+nav.header-nav a { color:var(--ink-200); }
+nav.header-nav a.cta { background:var(--indigo); color:white; padding:8px 16px; border-radius:8px; font-weight:600; }
+.layout { max-width:1400px; margin:0 auto; display:grid; grid-template-columns:240px 1fr 220px; gap:32px; padding:32px 24px; }
+aside.sidebar { position:sticky; top:80px; height:calc(100vh - 100px); overflow-y:auto; padding-right:8px; }
+.sidebar h4 { font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-300); margin:24px 0 8px; font-weight:700; }
+.sidebar h4:first-child { margin-top:0; }
+.sidebar ul { list-style:none; }
+.sidebar li a { display:block; padding:7px 12px; border-radius:6px; color:var(--ink-200); font-size:14px; }
+.sidebar li a:hover { background:var(--bg-elev); color:var(--gold); }
+.sidebar li a.active { background:rgba(125,104,255,0.12); color:var(--gold); border-left:2px solid var(--gold); padding-left:10px; }
+aside.toc { position:sticky; top:80px; height:calc(100vh - 100px); overflow-y:auto; font-size:13px; }
+.toc h5 { font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-300); margin-bottom:12px; font-weight:700; }
+.toc ul { list-style:none; border-left:2px solid var(--border); }
+.toc li a { display:block; padding:6px 14px; color:var(--ink-300); }
+.toc li a:hover { color:var(--gold); }
+main.content { min-width:0; max-width:820px; }
+.meta-bar { display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--ink-400); margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid var(--border); font-family:var(--mono); }
+.meta-bar .dot { width:4px; height:4px; border-radius:50%; background:var(--ink-400); display:inline-block; }
+.content h1 { font-size:36px; font-weight:800; line-height:1.2; margin-bottom:14px; background:linear-gradient(135deg, var(--ink-100) 0%, var(--ink-200) 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+.content h2 { font-size:24px; font-weight:700; margin:40px 0 14px; }
+.content h3 { font-size:18px; font-weight:700; margin:28px 0 10px; color:var(--gold); }
+.content p { margin-bottom:14px; }
+.content ul, .content ol { margin:14px 0 14px 24px; }
+.content li { margin-bottom:8px; }
+.content strong { color:var(--gold); font-weight:600; }
+.content code { font-family:var(--mono); font-size:13px; background:var(--bg-elev); padding:2px 7px; border-radius:4px; color:var(--gold); border:1px solid var(--border); }
+.content pre { background:var(--code-bg); border:1px solid var(--border); border-radius:10px; padding:18px 20px; margin:18px 0; overflow-x:auto; position:relative; }
+.content pre code { background:transparent; border:none; padding:0; color:var(--ink-100); font-size:13px; }
+.lang-tag { position:absolute; top:8px; right:12px; font-family:var(--mono); font-size:11px; color:var(--ink-400); background:var(--bg-elev); padding:2px 8px; border-radius:4px; border:1px solid var(--border); }
+.lead { font-size:17px; color:var(--ink-200); margin-bottom:24px; }
+.callout { padding:16px 20px; border-radius:10px; margin:18px 0; border-left:3px solid; background:var(--bg-elev); }
+.callout.tip { border-left-color:var(--aurora); }
+.callout.warn { border-left-color:var(--gold); }
+.callout.info { border-left-color:var(--indigo); }
+.callout-title { font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; }
+.callout.tip .callout-title { color:var(--aurora); }
+.callout.warn .callout-title { color:var(--gold); }
+.callout.info .callout-title { color:var(--indigo); }
+.table { width:100%; border-collapse:collapse; margin:18px 0; font-size:14px; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.table th, .table td { padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); }
+.table th { background:var(--bg-elev); color:var(--gold); font-weight:600; font-size:13px; text-transform:uppercase; letter-spacing:0.05em; }
+.table tr:last-child td { border-bottom:none; }
+.table td.code { font-family:var(--mono); font-size:13px; color:var(--gold); }
+.retry-timeline { display:flex; gap:8px; margin:18px 0; flex-wrap:wrap; }
+.retry-step { flex:1; min-width:100px; padding:14px; background:var(--bg-card); border:1px solid var(--border); border-radius:8px; text-align:center; }
+.retry-step .num { font-family:var(--mono); font-size:11px; color:var(--ink-400); }
+.retry-step .delay { font-size:18px; font-weight:700; color:var(--gold); margin-top:4px; }
+.retry-step .label { font-size:12px; color:var(--ink-300); margin-top:4px; }
+footer.footer { margin-top:64px; padding:32px 0 24px; border-top:1px solid var(--border); text-align:center; color:var(--ink-300); font-size:13px; }
+footer.footer a { color:var(--ink-200); margin:0 12px; }
+footer .version { display:inline-block; font-family:var(--mono); font-size:11px; color:var(--ink-400); margin-top:12px; padding:4px 10px; background:var(--bg-elev); border-radius:999px; border:1px solid var(--border); }
+@media (max-width:1100px) { .layout { grid-template-columns:220px 1fr; } aside.toc { display:none; } }
+@media (max-width:800px) { .layout { grid-template-columns:1fr; padding:20px 16px; } aside.sidebar { position:static; height:auto; } .topbar-inner { flex-wrap:wrap; gap:10px; } .breadcrumb { display:none; } .content h1 { font-size:28px; } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="index.html" class="logo">
+      <span class="logo-mark">Z</span>
+      <span>Zeni Cloud</span>
+    </a>
+    <div class="breadcrumb">
+      <a href="index.html">Docs</a>
+      <span class="breadcrumb-sep">/</span>
+      <span>Webhook</span>
+    </div>
+    <nav class="header-nav">
+      <a href="/">Trang chủ</a>
+      <a href="index.html">Docs</a>
+      <a href="/pricing">Giá</a>
+      <a href="/login">Đăng nhập</a>
+      <a href="/signup" class="cta">Đăng ký</a>
+    </nav>
+  </div>
+</header>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <h4>Bắt đầu</h4>
+    <ul>
+      <li><a href="quickstart.html">Quickstart 5 phút</a></li>
+      <li><a href="ai-call.html">Authentication & API</a></li>
+    </ul>
+    <h4>Hạ tầng</h4>
+    <ul>
+      <li><a href="custom-domain.html">Custom Domain</a></li>
+      <li><a href="vector.html">Database & Vector</a></li>
+      <li><a href="cost-dashboard.html">Cost & Quota</a></li>
+    </ul>
+    <h4>AI & Tự động hoá</h4>
+    <ul>
+      <li><a href="ai-call.html">AI Router</a></li>
+      <li><a href="ocr.html">OCR Tiếng Việt</a></li>
+      <li><a href="translate.html">Dịch thuật</a></li>
+      <li><a href="vector.html">Vector Search</a></li>
+      <li><a href="cron.html">Cron Job</a></li>
+      <li><a href="webhook.html" class="active">Webhook</a></li>
+    </ul>
+    <h4>Khác</h4>
+    <ul><li><a href="faq.html">FAQ</a></li></ul>
+  </aside>
+
+  <main class="content">
+    <div class="meta-bar">
+      <span>Đọc · 9 phút</span>
+      <span class="dot"></span>
+      <span>Cập nhật 30/04/2026</span>
+      <span class="dot"></span>
+      <span>Cấp độ · Trung cấp</span>
+    </div>
+
+    <h1>Webhook event-driven & retry</h1>
+    <p class="lead">Hệ thống event tin cậy với HMAC signature verification, exponential backoff lên đến 12 giờ, và dead-letter queue cho events fail. Phù hợp tích hợp Shopee/TikTok Shop, đồng bộ Zalo OA, fan-out notification.</p>
+
+    <h2 id="connectors">Connector — đầu nhận webhook</h2>
+    <p>Trước tiên đăng ký endpoint của bạn để Zeni biết gửi event đến đâu:</p>
+    <pre><span class="lang-tag">bash</span><code>curl -X POST "https://zenicloud.io/api/v1/automation/connectors?ws=prod" \
+  -H "Authorization: Bearer $ZENI_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "shopee_order_sync",
+    "type": "webhook_outbound",
+    "target_url": "https://app.example.com/hooks/order",
+    "events": ["order.created", "order.paid", "order.shipped"],
+    "secret": "auto",
+    "retry": {
+      "max_attempts": 5,
+      "schedule": "exponential"
+    }
+  }'</code></pre>
+
+    <p>Response:</p>
+    <pre><span class="lang-tag">json</span><code>{
+  "connector_id": "conn_3a8f9b1c",
+  "name": "shopee_order_sync",
+  "secret": "whsec_HxJ4n2pKvL7wRtY9zM",
+  "verify_url": "https://zenicloud.io/api/v1/connectors/conn_3a8f9b1c/verify",
+  "status": "pending_verification"
+}</code></pre>
+
+    <div class="callout warn">
+      <div class="callout-title">Lưu secret ngay</div>
+      <div>Trường <code>secret</code> chỉ trả về một lần — dùng để verify HMAC signature. Lưu vào env variable, không hardcode.</div>
+    </div>
+
+    <h2 id="fire-event">Trigger event</h2>
+    <p>Khi business logic của bạn cần fan-out, gửi event:</p>
+    <pre><span class="lang-tag">bash</span><code>curl -X POST "https://zenicloud.io/api/v1/automation/events?ws=prod" \
+  -H "Authorization: Bearer $ZENI_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "order.created",
+    "payload": {
+      "order_id": "ORD-2026-0042",
+      "amount_vnd": 1250000,
+      "customer_email": "khach@example.com",
+      "items": [
+        {"sku": "ABC-001", "qty": 2, "price": 625000}
+      ]
+    }
+  }'</code></pre>
+
+    <p>Zeni tự fan-out đến tất cả connectors đã subscribe <code>order.created</code> với retry policy.</p>
+
+    <h2 id="receive">Nhận webhook — verify HMAC</h2>
+    <p>Khi Zeni POST đến URL của bạn, header gồm:</p>
+    <pre><span class="lang-tag">http</span><code>POST /hooks/order HTTP/1.1
+Host: app.example.com
+Content-Type: application/json
+X-Zeni-Event: order.created
+X-Zeni-Event-Id: evt_8f3a9b1c2d4e
+X-Zeni-Timestamp: 1714435200
+X-Zeni-Signature: t=1714435200,v1=a3f8b2c1...</code></pre>
+
+    <h3 id="python-verify">Verify HMAC trong Python</h3>
+    <pre><span class="lang-tag">python</span><code>import hmac, hashlib, time
+from flask import Flask, request, abort
+
+app = Flask(__name__)
+SECRET = b"whsec_HxJ4n2pKvL7wRtY9zM"
+
+def verify_signature(payload, sig_header):
+    """Verify HMAC SHA256 từ Zeni."""
+    parts = dict(p.split("=", 1) for p in sig_header.split(","))
+    timestamp = int(parts["t"])
+    signature = parts["v1"]
+
+    # Chống replay: chỉ chấp nhận event trong 5 phút
+    if abs(time.time() - timestamp) > 300:
+        return False
+
+    # Tính HMAC từ timestamp + body
+    signed = f"{timestamp}.{payload.decode()}".encode()
+    expected = hmac.new(SECRET, signed, hashlib.sha256).hexdigest()
+
+    return hmac.compare_digest(expected, signature)
+
+@app.post("/hooks/order")
+def handle_order():
+    sig = request.headers.get("X-Zeni-Signature")
+    if not verify_signature(request.data, sig):
+        abort(401, "Invalid signature")
+
+    event_type = request.headers["X-Zeni-Event"]
+    event_id = request.headers["X-Zeni-Event-Id"]
+
+    # Idempotency: kiểm tra event_id đã xử lý chưa
+    if event_already_processed(event_id):
+        return "", 200
+
+    # Xử lý event
+    data = request.get_json()
+    process_order(event_type, data)
+    mark_processed(event_id)
+
+    return "", 200
+</code></pre>
+
+    <h3 id="node-verify">Verify HMAC trong Node.js</h3>
+    <pre><span class="lang-tag">javascript</span><code>import express from "express";
+import crypto from "crypto";
+
+const app = express();
+const SECRET = process.env.ZENI_WEBHOOK_SECRET;
+
+app.post("/hooks/order",
+  express.raw({ type: "application/json" }),
+  (req, res) => {
+    const sig = req.headers["x-zeni-signature"];
+    const parts = Object.fromEntries(
+      sig.split(",").map(p => p.split("="))
+    );
+    const timestamp = parseInt(parts.t);
+
+    // Chống replay 5 phút
+    if (Math.abs(Date.now() / 1000 - timestamp) > 300) {
+      return res.status(401).send("Stale");
+    }
+
+    const signed = `${timestamp}.${req.body.toString()}`;
+    const expected = crypto
+      .createHmac("sha256", SECRET)
+      .update(signed)
+      .digest("hex");
+
+    if (!crypto.timingSafeEqual(
+      Buffer.from(expected),
+      Buffer.from(parts.v1)
+    )) {
+      return res.status(401).send("Invalid signature");
+    }
+
+    const event = JSON.parse(req.body);
+    console.log("Received:", req.headers["x-zeni-event"], event);
+    res.status(200).send("ok");
+  }
+);
+</code></pre>
+
+    <h2 id="retry-policy">Retry policy — exponential backoff</h2>
+    <p>Khi endpoint trả non-2xx hoặc timeout (>10s), Zeni retry theo lịch:</p>
+
+    <div class="retry-timeline">
+      <div class="retry-step"><div class="num">Try 1</div><div class="delay">0s</div><div class="label">ngay lập tức</div></div>
+      <div class="retry-step"><div class="num">Try 2</div><div class="delay">1m</div><div class="label">sau 1 phút</div></div>
+      <div class="retry-step"><div class="num">Try 3</div><div class="delay">5m</div><div class="label">sau 5 phút</div></div>
+      <div class="retry-step"><div class="num">Try 4</div><div class="delay">30m</div><div class="label">sau 30 phút</div></div>
+      <div class="retry-step"><div class="num">Try 5</div><div class="delay">2h</div><div class="label">sau 2 giờ</div></div>
+      <div class="retry-step"><div class="num">Try 6</div><div class="delay">12h</div><div class="label">sau 12 giờ</div></div>
+    </div>
+
+    <p>Sau 6 lần fail, event chuyển sang <strong>Dead-Letter Queue</strong>.</p>
+
+    <h2 id="dlq">Dead-Letter Queue (DLQ)</h2>
+    <p>Events fail >5 lần được lưu DLQ trong 30 ngày. Bạn có thể inspect và replay thủ công:</p>
+
+    <pre><span class="lang-tag">bash</span><code># Liệt kê events trong DLQ
+curl "https://zenicloud.io/api/v1/automation/dlq?ws=prod" \
+  -H "Authorization: Bearer $ZENI_TOKEN"
+
+# Replay 1 event
+curl -X POST "https://zenicloud.io/api/v1/automation/dlq/evt_8f3a/replay?ws=prod" \
+  -H "Authorization: Bearer $ZENI_TOKEN"
+
+# Replay tất cả từ thời điểm
+curl -X POST "https://zenicloud.io/api/v1/automation/dlq/replay-bulk?ws=prod" \
+  -H "Authorization: Bearer $ZENI_TOKEN" \
+  -d '{"event_type":"order.created","since":"2026-04-29T00:00:00Z"}'</code></pre>
+
+    <h2 id="best-practice">Best practice cho receiver</h2>
+    <ol>
+      <li><strong>Luôn return 2xx nhanh</strong> — Zeni timeout sau 10s. Xử lý nặng phải đẩy vào queue nội bộ rồi return 200 ngay.</li>
+      <li><strong>Idempotency bằng Event-Id</strong> — lưu vào DB unique để tránh xử lý trùng.</li>
+      <li><strong>Verify signature MOI request</strong> — không bao giờ skip dù tin tưởng IP source.</li>
+      <li><strong>Log đủ thông tin</strong> — event_id, timestamp, response time để debug.</li>
+      <li><strong>Healthcheck endpoint</strong> — Zeni ping <code>HEAD /your-url</code> mỗi giờ; trả 200 là ok.</li>
+    </ol>
+
+    <h2 id="event-types">Event types phổ biến</h2>
+    <table class="table">
+      <thead><tr><th>Event</th><th>Mô tả</th></tr></thead>
+      <tbody>
+        <tr><td class="code">order.created</td><td>Đơn hàng mới tạo</td></tr>
+        <tr><td class="code">order.paid</td><td>Đơn hàng thanh toán xong</td></tr>
+        <tr><td class="code">order.shipped</td><td>Đơn hàng đã giao</td></tr>
+        <tr><td class="code">user.signup</td><td>Người dùng đăng ký</td></tr>
+        <tr><td class="code">payment.success</td><td>Thanh toán VNPay/Momo thành công</td></tr>
+        <tr><td class="code">payment.failed</td><td>Thanh toán thất bại</td></tr>
+        <tr><td class="code">webhook.test</td><td>Test event để verify connector</td></tr>
+      </tbody>
+    </table>
+
+    <p>Tự định nghĩa event với prefix riêng, ví dụ <code>my_app.user_promoted</code>.</p>
+
+    <h2 id="pricing">Chi phí</h2>
+    <ul>
+      <li><strong>Free</strong> — 10K events/tháng</li>
+      <li><strong>Starter</strong> — 100K events/tháng</li>
+      <li><strong>Pro+</strong> — 1M events/tháng</li>
+      <li>Vượt: $0.10 / 10K events</li>
+    </ul>
+
+    <h2 id="next">Bước tiếp theo</h2>
+    <ul>
+      <li><a href="cron.html">Cron</a> — schedule định kỳ trigger event</li>
+      <li><a href="ai-call.html">AI Router</a> — kết hợp xử lý thông minh trong webhook handler</li>
+    </ul>
+
+  </main>
+
+  <aside class="toc">
+    <h5>Trên trang này</h5>
+    <ul>
+      <li><a href="#connectors">Connector</a></li>
+      <li><a href="#fire-event">Trigger event</a></li>
+      <li><a href="#receive">Nhận webhook</a></li>
+      <li><a href="#python-verify">Python verify</a></li>
+      <li><a href="#node-verify">Node verify</a></li>
+      <li><a href="#retry-policy">Retry</a></li>
+      <li><a href="#dlq">DLQ</a></li>
+      <li><a href="#best-practice">Best practice</a></li>
+      <li><a href="#event-types">Event types</a></li>
+    </ul>
+  </aside>
+
+</div>
+
+<footer class="footer">
+  <div>
+    <a href="https://zenicloud.io/">Trang chủ</a>
+    <a href="https://zenicloud.io/pricing">Giá</a>
+    <a href="https://zenicloud.io/legal/privacy.html">Bảo mật</a>
+    <a href="mailto:support@zenicloud.io">Liên hệ</a>
+  </div>
+  <p style="margin-top:12px;">Zeni Cloud Co., Ltd. — TPHCM, Việt Nam</p>
+  <span class="version">v0.4.0 · Cập nhật 30/04/2026</span>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: https: blob: gs:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="robots" content="noindex, nofollow">
+<title>Zeni Cloud · Reseller Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-void: #030014;
+  --bg-base: #08051F;
+  --bg-surface: rgba(168, 85, 247, 0.04);
+  --bg-elev: rgba(168, 85, 247, 0.07);
+  --bg-hover: rgba(168, 85, 247, 0.12);
+  --border-soft: rgba(168, 139, 250, 0.08);
+  --border: rgba(168, 139, 250, 0.16);
+  --border-strong: rgba(168, 139, 250, 0.28);
+  --ink-50: #FAF5FF;
+  --ink-100: #EDE9FE;
+  --ink-200: #C4B5FD;
+  --ink-300: #9E8BE5;
+  --ink-400: #7C6BB0;
+  --ajna: #6366F1;
+  --crown: #A855F7;
+  --crown-light: #D8B4FE;
+  --crown-glow: rgba(168, 85, 247, 0.5);
+  --aurora-cyan: #22D3EE;
+  --gold: #FDE68A;
+  --ok: #22D3EE;
+  --warn: #FDE68A;
+  --err: #F472B6;
+  --info: #A5B4FC;
+  --font: 'Inter', system-ui, sans-serif;
+  --font-mono: 'Roboto Mono', ui-monospace, Menlo, monospace;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font);
+  background:
+    radial-gradient(ellipse at top left, rgba(99,102,241,0.10), transparent 50%),
+    radial-gradient(ellipse at top right, rgba(168,85,247,0.08), transparent 50%),
+    var(--bg-void);
+  color: var(--ink-100);
+  font-size: 13px;
+  line-height: 1.5;
+}
+a { color: var(--crown-light); text-decoration: none; }
+a:hover { color: var(--ink-50); }
+button { font-family: inherit; }
+input, select, textarea {
+  font-family: inherit; font-size: 13px;
+  background: var(--bg-elev);
+  color: var(--ink-100);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+  width: 100%;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none; border-color: var(--crown); box-shadow: 0 0 0 3px var(--crown-glow);
+}
+.hidden { display: none !important; }
+
+/* Header */
+.header {
+  position: sticky; top: 0; z-index: 50;
+  height: 56px;
+  display: flex; align-items: center;
+  padding: 0 20px;
+  background: rgba(8, 5, 31, 0.92);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--border);
+}
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 800; font-size: 14px; color: var(--ink-50);
+}
+.brand-mark {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--crown), var(--ajna));
+  display: grid; place-items: center;
+  font-weight: 900; color: white; font-size: 14px;
+  box-shadow: 0 0 20px var(--crown-glow);
+}
+.brand-tag {
+  font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 4px;
+  background: rgba(253,230,138,0.10);
+  color: var(--gold);
+  border: 1px solid rgba(253,230,138,0.25);
+}
+.header-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+.user-pill {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px; border-radius: 999px;
+  background: var(--bg-surface); border: 1px solid var(--border);
+  font-size: 12px; color: var(--ink-200);
+}
+.user-pill .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--ok); box-shadow: 0 0 8px var(--ok);
+}
+.btn-logout {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--ink-200); padding: 6px 12px; border-radius: var(--r-sm);
+  cursor: pointer; font-size: 12px;
+}
+.btn-logout:hover { color: var(--err); border-color: var(--err); }
+
+/* Layout */
+.layout { display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 56px); }
+.sidebar {
+  border-right: 1px solid var(--border); background: rgba(8, 5, 31, 0.6);
+  padding: 20px 12px;
+  position: sticky; top: 56px; height: calc(100vh - 56px); overflow: auto;
+}
+.nav-title {
+  font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--ink-400); padding: 0 10px; margin: 14px 0 6px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-radius: var(--r-sm);
+  color: var(--ink-200); cursor: pointer;
+  font-size: 12.5px;
+}
+.nav-item:hover { background: var(--bg-hover); color: var(--ink-50); }
+.nav-item.active {
+  background: linear-gradient(90deg, var(--bg-hover), transparent);
+  color: var(--ink-50); border-left: 2px solid var(--crown);
+}
+
+.content { padding: 24px 32px; max-width: 1300px; }
+.page-title { font-size: 20px; font-weight: 800; color: var(--ink-50); margin-bottom: 4px; }
+.page-sub { color: var(--ink-300); font-size: 12.5px; margin-bottom: 22px; }
+
+/* Cards */
+.card {
+  background: var(--bg-surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 16px 20px;
+  margin-bottom: 16px;
+}
+.card-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px; gap: 12px;
+}
+.card-title { font-weight: 700; color: var(--ink-50); font-size: 14px; }
+.card-sub { color: var(--ink-300); font-size: 11.5px; margin-top: 2px; }
+.card-actions { display: flex; gap: 8px; align-items: center; }
+
+/* KPI grid */
+.kpi-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 18px; }
+.kpi {
+  background: linear-gradient(180deg, var(--bg-elev), var(--bg-surface));
+  border: 1px solid var(--border); border-radius: var(--r-md);
+  padding: 14px 16px;
+}
+.kpi-label { font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-400); margin-bottom: 6px; }
+.kpi-value { font-size: 22px; font-weight: 800; color: var(--ink-50); font-family: var(--font-mono); }
+.kpi-sub { font-size: 11px; color: var(--ink-300); margin-top: 4px; }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+th { font-weight: 700; color: var(--ink-300); text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; }
+td { padding: 10px; border-bottom: 1px solid var(--border-soft); color: var(--ink-100); }
+tr:hover td { background: var(--bg-hover); }
+.right { text-align: right; }
+.empty { color: var(--ink-400); padding: 30px 10px; text-align: center; font-style: italic; }
+
+/* Buttons */
+.btn {
+  background: linear-gradient(135deg, var(--crown), var(--ajna));
+  color: white; border: none; padding: 8px 16px;
+  border-radius: var(--r-sm); cursor: pointer;
+  font-size: 12.5px; font-weight: 600;
+  box-shadow: 0 0 12px var(--crown-glow);
+  transition: all 0.15s ease;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 0 20px var(--crown-glow); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-ghost {
+  background: transparent; box-shadow: none;
+  border: 1px solid var(--border); color: var(--ink-200);
+}
+.btn-ghost:hover { background: var(--bg-hover); color: var(--ink-50); transform: none; box-shadow: none; }
+.btn-sm { padding: 4px 10px; font-size: 11.5px; }
+.btn-danger { background: linear-gradient(135deg, var(--err), #BE185D); }
+
+/* Pills */
+.pill {
+  display: inline-block; padding: 2px 8px; border-radius: 10px;
+  font-size: 10.5px; font-weight: 600;
+}
+.pill.ok    { background: rgba(34,211,238,0.12);  color: var(--ok); }
+.pill.warn  { background: rgba(253,230,138,0.12); color: var(--warn); }
+.pill.err   { background: rgba(244,114,182,0.12); color: var(--err); }
+.pill.info  { background: rgba(165,180,252,0.12); color: var(--info); }
+
+/* Login */
+.login-screen {
+  min-height: 100vh; display: grid; place-items: center; padding: 24px;
+}
+.login-card {
+  width: 100%; max-width: 420px;
+  background: var(--bg-surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 32px;
+}
+.login-title { font-size: 18px; font-weight: 800; margin-bottom: 6px; color: var(--ink-50); }
+.login-sub { color: var(--ink-300); margin-bottom: 22px; font-size: 12.5px; }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-300); margin-bottom: 4px; }
+.error-banner {
+  margin-top: 12px; padding: 10px;
+  background: rgba(244,114,182,0.10); border: 1px solid var(--err);
+  border-radius: var(--r-sm); color: var(--err); font-size: 12px;
+}
+
+/* Tabs hide */
+.tab.hidden { display: none; }
+
+/* Form rows */
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.row > * { flex: 1; }
+
+/* Toast */
+.toast-wrap { position: fixed; right: 20px; top: 70px; z-index: 100; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  background: var(--bg-elev); border: 1px solid var(--border);
+  border-left: 3px solid var(--crown);
+  padding: 10px 14px; border-radius: var(--r-sm);
+  color: var(--ink-100); font-size: 12.5px; max-width: 360px;
+  transition: all 0.3s ease;
+}
+.toast.err { border-left-color: var(--err); }
+.toast.ok  { border-left-color: var(--ok); }
+
+/* Brand preview */
+.brand-preview {
+  display: flex; gap: 14px; align-items: center;
+  padding: 14px; border-radius: var(--r-md);
+  background: var(--bg-elev); border: 1px solid var(--border);
+}
+.brand-logo-box {
+  width: 64px; height: 64px; border-radius: var(--r-md);
+  background: var(--bg-base); border: 1px dashed var(--border-strong);
+  display: grid; place-items: center;
+  font-size: 11px; color: var(--ink-400);
+  overflow: hidden;
+}
+.brand-logo-box img { max-width: 100%; max-height: 100%; }
+.color-chip {
+  display: inline-block; width: 26px; height: 26px;
+  border-radius: 6px; vertical-align: middle; margin-right: 6px;
+  border: 1px solid var(--border-strong);
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .content { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ───── LOGIN ───── -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="brand" style="margin-bottom: 6px;">
+      <div class="brand-mark">Z</div>
+      <span>Zeni Cloud</span>
+      <span class="brand-tag">Reseller</span>
+    </div>
+    <div class="login-title">Đăng nhập Reseller Portal</div>
+    <div class="login-sub">Quản lý khách hàng, branding và hoa hồng affiliate</div>
+    <form id="loginForm">
+      <div class="field">
+        <label>Email</label>
+        <input id="loginEmail" type="email" required autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Mật khẩu</label>
+        <input id="loginPass" type="password" required autocomplete="current-password">
+      </div>
+      <div class="field">
+        <label>Workspace ID</label>
+        <input id="loginWs" placeholder="ws_xxxxxxxx" required>
+      </div>
+      <button type="submit" class="btn" style="width: 100%;">Đăng nhập</button>
+      <div id="loginError" class="error-banner hidden"></div>
+    </form>
+    <div style="margin-top: 14px; font-size: 11.5px; color: var(--ink-400); text-align: center;">
+      Chưa là reseller? <a href="/signup">Apply Reseller Program</a>
+    </div>
+  </div>
+</div>
+
+<!-- ───── APP ───── -->
+<div id="app" class="hidden">
+  <header class="header">
+    <div class="brand">
+      <div class="brand-mark">Z</div>
+      <span>Zeni Cloud</span>
+      <span style="color: var(--ink-400);">·</span>
+      <span style="color: var(--ink-200);">Reseller Portal</span>
+      <span class="brand-tag" id="tierTag">basic</span>
+    </div>
+    <div class="header-right">
+      <div class="user-pill"><span class="dot"></span><span id="userEmail">—</span></div>
+      <button class="btn-logout" id="btnLogout">Đăng xuất</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="nav-title">Reseller</div>
+      <div class="nav-item active" data-tab="dashboard">Dashboard</div>
+      <div class="nav-item" data-tab="customers">Khách hàng</div>
+      <div class="nav-item" data-tab="commissions">Hoa hồng</div>
+      <div class="nav-item" data-tab="brand">Branding</div>
+      <div class="nav-item" data-tab="promo">Mã khuyến mãi</div>
+    </aside>
+
+    <main class="content">
+
+      <!-- ──────── DASHBOARD ──────── -->
+      <section id="tab-dashboard" class="tab">
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub">Tổng quan revenue + customers + commission</div>
+        <div class="kpi-grid" id="dashKpis">
+          <div class="kpi"><div class="kpi-label">Đang tải...</div><div class="kpi-value">—</div></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Forecast 90 ngày tới</div>
+              <div class="card-sub">Dự báo dựa trên trung bình 90 ngày qua</div>
+            </div>
+          </div>
+          <div id="forecastBox" class="empty">Đang tải...</div>
+        </div>
+      </section>
+
+      <!-- ──────── CUSTOMERS ──────── -->
+      <section id="tab-customers" class="tab hidden">
+        <div class="page-title">Khách hàng</div>
+        <div class="page-sub">Workspace bạn giới thiệu vào Zeni Cloud</div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Mời khách mới</div>
+          </div>
+          <form id="inviteForm" class="row">
+            <input id="invEmail" type="email" placeholder="email khách" required style="flex: 2;">
+            <select id="invPlan" style="flex: 1;">
+              <option value="starter">Starter</option>
+              <option value="pro">Pro</option>
+              <option value="enterprise">Enterprise</option>
+            </select>
+            <input id="invPromo" placeholder="Promo code (tùy chọn)" style="flex: 1;">
+            <button type="submit" class="btn" style="flex: 0 0 auto;">Gửi mời</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Danh sách khách</div>
+            <div class="card-actions">
+              <select id="custStatus" style="width: 140px;">
+                <option value="">Tất cả</option>
+                <option value="active">Active</option>
+                <option value="churned">Churned</option>
+                <option value="suspended">Suspended</option>
+              </select>
+              <button class="btn btn-ghost btn-sm" id="custReload">Làm mới</button>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Email</th><th>Plan</th><th>Status</th><th>Source</th>
+                <th class="right">LTV (₫)</th><th>Last payment</th><th>Signup</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="custTable"><tr><td colspan="8" class="empty">Đang tải...</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ──────── COMMISSIONS ──────── -->
+      <section id="tab-commissions" class="tab hidden">
+        <div class="page-title">Hoa hồng</div>
+        <div class="page-sub">Lịch sử commission + payout</div>
+
+        <div class="kpi-grid" id="commKpis">
+          <div class="kpi"><div class="kpi-label">Đang tải...</div><div class="kpi-value">—</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Commission detail</div>
+            <div class="card-actions">
+              <select id="commStatus" style="width: 140px;">
+                <option value="">Tất cả</option>
+                <option value="pending">Pending</option>
+                <option value="payable">Payable</option>
+                <option value="paid">Paid</option>
+                <option value="clawback">Clawback</option>
+              </select>
+              <input id="commPeriod" placeholder="2026-04" style="width: 130px;">
+              <button class="btn btn-ghost btn-sm" id="commReload">Làm mới</button>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Workspace</th><th>Period</th>
+                <th class="right">Customer paid (₫)</th>
+                <th class="right">%</th>
+                <th class="right">Commission (₫)</th>
+                <th>Status</th><th>Paid at</th>
+              </tr>
+            </thead>
+            <tbody id="commTable"><tr><td colspan="7" class="empty">Đang tải...</td></tr></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Payout history</div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th><th>Period</th>
+                <th class="right">Total (₫)</th>
+                <th class="right">Items</th>
+                <th>Method</th><th>Status</th><th>Paid at</th><th>Tx ref</th>
+              </tr>
+            </thead>
+            <tbody id="payoutTable"><tr><td colspan="8" class="empty">Đang tải...</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ──────── BRAND ──────── -->
+      <section id="tab-brand" class="tab hidden">
+        <div class="page-title">Branding</div>
+        <div class="page-sub">Logo, màu sắc, custom domain — khách của bạn sẽ thấy brand riêng</div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Preview</div>
+          </div>
+          <div class="brand-preview" id="brandPreview">
+            <div class="brand-logo-box" id="brandLogoPreview">no logo</div>
+            <div style="flex: 1;">
+              <div id="brandNamePreview" style="font-size: 16px; font-weight: 800;">Brand name</div>
+              <div style="margin-top: 8px;">
+                <span class="color-chip" id="brandColor1" style="background:#6366F1"></span>
+                <span class="color-chip" id="brandColor2" style="background:#A855F7"></span>
+                <span class="color-chip" id="brandColor3" style="background:#22D3EE"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Cấu hình thương hiệu</div>
+            <button class="btn btn-sm" id="brandSave">Lưu</button>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;">
+            <div class="field"><label>Brand name</label><input id="bf_brand_name"></div>
+            <div class="field"><label>Logo URL</label><input id="bf_logo_url" placeholder="gs:// hoặc https://"></div>
+            <div class="field"><label>Primary color</label><input id="bf_primary_color" placeholder="#6366F1"></div>
+            <div class="field"><label>Secondary color</label><input id="bf_secondary_color" placeholder="#A855F7"></div>
+            <div class="field"><label>Accent color</label><input id="bf_accent_color" placeholder="#22D3EE"></div>
+            <div class="field"><label>Custom domain</label><input id="bf_custom_domain" placeholder="cloud.brand.com"></div>
+            <div class="field"><label>Email FROM</label><input id="bf_custom_email_from" placeholder="noreply@brand.com"></div>
+            <div class="field"><label>Support email</label><input id="bf_support_email"></div>
+            <div class="field"><label>Terms URL</label><input id="bf_terms_url"></div>
+            <div class="field"><label>Privacy URL</label><input id="bf_privacy_url"></div>
+            <div class="field" style="grid-column: span 2;"><label>Footer HTML</label><textarea id="bf_footer_html" rows="3"></textarea></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Upload logo</div>
+          </div>
+          <form id="logoForm" class="row">
+            <input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="flex: 2;">
+            <select id="logoKind" style="flex: 0 0 140px;">
+              <option value="logo">Logo</option>
+              <option value="favicon">Favicon</option>
+            </select>
+            <button type="submit" class="btn">Upload</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Custom domain</div>
+              <div class="card-sub" id="domainInfo">Set custom_domain ở trên rồi xác minh CNAME</div>
+            </div>
+            <button class="btn btn-ghost" id="btnVerifyDomain">Verify CNAME</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ──────── PROMO ──────── -->
+      <section id="tab-promo" class="tab hidden">
+        <div class="page-title">Mã khuyến mãi</div>
+        <div class="page-sub">Phát mã giảm giá để khách dùng khi đăng ký</div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Tạo mã mới</div>
+          </div>
+          <form id="promoForm" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+            <div class="field"><label>Code</label><input id="pf_code" required placeholder="WELCOME10"></div>
+            <div class="field"><label>Loại</label>
+              <select id="pf_type"><option value="percent">% Percent</option><option value="fixed">Fixed (VND)</option></select>
+            </div>
+            <div class="field"><label>Giá trị</label><input id="pf_value" type="number" min="0" step="0.01" required></div>
+            <div class="field"><label>Max uses</label><input id="pf_max" type="number" min="1" placeholder="Không giới hạn"></div>
+            <div class="field"><label>Hết hạn</label><input id="pf_exp" type="datetime-local"></div>
+            <div class="field"><label>Áp dụng plans (csv)</label><input id="pf_plans" placeholder="starter,pro"></div>
+            <div class="field" style="grid-column: span 3;"><label>Mô tả</label><input id="pf_desc"></div>
+            <div style="grid-column: span 3;"><button type="submit" class="btn">Tạo mã</button></div>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Mã đã tạo</div>
+            <button class="btn btn-ghost btn-sm" id="promoReload">Làm mới</button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Code</th><th>Loại</th><th class="right">Giá trị</th>
+                <th class="right">Đã dùng</th><th>Hết hạn</th><th>Plans</th>
+                <th>Trạng thái</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="promoTable"><tr><td colspan="8" class="empty">Đang tải...</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+'use strict';
+/* ════════════════════════════════════════════════════════════════════
+ *  Zeni Cloud · Reseller Portal — Vanilla JS
+ *  All API calls go to /api/v1/reseller/*
+ * ════════════════════════════════════════════════════════════════════ */
+const API_BASE = '/api/v1';
+const TOKEN_KEY = 'zeni_reseller_token';
+const EMAIL_KEY = 'zeni_reseller_email';
+const WS_KEY = 'zeni_reseller_ws';
+
+let CURRENT_WS = '';
+let CURRENT_TIER = 'basic';
+
+/* ─── Auth helpers ─── */
+function getToken() { return localStorage.getItem(TOKEN_KEY) || ''; }
+function setSession(t, e, w) {
+  if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY);
+  if (e) localStorage.setItem(EMAIL_KEY, e); else localStorage.removeItem(EMAIL_KEY);
+  if (w) localStorage.setItem(WS_KEY, w); else localStorage.removeItem(WS_KEY);
+}
+function getEmail() { return localStorage.getItem(EMAIL_KEY) || ''; }
+function getWs() { return localStorage.getItem(WS_KEY) || ''; }
+
+async function api(path, opts) {
+  opts = opts || {};
+  const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+  const t = getToken();
+  if (t) headers['Authorization'] = 'Bearer ' + t;
+  const res = await fetch(API_BASE + path, {
+    method: opts.method || 'GET',
+    headers,
+    body: opts.body ? (opts.raw ? opts.body : JSON.stringify(opts.body)) : undefined,
+    credentials: 'same-origin'
+  });
+  if (res.status === 401) { setSession(null, null, null); showLogin(); throw new Error('Phiên hết hạn'); }
+  let body = null;
+  try { body = await res.json(); } catch (e) {}
+  if (!res.ok) {
+    const msg = (body && body.detail) || ('HTTP ' + res.status);
+    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+  }
+  return body;
+}
+
+async function apiUpload(path, formData) {
+  const t = getToken();
+  const headers = {};
+  if (t) headers['Authorization'] = 'Bearer ' + t;
+  const res = await fetch(API_BASE + path, { method: 'POST', headers, body: formData });
+  if (res.status === 401) { setSession(null, null, null); showLogin(); throw new Error('Phiên hết hạn'); }
+  let body = null;
+  try { body = await res.json(); } catch (e) {}
+  if (!res.ok) throw new Error((body && body.detail) || ('HTTP ' + res.status));
+  return body;
+}
+
+/* ─── UI helpers ─── */
+function $(id) { return document.getElementById(id); }
+function fmtVnd(v) {
+  return Math.round(Number(v || 0)).toLocaleString('vi-VN') + ' ₫';
+}
+function fmtNum(v) { return Number(v || 0).toLocaleString('vi-VN'); }
+function fmtDate(iso) {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
+  } catch (e) { return iso; }
+}
+function fmtDay(iso) {
+  if (!iso) return '—';
+  try { return new Date(iso).toLocaleDateString('vi-VN'); } catch (e) { return iso; }
+}
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function toast(msg, kind) {
+  const t = document.createElement('div');
+  t.className = 'toast ' + (kind || '');
+  t.textContent = msg;
+  $('toasts').appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(20px)'; }, 2600);
+  setTimeout(() => t.remove(), 3000);
+}
+function statusPill(s) {
+  const map = {
+    active: 'ok', paid: 'ok', payable: 'ok',
+    pending: 'warn',
+    churned: 'err', clawback: 'err', suspended: 'err',
+  };
+  return '<span class="pill ' + (map[s] || 'info') + '">' + escapeHtml(s) + '</span>';
+}
+
+/* ─── Login / boot ─── */
+function showLogin() { $('loginScreen').classList.remove('hidden'); $('app').classList.add('hidden'); }
+function showApp() {
+  $('loginScreen').classList.add('hidden'); $('app').classList.remove('hidden');
+  $('userEmail').textContent = getEmail() || '—';
+}
+
+$('loginForm').addEventListener('submit', async function(ev) {
+  ev.preventDefault();
+  $('loginError').classList.add('hidden');
+  const email = $('loginEmail').value.trim();
+  const password = $('loginPass').value;
+  const ws = $('loginWs').value.trim();
+  try {
+    const res = await fetch(API_BASE + '/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) {
+      let m = 'Đăng nhập thất bại';
+      try { const b = await res.json(); if (b.detail) m = typeof b.detail === 'string' ? b.detail : JSON.stringify(b.detail); } catch (e) {}
+      throw new Error(m);
+    }
+    const data = await res.json();
+    const token = data.access_token || data.token;
+    if (!token) throw new Error('Phản hồi thiếu token');
+    setSession(token, email, ws);
+    CURRENT_WS = ws;
+    showApp();
+    initApp();
+  } catch (e) {
+    $('loginError').textContent = e.message || String(e);
+    $('loginError').classList.remove('hidden');
+  }
+});
+
+$('btnLogout').addEventListener('click', function() {
+  setSession(null, null, null);
+  showLogin();
+});
+
+/* ─── Tabs ─── */
+document.querySelectorAll('.nav-item').forEach(n => {
+  n.addEventListener('click', function() {
+    document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+    n.classList.add('active');
+    document.querySelectorAll('.tab').forEach(t => t.classList.add('hidden'));
+    const tab = n.getAttribute('data-tab');
+    $('tab-' + tab).classList.remove('hidden');
+    if (tab === 'dashboard') loadDashboard();
+    else if (tab === 'customers') loadCustomers();
+    else if (tab === 'commissions') loadCommissions();
+    else if (tab === 'brand') loadBrand();
+    else if (tab === 'promo') loadPromos();
+  });
+});
+
+/* ─── Dashboard ─── */
+async function loadDashboard() {
+  try {
+    const [dash, forecast, pending] = await Promise.all([
+      api('/reseller/reports/dashboard?ws=' + encodeURIComponent(CURRENT_WS)),
+      api('/reseller/reports/forecast?ws=' + encodeURIComponent(CURRENT_WS) + '&period_days=90'),
+      api('/reseller/commissions/pending?ws=' + encodeURIComponent(CURRENT_WS)),
+    ]);
+    CURRENT_TIER = dash.tier || 'basic';
+    $('tierTag').textContent = CURRENT_TIER;
+    const kpis = [
+      { label: 'Khách active', value: fmtNum(dash.active_customers) },
+      { label: 'Churn rate', value: dash.churn_rate_pct + '%' },
+      { label: 'Hoa hồng (lifetime, đã trả)', value: fmtVnd(dash.commission_paid_vnd) },
+      { label: 'Hoa hồng đang chờ', value: fmtVnd(dash.commission_pending_vnd) },
+      { label: 'Tỉ lệ commission', value: dash.commission_percent + '%' },
+      { label: 'Commission 30d gần nhất', value: fmtVnd(dash.commission_last_30d_vnd) },
+      { label: 'Pending count', value: fmtNum(pending.count) },
+      { label: 'MRR ước tính', value: fmtVnd(dash.mrr_vnd) },
+    ];
+    $('dashKpis').innerHTML = kpis.map(k =>
+      '<div class="kpi"><div class="kpi-label">' + escapeHtml(k.label) +
+      '</div><div class="kpi-value">' + escapeHtml(k.value) + '</div></div>'
+    ).join('');
+    $('forecastBox').innerHTML =
+      '<div style="font-size: 22px; font-weight: 800; color: var(--ink-50);">' + fmtVnd(forecast.expected_commission_vnd) + '</div>' +
+      '<div style="color: var(--ink-300); margin-top: 4px;">Dự kiến hoa hồng ' + forecast.period_days + ' ngày tới</div>' +
+      '<div style="margin-top: 8px; font-size: 12px;">Dựa trên ' + forecast.based_on_customers + ' khách · TB ' +
+      fmtVnd(forecast.avg_commission_per_customer_vnd) + '/khách</div>';
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+/* ─── Customers ─── */
+async function loadCustomers() {
+  try {
+    const q = $('custStatus').value;
+    const path = '/reseller/customers?ws=' + encodeURIComponent(CURRENT_WS) + (q ? '&status=' + q : '');
+    const list = await api(path);
+    if (!list.length) {
+      $('custTable').innerHTML = '<tr><td colspan="8" class="empty">Chưa có khách nào</td></tr>';
+      return;
+    }
+    $('custTable').innerHTML = list.map(c => {
+      return '<tr>' +
+        '<td>' + escapeHtml(c.customer_email) + '</td>' +
+        '<td>' + escapeHtml(c.current_plan) + '</td>' +
+        '<td>' + statusPill(c.status) + '</td>' +
+        '<td>' + escapeHtml(c.signed_up_via || '—') + '</td>' +
+        '<td class="right">' + fmtVnd(c.lifetime_value_vnd) + '</td>' +
+        '<td>' + fmtDate(c.last_payment_at) + '</td>' +
+        '<td>' + fmtDay(c.signed_up_at) + '</td>' +
+        '<td><button class="btn btn-ghost btn-sm" data-cust-upgrade="' + c.id + '">Upgrade</button></td>' +
+        '</tr>';
+    }).join('');
+    document.querySelectorAll('[data-cust-upgrade]').forEach(b => {
+      b.addEventListener('click', async () => {
+        const cid = b.getAttribute('data-cust-upgrade');
+        const newPlan = prompt('Plan mới (starter/pro/enterprise):');
+        if (!newPlan) return;
+        try {
+          await api('/reseller/customers/' + cid + '/upgrade?ws=' + encodeURIComponent(CURRENT_WS),
+            { method: 'POST', body: { new_plan: newPlan } });
+          toast('Đã upgrade', 'ok'); loadCustomers();
+        } catch (e) { toast(e.message, 'err'); }
+      });
+    });
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+$('custStatus').addEventListener('change', loadCustomers);
+$('custReload').addEventListener('click', loadCustomers);
+
+$('inviteForm').addEventListener('submit', async function(ev) {
+  ev.preventDefault();
+  try {
+    const out = await api('/reseller/customers/invite?ws=' + encodeURIComponent(CURRENT_WS), {
+      method: 'POST',
+      body: {
+        email: $('invEmail').value.trim(),
+        plan_id: $('invPlan').value,
+        promo_code: $('invPromo').value.trim() || null,
+      },
+    });
+    toast('Đã gửi mời. URL: ' + out.invite_url.slice(0, 60) + '...', 'ok');
+    $('invEmail').value = ''; $('invPromo').value = '';
+    loadCustomers();
+  } catch (e) { toast(e.message, 'err'); }
+});
+
+/* ─── Commissions ─── */
+async function loadCommissions() {
+  const status = $('commStatus').value;
+  const period = $('commPeriod').value.trim();
+  try {
+    const [pending, list, payouts] = await Promise.all([
+      api('/reseller/commissions/pending?ws=' + encodeURIComponent(CURRENT_WS)),
+      api('/reseller/commissions?ws=' + encodeURIComponent(CURRENT_WS) +
+        (status ? '&status=' + status : '') +
+        (period ? '&period=' + encodeURIComponent(period) : '')),
+      api('/reseller/payouts?ws=' + encodeURIComponent(CURRENT_WS)),
+    ]);
+
+    const kpis = [
+      { label: 'Đang pending', value: fmtVnd(pending.pending_vnd) },
+      { label: 'Sẵn sàng payable', value: fmtVnd(pending.payable_vnd) },
+      { label: 'Số mục pending', value: fmtNum(pending.count) },
+      { label: 'Lần payable kế tiếp', value: pending.next_payable_at ? fmtDay(pending.next_payable_at) : '—' },
+    ];
+    $('commKpis').innerHTML = kpis.map(k =>
+      '<div class="kpi"><div class="kpi-label">' + escapeHtml(k.label) +
+      '</div><div class="kpi-value">' + escapeHtml(k.value) + '</div></div>'
+    ).join('');
+
+    if (!list.length) {
+      $('commTable').innerHTML = '<tr><td colspan="7" class="empty">Chưa có hoa hồng</td></tr>';
+    } else {
+      $('commTable').innerHTML = list.map(c =>
+        '<tr>' +
+        '<td><code style="font-family: var(--font-mono); font-size: 11px;">' + escapeHtml(c.customer_workspace_id) + '</code></td>' +
+        '<td>' + fmtDay(c.billing_period_start) + ' → ' + fmtDay(c.billing_period_end) + '</td>' +
+        '<td class="right">' + fmtVnd(c.customer_paid_vnd) + '</td>' +
+        '<td class="right">' + c.commission_percent + '%</td>' +
+        '<td class="right" style="font-weight: 700;">' + fmtVnd(c.commission_vnd) + '</td>' +
+        '<td>' + statusPill(c.status) + '</td>' +
+        '<td>' + fmtDate(c.paid_at) + '</td>' +
+        '</tr>'
+      ).join('');
+    }
+
+    if (!payouts.length) {
+      $('payoutTable').innerHTML = '<tr><td colspan="8" class="empty">Chưa có payout</td></tr>';
+    } else {
+      $('payoutTable').innerHTML = payouts.map(p =>
+        '<tr>' +
+        '<td>#' + p.id + '</td>' +
+        '<td>' + fmtDay(p.period_start) + ' → ' + fmtDay(p.period_end) + '</td>' +
+        '<td class="right" style="font-weight: 700;">' + fmtVnd(p.total_amount_vnd) + '</td>' +
+        '<td class="right">' + p.commission_count + '</td>' +
+        '<td>' + escapeHtml(p.payment_method || '—') + '</td>' +
+        '<td>' + statusPill(p.status) + '</td>' +
+        '<td>' + fmtDate(p.paid_at) + '</td>' +
+        '<td><code style="font-size: 11px;">' + escapeHtml(p.transaction_ref || '—') + '</code></td>' +
+        '</tr>'
+      ).join('');
+    }
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+$('commStatus').addEventListener('change', loadCommissions);
+$('commPeriod').addEventListener('change', loadCommissions);
+$('commReload').addEventListener('click', loadCommissions);
+
+/* ─── Brand ─── */
+let CURRENT_BRAND = {};
+async function loadBrand() {
+  try {
+    const b = await api('/reseller/brand?ws=' + encodeURIComponent(CURRENT_WS));
+    CURRENT_BRAND = b;
+    $('bf_brand_name').value = b.brand_name || '';
+    $('bf_logo_url').value = b.logo_url || '';
+    $('bf_primary_color').value = b.primary_color || '#6366F1';
+    $('bf_secondary_color').value = b.secondary_color || '#A855F7';
+    $('bf_accent_color').value = b.accent_color || '#22D3EE';
+    $('bf_custom_domain').value = b.custom_domain || '';
+    $('bf_custom_email_from').value = b.custom_email_from || '';
+    $('bf_support_email').value = b.support_email || '';
+    $('bf_terms_url').value = b.terms_url || '';
+    $('bf_privacy_url').value = b.privacy_url || '';
+    $('bf_footer_html').value = b.footer_html || '';
+    updateBrandPreview();
+    if (b.custom_domain) {
+      const verified = b.domain_verified_at ? '✓ Verified ' + fmtDate(b.domain_verified_at) : 'Chưa verify';
+      $('domainInfo').innerHTML = 'Domain: <code>' + escapeHtml(b.custom_domain) + '</code> · ' + verified +
+        '<br/>Token CNAME: <code>' + escapeHtml((b.domain_cname_token || '').slice(0, 16) + '...') + '</code>';
+    }
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+function updateBrandPreview() {
+  $('brandNamePreview').textContent = $('bf_brand_name').value || 'Brand name';
+  $('brandColor1').style.background = $('bf_primary_color').value || '#6366F1';
+  $('brandColor2').style.background = $('bf_secondary_color').value || '#A855F7';
+  $('brandColor3').style.background = $('bf_accent_color').value || '#22D3EE';
+  const lu = $('bf_logo_url').value;
+  if (lu && lu.startsWith('http')) {
+    $('brandLogoPreview').innerHTML = '<img src="' + escapeHtml(lu) + '" alt="logo">';
+  } else {
+    $('brandLogoPreview').textContent = 'no logo';
+  }
+}
+['bf_brand_name','bf_primary_color','bf_secondary_color','bf_accent_color','bf_logo_url'].forEach(id => {
+  $(id).addEventListener('input', updateBrandPreview);
+});
+
+$('brandSave').addEventListener('click', async function() {
+  const body = {
+    brand_name: $('bf_brand_name').value || null,
+    logo_url: $('bf_logo_url').value || null,
+    primary_color: $('bf_primary_color').value || null,
+    secondary_color: $('bf_secondary_color').value || null,
+    accent_color: $('bf_accent_color').value || null,
+    custom_domain: $('bf_custom_domain').value || null,
+    custom_email_from: $('bf_custom_email_from').value || null,
+    support_email: $('bf_support_email').value || null,
+    terms_url: $('bf_terms_url').value || null,
+    privacy_url: $('bf_privacy_url').value || null,
+    footer_html: $('bf_footer_html').value || null,
+  };
+  Object.keys(body).forEach(k => { if (body[k] === null || body[k] === '') delete body[k]; });
+  try {
+    await api('/reseller/brand?ws=' + encodeURIComponent(CURRENT_WS), { method: 'PATCH', body });
+    toast('Đã lưu cấu hình brand', 'ok');
+    loadBrand();
+  } catch (e) { toast(e.message, 'err'); }
+});
+
+$('logoForm').addEventListener('submit', async function(ev) {
+  ev.preventDefault();
+  const f = $('logoFile').files[0];
+  if (!f) { toast('Chọn file đi', 'err'); return; }
+  const fd = new FormData();
+  fd.append('file', f);
+  fd.append('kind', $('logoKind').value);
+  try {
+    const out = await apiUpload('/reseller/brand/upload-logo?ws=' + encodeURIComponent(CURRENT_WS), fd);
+    toast('Upload OK: ' + out.url, 'ok');
+    $('bf_logo_url').value = out.url;
+    updateBrandPreview();
+  } catch (e) { toast(e.message, 'err'); }
+});
+
+$('btnVerifyDomain').addEventListener('click', async function() {
+  try {
+    const out = await api('/reseller/brand/verify-domain?ws=' + encodeURIComponent(CURRENT_WS), { method: 'POST' });
+    toast(out.verified ? 'Domain verified' : ('Chưa verify: ' + (out.note || '')), out.verified ? 'ok' : 'err');
+    loadBrand();
+  } catch (e) { toast(e.message, 'err'); }
+});
+
+/* ─── Promo codes ─── */
+async function loadPromos() {
+  try {
+    const list = await api('/reseller/promo-codes?ws=' + encodeURIComponent(CURRENT_WS));
+    if (!list.length) {
+      $('promoTable').innerHTML = '<tr><td colspan="8" class="empty">Chưa có promo nào</td></tr>';
+      return;
+    }
+    $('promoTable').innerHTML = list.map(p =>
+      '<tr>' +
+      '<td><code style="font-weight: 700;">' + escapeHtml(p.code) + '</code></td>' +
+      '<td>' + escapeHtml(p.discount_type) + '</td>' +
+      '<td class="right">' + (p.discount_type === 'percent' ? p.discount_value + '%' : fmtVnd(p.discount_value)) + '</td>' +
+      '<td class="right">' + p.current_uses + (p.max_uses ? ' / ' + p.max_uses : '') + '</td>' +
+      '<td>' + (p.expires_at ? fmtDay(p.expires_at) : '—') + '</td>' +
+      '<td>' + escapeHtml((p.applies_to_plans || []).join(', ') || '—') + '</td>' +
+      '<td>' + (p.enabled ? '<span class="pill ok">enabled</span>' : '<span class="pill err">disabled</span>') + '</td>' +
+      '<td><button class="btn btn-ghost btn-sm" data-promo-del="' + p.id + '">Xóa</button></td>' +
+      '</tr>'
+    ).join('');
+    document.querySelectorAll('[data-promo-del]').forEach(b => {
+      b.addEventListener('click', async () => {
+        if (!confirm('Xóa mã này?')) return;
+        const id = b.getAttribute('data-promo-del');
+        try {
+          await api('/reseller/promo-codes/' + id + '?ws=' + encodeURIComponent(CURRENT_WS), { method: 'DELETE' });
+          toast('Đã xóa', 'ok'); loadPromos();
+        } catch (e) { toast(e.message, 'err'); }
+      });
+    });
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+$('promoReload').addEventListener('click', loadPromos);
+
+$('promoForm').addEventListener('submit', async function(ev) {
+  ev.preventDefault();
+  const plansRaw = $('pf_plans').value.trim();
+  const expRaw = $('pf_exp').value;
+  const body = {
+    code: $('pf_code').value.trim().toUpperCase(),
+    discount_type: $('pf_type').value,
+    discount_value: parseFloat($('pf_value').value || '0'),
+    max_uses: $('pf_max').value ? parseInt($('pf_max').value, 10) : null,
+    expires_at: expRaw ? new Date(expRaw).toISOString() : null,
+    applies_to_plans: plansRaw ? plansRaw.split(',').map(s => s.trim()).filter(Boolean) : [],
+    description: $('pf_desc').value || null,
+    enabled: true,
+  };
+  try {
+    await api('/reseller/promo-codes?ws=' + encodeURIComponent(CURRENT_WS), { method: 'POST', body });
+    toast('Đã tạo mã', 'ok');
+    ev.target.reset();
+    loadPromos();
+  } catch (e) { toast(e.message, 'err'); }
+});
+
+/* ─── App boot ─── */
+async function initApp() {
+  try {
+    const status = await api('/reseller/status?ws=' + encodeURIComponent(CURRENT_WS));
+    if (!status.has_application || status.status !== 'approved') {
+      toast('Workspace chưa là reseller hoặc chưa được duyệt: ' + (status.status || 'none'), 'err');
+    }
+    CURRENT_TIER = status.tier || 'basic';
+    $('tierTag').textContent = CURRENT_TIER;
+    loadDashboard();
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+if (getToken() && getWs()) {
+  CURRENT_WS = getWs();
+  showApp();
+  initApp();
+} else {
+  showLogin();
+}
+</script>
+</body>
+</html>

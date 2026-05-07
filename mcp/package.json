@@ -1,0 +1,29 @@
+{
+  "name": "@zenicloud/mcp",
+  "version": "0.1.0",
+  "description": "Zeni Cloud MCP Server — 12 tools cho Claude Desktop/Cursor/AI agents tự động deploy + manage apps trên Zeni Cloud",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "zenicloud-mcp": "./bin/server.js"
+  },
+  "files": ["bin/", "src/", "README.md"],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "zeni",
+    "zenicloud",
+    "claude-desktop",
+    "cursor",
+    "ai-agent",
+    "deploy"
+  ],
+  "author": "Zeni Cloud Team <hello@zenicloud.io>",
+  "homepage": "https://zenicloud.io/docs/mcp"
+}

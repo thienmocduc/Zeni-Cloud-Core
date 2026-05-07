@@ -1,0 +1,36 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Hardhat build output
+cache/
+artifacts/
+typechain/
+typechain-types/
+
+# Coverage
+coverage/
+coverage.json
+.nyc_output/
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+
+# Per-network deployment records (keep .example if any)
+deployments/*.json
+!deployments/*.example.json
+
+# OpenZeppelin upgrades manifest (network-specific; keep mainnet/testnet
+# files in private storage rather than git for security)
+.openzeppelin/unknown-*.json
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,86 @@
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.env.local
+*.log
+.DS_Store
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+pgdata/
+redis-data/
+minio-data/
+uploads/
+*.sqlite
+*.db
+
+# ─── GCP service account keys (NEVER commit) ────────
+gcp-sa-key.json
+*-sa-key.json
+zeni-cloud-core-*.json
+zeni-cloud-prod-*.json
+zeni-cloud-*-sa.json
+credentials.json
+service-account*.json
+*.p12
+*.p8
+*.pem
+*.key
+
+# ─── Secrets, env, local override ────────────────────
+.env
+.env.*
+!.env.example
+local-secrets.yaml
+secrets.json
+auth-token*.txt
+
+# ─── Credential markdown / postman / settings (production secrets) ──
+docs/*CREDENTIALS*.md
+docs/*credentials*.md
+docs/NEXBUILD_FULL_CREDENTIALS.md
+docs/NEXDESIGN_API_QUICKSTART.md
+docs/zenicloud.postman_collection.json
+docs/*.postman_collection.json
+ANIMA_MIGRATION_TO_ZENICLOUD.md
+.claude/settings.local.json
+.claude/projects/
+.claude/cache/
+
+# ─── Internal credential dumps (per-project) ─────────
+NEXBUILD_FULL_CREDENTIALS.md
+ZENI_SESSION_HANDOFF.md
+*_CREDENTIALS_*.md
+*_handoff*.md
+*_HANDOFF*.md
+
+# ─── IDE / OS ────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+Thumbs.db
+
+# ─── Build artifacts ─────────────────────────────────
+*.tar.gz
+*.zip
+backend/static/
+.next/
+out/
+
+# ─── Test reports / coverage ─────────────────────────
+.coverage
+htmlcov/
+.pytest_cache/
+playwright-report/
+test-results/
+tests/e2e/node_modules/
+
+# ─── Tauri / build farm temp files ───────────────────
+target/
+*.exe.tmp
+*.dmg.tmp

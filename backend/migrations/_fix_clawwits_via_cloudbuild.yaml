@@ -1,0 +1,35 @@
+steps:
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        echo "Installing postgresql-client + cloud-sql-proxy..."
+        apt-get update -qq && apt-get install -y -qq postgresql-client wget
+        wget -q https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.13.0/cloud-sql-proxy.linux.amd64 -O /tmp/cloud-sql-proxy
+        chmod +x /tmp/cloud-sql-proxy
+        echo "Starting Cloud SQL Auth Proxy..."
+        /tmp/cloud-sql-proxy --port 5433 zeni-cloud-core:us-central1:zeni-cloud-db &
+        PROXY_PID=$$!
+        sleep 8
+        echo "Fetching DB password from Secret Manager..."
+        DB_URL=$(gcloud secrets versions access latest --secret=zeni-database-url --project=zeni-cloud-core)
+        echo "DB_URL preview: $${DB_URL:0:40}..."
+        # The URL format is postgresql+asyncpg://user:pwd@/dbname?host=/cloudsql/instance
+        # Hardcode dbname=zenicore + user=zeni, only parse password
+        DB_USER=$(echo "$$DB_URL" | sed -E 's|.*://([^:]+):.*|\1|')
+        DB_NAME="zeni_cloud"
+        DB_PWD=$(echo "$$DB_URL" | sed -E 's|.*://[^:]+:([^@]+)@.*|\1|')
+        echo "DB_USER=$$DB_USER DB_NAME=$$DB_NAME"
+        echo "Downloading SQL fix..."
+        gsutil cp gs://zeni-cloud-core_cloudbuild/sql-imports/999_fix_clawwits.sql /tmp/fix.sql
+        echo "Applying SQL fix via psql..."
+        PGPASSWORD="$$DB_PWD" psql -h 127.0.0.1 -p 5433 -U "$$DB_USER" -d "$$DB_NAME" -v ON_ERROR_STOP=1 -f /tmp/fix.sql
+        echo "Verifying fix..."
+        PGPASSWORD="$$DB_PWD" psql -h 127.0.0.1 -p 5433 -U "$$DB_USER" -d "$$DB_NAME" -c "SELECT u.email, uw.role, uw.workspace_id FROM users u JOIN user_workspaces uw ON uw.user_id = u.id WHERE u.email = 'chairman@clawwits.com';"
+        kill $$PROXY_PID 2>/dev/null || true
+        echo "✓ Fix applied successfully"
+options:
+  logging: CLOUD_LOGGING_ONLY
+timeout: '300s'

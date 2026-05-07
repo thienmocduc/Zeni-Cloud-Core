@@ -1,0 +1,7 @@
+GCP_PROJECT_ID: zeni-cloud-core
+GCP_REGION: us-central1
+GCS_BUCKET_PREFIX: "zeni-"
+ADMIN_EMAIL: "caotuanphat581@gmail.com"
+ADMIN_NAME: "Cao Tuan Phat (CEO Zeni)"
+ALLOWED_ORIGINS: "https://zenicloud.io,https://www.zenicloud.io,https://zeni-backend-1026010018600.us-central1.run.app,http://localhost:8080"
+APP_BASE_URL: "https://zenicloud.io"

@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pháp lý — Zeni Cloud</title>
+<meta name="description" content="Tổng hợp tài liệu pháp lý của Zeni Cloud: Điều khoản dịch vụ, Chính sách bảo mật, DPA, Chính sách dữ liệu AI, Cookies." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a14;
+    --bg-card: #14141f;
+    --bg-card-hover: #1a1a28;
+    --ink: #e5e7eb;
+    --ink-muted: #9ca3af;
+    --ink-soft: #6e6e80;
+    --accent: #fde68a;
+    --accent-2: #f5c46b;
+    --accent-3: #f59e0b;
+    --accent-soft: rgba(253, 230, 138, 0.10);
+    --border: rgba(253, 230, 138, 0.18);
+    --border-soft: rgba(255, 255, 255, 0.06);
+    --success: #10b981;
+  }
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background:
+      radial-gradient(ellipse at top, rgba(253, 230, 138, 0.06), transparent 60%),
+      var(--bg);
+  }
+  header.site {
+    border-bottom: 1px solid var(--border-soft);
+    padding: 18px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(12px);
+    background: rgba(10, 10, 20, 0.85);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 12px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700; font-size: 18px;
+    color: var(--ink); text-decoration: none;
+  }
+  .brand-dot {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-3));
+    display: flex; align-items: center; justify-content: center;
+    color: var(--bg); font-weight: 800;
+  }
+  nav.top-nav { display: flex; gap: 18px; align-items: center; }
+  nav.top-nav a {
+    color: var(--ink-muted); text-decoration: none;
+    font-size: 14px; font-weight: 500; transition: color 0.2s;
+  }
+  nav.top-nav a:hover { color: var(--accent); }
+  .btn-back {
+    border: 1px solid var(--border);
+    padding: 8px 16px;
+    border-radius: 8px;
+    color: var(--accent) !important;
+    font-weight: 600;
+  }
+  .btn-back:hover { background: var(--accent-soft); }
+  .lang-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--ink-muted);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer;
+  }
+  .lang-btn:hover { color: var(--accent); border-color: var(--accent); }
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 60px 24px 80px;
+  }
+  .hero { text-align: center; margin-bottom: 60px; }
+  .hero-eyebrow {
+    color: var(--accent);
+    font-size: 13px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 44px; font-weight: 800;
+    margin-bottom: 18px;
+    background: linear-gradient(135deg, #ffffff 0%, var(--accent) 60%, var(--accent-3) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: -0.02em;
+  }
+  .hero p {
+    font-size: 17px; color: var(--ink-muted);
+    max-width: 700px; margin: 0 auto;
+  }
+  .last-updated {
+    display: inline-block; margin-top: 20px;
+    padding: 6px 14px;
+    background: var(--accent-soft);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--accent);
+    font-size: 13px; font-weight: 500;
+  }
+  .docs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 22px;
+    margin-bottom: 60px;
+  }
+  .doc-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    padding: 28px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .doc-card::before {
+    content: ''; position: absolute;
+    top: 0; left: 0;
+    width: 4px; height: 100%;
+    background: linear-gradient(180deg, var(--accent), var(--accent-3));
+    transform: scaleY(0);
+    transform-origin: top;
+    transition: transform 0.3s;
+  }
+  .doc-card:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border);
+    transform: translateY(-3px);
+    box-shadow: 0 20px 40px -20px rgba(253, 230, 138, 0.18);
+  }
+  .doc-card:hover::before { transform: scaleY(1); }
+  .doc-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent);
+    font-size: 20px; font-weight: 800;
+    margin-bottom: 18px;
+  }
+  .doc-card h2 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 20px; font-weight: 700;
+    margin-bottom: 10px;
+    color: var(--ink);
+  }
+  .doc-card p {
+    color: var(--ink-muted);
+    font-size: 14px;
+    margin-bottom: 18px;
+    flex: 1;
+  }
+  .card-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-soft);
+    font-size: 12px; color: var(--ink-soft);
+  }
+  .badge {
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: var(--success);
+    padding: 2px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 600;
+  }
+  .badge.stub {
+    background: rgba(168, 168, 184, 0.08);
+    border: 1px solid var(--border-soft);
+    color: var(--ink-soft);
+  }
+  .arrow {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .commitment {
+    background: linear-gradient(135deg, rgba(253, 230, 138, 0.06), rgba(245, 158, 11, 0.03));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px;
+    margin-bottom: 60px;
+  }
+  .commitment h3 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 22px; color: var(--accent);
+    margin-bottom: 14px;
+  }
+  .commitment p {
+    color: var(--ink-muted); font-size: 14px;
+    margin-bottom: 16px;
+  }
+  .commitment ul {
+    margin: 0 0 0 20px;
+    color: var(--ink-muted); font-size: 14px;
+  }
+  .commitment ul li { margin-bottom: 8px; }
+  .commitment strong { color: var(--ink); }
+  .commitment code {
+    background: rgba(253, 230, 138, 0.08);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+  .contact-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    padding: 36px;
+    text-align: center;
+  }
+  .contact-section h3 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 22px; margin-bottom: 12px; color: var(--ink);
+  }
+  .contact-section p {
+    color: var(--ink-muted);
+    margin-bottom: 22px;
+    font-size: 15px;
+  }
+  .contact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+    max-width: 700px; margin: 0 auto;
+  }
+  .contact-item {
+    padding: 18px;
+    background: rgba(253, 230, 138, 0.04);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    text-align: left;
+  }
+  .contact-item .label {
+    font-size: 12px; color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  .contact-item a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600; font-size: 15px;
+  }
+  .contact-item a:hover { text-decoration: underline; }
+  footer.site {
+    border-top: 1px solid var(--border-soft);
+    padding: 30px 24px;
+    text-align: center;
+    color: var(--ink-muted);
+    font-size: 13px;
+    margin-top: 60px;
+  }
+  footer.site a { color: var(--accent); text-decoration: none; }
+  @media (max-width: 640px) {
+    h1 { font-size: 30px; }
+    main { padding: 40px 18px 60px; }
+    .docs-grid { grid-template-columns: 1fr; }
+    nav.top-nav { gap: 10px; }
+    nav.top-nav a:not(.btn-back):not(.lang-btn) { display: none; }
+    .commitment, .contact-section { padding: 24px; }
+  }
+</style>
+</head>
+<body>
+<header class="site">
+  <a href="/" class="brand">
+    <span class="brand-dot">Z</span>
+    <span>Zeni Cloud</span>
+  </a>
+  <nav class="top-nav">
+    <a href="/">Trang chủ</a>
+    <a href="/docs">Tài liệu</a>
+    <a href="/app" class="btn-back">Vào ứng dụng</a>
+    <button class="lang-btn" onclick="alert('English version coming Q3/2026.')">EN</button>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-eyebrow">Legal Center</div>
+    <h1>Pháp lý Zeni Cloud</h1>
+    <p>Tất cả tài liệu pháp lý điều chỉnh việc sử dụng nền tảng Zeni Cloud — minh bạch, đầy đủ và tuân thủ pháp luật Việt Nam (Nghị định 13/2023/NĐ-CP) cũng như chuẩn quốc tế (GDPR cho khách hàng có hoạt động tại EU).</p>
+    <div class="last-updated">Phiên bản v1.0 — Cập nhật lần cuối: 30/04/2026</div>
+  </section>
+
+  <section class="docs-grid">
+
+    <a href="terms.html" class="doc-card">
+      <div class="doc-icon">§</div>
+      <h2>Điều khoản dịch vụ</h2>
+      <p>Quyền và nghĩa vụ giữa người dùng và Zeni Cloud khi sử dụng nền tảng — bao gồm thanh toán, sở hữu trí tuệ, trách nhiệm và chấm dứt dịch vụ.</p>
+      <div class="card-footer">
+        <span>Đọc khoảng 8 phút</span>
+        <span class="badge">v1.0</span>
+      </div>
+    </a>
+
+    <a href="privacy.html" class="doc-card">
+      <div class="doc-icon">P</div>
+      <h2>Chính sách bảo mật</h2>
+      <p>Cách Zeni Cloud thu thập, lưu trữ, mã hoá và chia sẻ dữ liệu cá nhân — bao gồm chính sách Admin Access on-chain qua Smart Contract Polygon, opt-in AI training, quyền của chủ thể dữ liệu theo Nghị định 13/2023/NĐ-CP.</p>
+      <div class="card-footer">
+        <span>Đọc khoảng 12 phút</span>
+        <span class="badge">v1.0</span>
+      </div>
+    </a>
+
+    <a href="dpa.html" class="doc-card">
+      <div class="doc-icon">D</div>
+      <h2>Hợp đồng xử lý dữ liệu (DPA)</h2>
+      <p>Thoả thuận B2B giữa khách hàng (Bên Kiểm soát Dữ liệu) và Zeni Cloud (Bên Xử lý Dữ liệu). Áp dụng cho doanh nghiệp lưu trữ dữ liệu cá nhân của khách hàng cuối.</p>
+      <div class="card-footer">
+        <span>Đọc khoảng 10 phút</span>
+        <span class="badge">v1.0</span>
+      </div>
+    </a>
+
+    <a href="ai-data-usage.html" class="doc-card">
+      <div class="doc-icon">A</div>
+      <h2>Chính sách dữ liệu AI</h2>
+      <p>Cách dữ liệu (đã ẩn danh hoá) được dùng để huấn luyện Zeni Claw, Zeni Make và các agent chuyên biệt. Chi tiết Differential Privacy ε=1.0, 5 lớp chống rò rỉ, opt-in/opt-out, ưu đãi 20%.</p>
+      <div class="card-footer">
+        <span>Đọc khoảng 10 phút</span>
+        <span class="badge">v1.0</span>
+      </div>
+    </a>
+
+    <a href="cookies.html" class="doc-card" onclick="event.preventDefault(); alert('Chính sách Cookies sẽ được công bố vào Q3/2026. Hiện tại Zeni Cloud chỉ sử dụng cookie kỹ thuật cần thiết (session, CSRF token), không dùng cookie quảng cáo bên thứ ba.');">
+      <div class="doc-icon">C</div>
+      <h2>Chính sách Cookies</h2>
+      <p>Loại cookie Zeni Cloud sử dụng, mục đích, thời hạn lưu, và cách kiểm soát. Hiện tại nền tảng chỉ dùng cookie kỹ thuật cần thiết, không dùng cookie quảng cáo bên thứ ba.</p>
+      <div class="card-footer">
+        <span>Đọc khoảng 3 phút</span>
+        <span class="badge stub">Sắp ra mắt</span>
+      </div>
+    </a>
+
+  </section>
+
+  <section class="commitment">
+    <h3>Năm cam kết cốt lõi của Zeni Cloud</h3>
+    <p>Trước khi đi vào chi tiết pháp lý, đây là năm nguyên tắc bất di bất dịch chúng tôi cam kết với mọi khách hàng:</p>
+    <ul>
+      <li><strong>Quản trị viên Zeni mặc định không truy cập dữ liệu khách hàng.</strong> Chỉ truy cập trong hai trường hợp: khách hàng yêu cầu hỗ trợ qua email chính chủ (cấp quyền 6 đến 24 giờ rồi tự động đóng) hoặc cơ quan thẩm quyền yêu cầu (xác thực đa chữ ký 3 trên 5 trên blockchain Polygon).</li>
+      <li><strong>Mọi lượt truy cập đều ghi nhận on-chain.</strong> Khách hàng có thể tự kiểm tra tại polygonscan.com với mã hợp đồng <code>ZeniAccessControl</code>. Bản ghi không thể sửa, không thể xoá.</li>
+      <li><strong>Mã hoá CMEK theo từng không gian làm việc.</strong> Khoá mã hoá riêng cho mỗi tổ chức. Khi khách thu hồi khoá, ngay cả Google Cloud cũng không thể giải mã dữ liệu.</li>
+      <li><strong>Dữ liệu huấn luyện AI luôn được ẩn danh hoá năm bước</strong> trước khi đưa vào kho huấn luyện. Khách hàng tự chọn opt-in (giảm 20% giá) hoặc opt-out (mặc định khi không tích chọn).</li>
+      <li><strong>Tuân thủ Nghị định 13/2023/NĐ-CP</strong> về bảo vệ dữ liệu cá nhân Việt Nam, đồng thời cam kết tuân thủ GDPR cho khách hàng có hoạt động tại EU.</li>
+    </ul>
+  </section>
+
+  <section class="contact-section">
+    <h3>Liên hệ pháp lý</h3>
+    <p>Nếu có câu hỏi về tài liệu pháp lý hoặc cách Zeni Cloud xử lý dữ liệu, vui lòng liên hệ qua các kênh sau.</p>
+    <div class="contact-grid">
+      <div class="contact-item">
+        <div class="label">Pháp lý chung</div>
+        <a href="mailto:legal@zenicloud.io">legal@zenicloud.io</a>
+      </div>
+      <div class="contact-item">
+        <div class="label">Bảo mật &amp; quyền riêng tư (DPO)</div>
+        <a href="mailto:dpo@zenicloud.io">dpo@zenicloud.io</a>
+      </div>
+      <div class="contact-item">
+        <div class="label">Báo cáo vi phạm bảo mật</div>
+        <a href="mailto:security@zenicloud.io">security@zenicloud.io</a>
+      </div>
+      <div class="contact-item">
+        <div class="label">Đối tác doanh nghiệp &amp; DPA</div>
+        <a href="mailto:enterprise@zenicloud.io">enterprise@zenicloud.io</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  Zeni Holdings Vietnam · <a href="https://zenicloud.io">zenicloud.io</a> · Phiên bản v1.0 — Hiệu lực 30/04/2026 · Bản quyền 2026.
+</footer>
+</body>
+</html>

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dịch thuật EN VI — Zeni Cloud Docs</title>
+<meta name="description" content="API dịch thuật chất lượng cao — auto-detect ngôn ngữ nguồn, hỗ trợ 7 ngôn ngữ, $20 cho 1 triệu ký tự.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root { --bg-void:#0a0a14; --bg-elev:#11111d; --bg-card:#14142a; --border:rgba(168,139,250,0.15); --border-strong:rgba(168,139,250,0.3); --ink-100:#e5e7eb; --ink-200:#c4b5fd; --ink-300:#9e8be5; --ink-400:#7c6bb0; --gold:#fde68a; --indigo:#7d68ff; --crown:#a855f7; --aurora:#22d3ee; --code-bg:#0d1117; --font:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace; }
+* { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior:smooth; scroll-padding-top:80px; }
+body { font-family:var(--font); background:var(--bg-void); color:var(--ink-100); font-size:15px; line-height:1.7; min-height:100vh; }
+body::before { content:''; position:fixed; inset:0; background: radial-gradient(ellipse 1000px 700px at 80% 5%, rgba(168,85,247,0.08), transparent 55%), radial-gradient(ellipse 900px 600px at 5% 90%, rgba(99,102,241,0.06), transparent 55%); z-index:-1; pointer-events:none; }
+a { color:var(--indigo); text-decoration:none; }
+a:hover { color:var(--gold); }
+header.topbar { position:sticky; top:0; z-index:100; background:rgba(10,10,20,0.85); backdrop-filter:blur(12px); border-bottom:1px solid var(--border); }
+.topbar-inner { max-width:1400px; margin:0 auto; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:24px; }
+.logo { display:flex; align-items:center; gap:10px; font-weight:800; font-size:18px; color:var(--ink-100); }
+.logo-mark { width:32px; height:32px; background:linear-gradient(135deg, var(--indigo), var(--crown)); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; color:white; }
+.breadcrumb { color:var(--ink-300); font-size:14px; display:flex; align-items:center; gap:8px; }
+.breadcrumb-sep { opacity:.4; }
+nav.header-nav { display:flex; align-items:center; gap:20px; font-size:14px; }
+nav.header-nav a { color:var(--ink-200); }
+nav.header-nav a.cta { background:var(--indigo); color:white; padding:8px 16px; border-radius:8px; font-weight:600; }
+.layout { max-width:1400px; margin:0 auto; display:grid; grid-template-columns:240px 1fr 220px; gap:32px; padding:32px 24px; }
+aside.sidebar { position:sticky; top:80px; height:calc(100vh - 100px); overflow-y:auto; padding-right:8px; }
+.sidebar h4 { font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-300); margin:24px 0 8px; font-weight:700; }
+.sidebar h4:first-child { margin-top:0; }
+.sidebar ul { list-style:none; }
+.sidebar li a { display:block; padding:7px 12px; border-radius:6px; color:var(--ink-200); font-size:14px; }
+.sidebar li a:hover { background:var(--bg-elev); color:var(--gold); }
+.sidebar li a.active { background:rgba(125,104,255,0.12); color:var(--gold); border-left:2px solid var(--gold); padding-left:10px; }
+aside.toc { position:sticky; top:80px; height:calc(100vh - 100px); overflow-y:auto; font-size:13px; }
+.toc h5 { font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-300); margin-bottom:12px; font-weight:700; }
+.toc ul { list-style:none; border-left:2px solid var(--border); }
+.toc li a { display:block; padding:6px 14px; color:var(--ink-300); }
+.toc li a:hover { color:var(--gold); }
+main.content { min-width:0; max-width:820px; }
+.meta-bar { display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--ink-400); margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid var(--border); font-family:var(--mono); }
+.meta-bar .dot { width:4px; height:4px; border-radius:50%; background:var(--ink-400); display:inline-block; }
+.content h1 { font-size:36px; font-weight:800; line-height:1.2; margin-bottom:14px; background:linear-gradient(135deg, var(--ink-100) 0%, var(--ink-200) 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+.content h2 { font-size:24px; font-weight:700; margin:40px 0 14px; }
+.content h3 { font-size:18px; font-weight:700; margin:28px 0 10px; color:var(--gold); }
+.content p { margin-bottom:14px; }
+.content ul, .content ol { margin:14px 0 14px 24px; }
+.content li { margin-bottom:8px; }
+.content strong { color:var(--gold); font-weight:600; }
+.content code { font-family:var(--mono); font-size:13px; background:var(--bg-elev); padding:2px 7px; border-radius:4px; color:var(--gold); border:1px solid var(--border); }
+.content pre { background:var(--code-bg); border:1px solid var(--border); border-radius:10px; padding:18px 20px; margin:18px 0; overflow-x:auto; position:relative; }
+.content pre code { background:transparent; border:none; padding:0; color:var(--ink-100); font-size:13px; }
+.lang-tag { position:absolute; top:8px; right:12px; font-family:var(--mono); font-size:11px; color:var(--ink-400); background:var(--bg-elev); padding:2px 8px; border-radius:4px; border:1px solid var(--border); }
+.lead { font-size:17px; color:var(--ink-200); margin-bottom:24px; }
+.callout { padding:16px 20px; border-radius:10px; margin:18px 0; border-left:3px solid; background:var(--bg-elev); }
+.callout.tip { border-left-color:var(--aurora); }
+.callout.warn { border-left-color:var(--gold); }
+.callout.info { border-left-color:var(--indigo); }
+.callout-title { font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; }
+.callout.tip .callout-title { color:var(--aurora); }
+.callout.warn .callout-title { color:var(--gold); }
+.callout.info .callout-title { color:var(--indigo); }
+.table { width:100%; border-collapse:collapse; margin:18px 0; font-size:14px; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.table th, .table td { padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); }
+.table th { background:var(--bg-elev); color:var(--gold); font-weight:600; font-size:13px; text-transform:uppercase; letter-spacing:0.05em; }
+.table tr:last-child td { border-bottom:none; }
+.table td.code { font-family:var(--mono); font-size:13px; color:var(--gold); }
+.lang-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin:18px 0; }
+.lang-card { padding:14px; background:var(--bg-card); border:1px solid var(--border); border-radius:10px; text-align:center; }
+.lang-card .flag { font-size:24px; font-family:var(--mono); color:var(--gold); font-weight:700; }
+.lang-card .name { font-size:13px; color:var(--ink-200); margin-top:6px; }
+.lang-card .iso { font-size:11px; font-family:var(--mono); color:var(--ink-400); }
+footer.footer { margin-top:64px; padding:32px 0 24px; border-top:1px solid var(--border); text-align:center; color:var(--ink-300); font-size:13px; }
+footer.footer a { color:var(--ink-200); margin:0 12px; }
+footer .version { display:inline-block; font-family:var(--mono); font-size:11px; color:var(--ink-400); margin-top:12px; padding:4px 10px; background:var(--bg-elev); border-radius:999px; border:1px solid var(--border); }
+@media (max-width:1100px) { .layout { grid-template-columns:220px 1fr; } aside.toc { display:none; } }
+@media (max-width:800px) { .layout { grid-template-columns:1fr; padding:20px 16px; } aside.sidebar { position:static; height:auto; } .topbar-inner { flex-wrap:wrap; gap:10px; } .breadcrumb { display:none; } .content h1 { font-size:28px; } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="index.html" class="logo">
+      <span class="logo-mark">Z</span>
+      <span>Zeni Cloud</span>
+    </a>
+    <div class="breadcrumb">
+      <a href="index.html">Docs</a>
+      <span class="breadcrumb-sep">/</span>
+      <span>Translate</span>
+    </div>
+    <nav class="header-nav">
+      <a href="/">Trang chủ</a>
+      <a href="index.html">Docs</a>
+      <a href="/pricing">Giá</a>
+      <a href="/login">Đăng nhập</a>
+      <a href="/signup" class="cta">Đăng ký</a>
+    </nav>
+  </div>
+</header>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <h4>Bắt đầu</h4>
+    <ul>
+      <li><a href="quickstart.html">Quickstart 5 phút</a></li>
+      <li><a href="ai-call.html">Authentication & API</a></li>
+    </ul>
+    <h4>Hạ tầng</h4>
+    <ul>
+      <li><a href="custom-domain.html">Custom Domain</a></li>
+      <li><a href="vector.html">Database & Vector</a></li>
+      <li><a href="cost-dashboard.html">Cost & Quota</a></li>
+    </ul>
+    <h4>AI & Tự động hoá</h4>
+    <ul>
+      <li><a href="ai-call.html">AI Router</a></li>
+      <li><a href="ocr.html">OCR Tiếng Việt</a></li>
+      <li><a href="translate.html" class="active">Dịch thuật</a></li>
+      <li><a href="vector.html">Vector Search</a></li>
+      <li><a href="cron.html">Cron Job</a></li>
+      <li><a href="webhook.html">Webhook</a></li>
+    </ul>
+    <h4>Khác</h4>
+    <ul><li><a href="faq.html">FAQ</a></li></ul>
+  </aside>
+
+  <main class="content">
+    <div class="meta-bar">
+      <span>Đọc · 7 phút</span>
+      <span class="dot"></span>
+      <span>Cập nhật 30/04/2026</span>
+      <span class="dot"></span>
+      <span>Cấp độ · Cơ bản</span>
+    </div>
+
+    <h1>Dịch thuật EN VI và 5 ngôn ngữ khác</h1>
+    <p class="lead">API dịch thuật chất lượng cao, auto-detect ngôn ngữ nguồn, giữ nguyên định dạng (markdown, HTML, code block). Đặc biệt tối ưu cặp Anh — Việt, phù hợp cho localization, hỗ trợ khách hàng quốc tế và content marketing.</p>
+
+    <h2 id="endpoint">Endpoint</h2>
+    <pre><span class="lang-tag">http</span><code>POST /api/v1/translate?ws=my_workspace
+Authorization: Bearer zeni_pat_xxx
+Content-Type: application/json</code></pre>
+
+    <h2 id="languages">Ngôn ngữ hỗ trợ</h2>
+    <div class="lang-grid">
+      <div class="lang-card"><div class="flag">VI</div><div class="name">Tiếng Việt</div><div class="iso">vi</div></div>
+      <div class="lang-card"><div class="flag">EN</div><div class="name">English</div><div class="iso">en</div></div>
+      <div class="lang-card"><div class="flag">JA</div><div class="name">日本語</div><div class="iso">ja</div></div>
+      <div class="lang-card"><div class="flag">ZH</div><div class="name">中文</div><div class="iso">zh</div></div>
+      <div class="lang-card"><div class="flag">KO</div><div class="name">한국어</div><div class="iso">ko</div></div>
+      <div class="lang-card"><div class="flag">TH</div><div class="name">ไทย</div><div class="iso">th</div></div>
+      <div class="lang-card"><div class="flag">ID</div><div class="name">Bahasa</div><div class="iso">id</div></div>
+    </div>
+
+    <h2 id="basic">Dịch cơ bản</h2>
+    <pre><span class="lang-tag">bash</span><code>curl -X POST "https://zenicloud.io/api/v1/translate?ws=prod" \
+  -H "Authorization: Bearer $ZENI_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Hello, how can I help you today?",
+    "target": "vi"
+  }'</code></pre>
+
+    <p>Response:</p>
+    <pre><span class="lang-tag">json</span><code>{
+  "translated": "Xin chào, tôi có thể giúp gì cho bạn hôm nay?",
+  "source_detected": "en",
+  "target": "vi",
+  "char_count": 33,
+  "cost_usd": 0.0007,
+  "latency_ms": 230
+}</code></pre>
+
+    <div class="callout tip">
+      <div class="callout-title">Auto-detect</div>
+      <div>Bạn không cần truyền <code>source</code> — Zeni tự nhận diện ngôn ngữ nguồn với độ chính xác trên 99 phần trăm cho text từ 10 ký tự trở lên. Nếu muốn ép kiểu, truyền <code>source: "en"</code> tường minh.</div>
+    </div>
+
+    <h2 id="batch">Dịch batch — nhiều câu một lúc</h2>
+    <p>Để giảm latency và chi phí, gửi mảng <code>texts</code>:</p>
+    <pre><span class="lang-tag">json</span><code>{
+  "texts": [
+    "Welcome to our store",
+    "Your order has been confirmed",
+    "Free shipping on orders over $50"
+  ],
+  "target": "vi"
+}</code></pre>
+
+    <pre><span class="lang-tag">json</span><code>{
+  "translations": [
+    {"original": "Welcome to our store", "translated": "Chào mừng đến cửa hàng của chúng tôi"},
+    {"original": "Your order has been confirmed", "translated": "Đơn hàng của bạn đã được xác nhận"},
+    {"original": "Free shipping on orders over $50", "translated": "Miễn phí vận chuyển đơn từ 50 đô"}
+  ],
+  "source_detected": "en",
+  "total_chars": 89
+}</code></pre>
+
+    <h2 id="python">Ví dụ Python — localize app</h2>
+    <pre><span class="lang-tag">python</span><code>import os, json, requests
+
+ZENI = "https://zenicloud.io/api/v1"
+TOKEN = os.environ["ZENI_TOKEN"]
+
+def translate(text, target="vi", source=None):
+    body = {"text": text, "target": target}
+    if source:
+        body["source"] = source
+    r = requests.post(
+        f"{ZENI}/translate?ws=prod",
+        headers={"Authorization": f"Bearer {TOKEN}"},
+        json=body,
+        timeout=30,
+    )
+    r.raise_for_status()
+    return r.json()["translated"]
+
+# Localize toàn bộ file i18n EN sang VI
+with open("locales/en.json", "r") as f:
+    en_strings = json.load(f)
+
+vi_strings = {}
+for key, value in en_strings.items():
+    vi_strings[key] = translate(value, target="vi")
+
+with open("locales/vi.json", "w", encoding="utf-8") as f:
+    json.dump(vi_strings, f, ensure_ascii=False, indent=2)
+
+print(f"Dịch xong {len(vi_strings)} chuỗi")
+</code></pre>
+
+    <h2 id="format">Giữ nguyên định dạng</h2>
+    <p>API hỗ trợ ba chế độ giữ format:</p>
+
+    <h3 id="markdown-mode">Markdown</h3>
+    <pre><span class="lang-tag">json</span><code>{
+  "text": "# Welcome\n\nThis is a **bold** statement with [a link](https://example.com).",
+  "target": "vi",
+  "preserve_format": "markdown"
+}</code></pre>
+
+    <p>Markdown syntax (heading, bold, link, code) được giữ nguyên, chỉ phần text dịch:</p>
+    <pre><span class="lang-tag">markdown</span><code># Chào mừng
+
+Đây là một câu **in đậm** với [một liên kết](https://example.com).</code></pre>
+
+    <h3 id="html-mode">HTML</h3>
+    <pre><span class="lang-tag">json</span><code>{
+  "text": "&lt;p&gt;Click &lt;a href='/buy'&gt;here&lt;/a&gt; to purchase.&lt;/p&gt;",
+  "target": "vi",
+  "preserve_format": "html"
+}</code></pre>
+
+    <p>Tag và attribute được giữ nguyên, chỉ text node dịch.</p>
+
+    <h3 id="code-mode">Code-aware</h3>
+    <pre><span class="lang-tag">json</span><code>{
+  "text": "Run `npm install` then start the server.",
+  "target": "vi",
+  "preserve_format": "code"
+}</code></pre>
+
+    <p>Code block (backtick, fence) được giữ nguyên, không bị dịch sai thành câu lệnh khác.</p>
+
+    <h2 id="usecases">Use cases</h2>
+    <ul>
+      <li><strong>Localization web/app</strong> — auto-translate file i18n từ EN sang VI/JA/KO khi launch thị trường mới</li>
+      <li><strong>Customer support</strong> — dịch email khách quốc tế sang tiếng Việt cho team CS</li>
+      <li><strong>Content marketing</strong> — dịch bài blog VN sang EN để SEO quốc tế</li>
+      <li><strong>E-commerce</strong> — dịch description sản phẩm từ supplier nước ngoài</li>
+      <li><strong>Document</strong> — dịch hợp đồng, tài liệu kỹ thuật (kết hợp với <a href="ocr.html">OCR</a>)</li>
+    </ul>
+
+    <h2 id="pricing">Chi phí</h2>
+    <table class="table">
+      <thead><tr><th>Khối lượng</th><th>Đơn giá</th><th>Tương đương</th></tr></thead>
+      <tbody>
+        <tr><td>Per 1M chars</td><td>$20</td><td>~480.000 VND</td></tr>
+        <tr><td>Free tier</td><td>500K chars/tháng</td><td>~10 cuốn sách 200 trang</td></tr>
+        <tr><td>Starter trở lên</td><td>5M chars miễn phí</td><td>Đủ cho startup nhỏ</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout info">
+      <div class="callout-title">Cache tự động</div>
+      <div>Câu giống y hệt được dịch lại sẽ trả về từ cache trong 24 giờ — miễn phí. Hữu ích cho website có nhiều khách xem cùng một trang.</div>
+    </div>
+
+    <h2 id="quality">Chất lượng & limit</h2>
+    <ul>
+      <li>Tối đa 30.000 ký tự một request — cắt nhỏ nếu vượt</li>
+      <li>Batch tối đa 100 câu một lần</li>
+      <li>Rate limit 60 req/phút (Free), 600 (Starter+)</li>
+      <li>Latency trung bình 200-500ms cho text dưới 500 chars</li>
+      <li>Hỗ trợ glossary (từ điển riêng) cho gói Pro+</li>
+    </ul>
+
+    <h2 id="next">Bước tiếp theo</h2>
+    <ul>
+      <li><a href="ai-call.html">AI Router</a> — dịch sáng tạo hơn, giữ tone of voice</li>
+      <li><a href="webhook.html">Webhook</a> — dịch event realtime cho chat</li>
+      <li><a href="cron.html">Cron</a> — dịch định kỳ database content</li>
+    </ul>
+
+  </main>
+
+  <aside class="toc">
+    <h5>Trên trang này</h5>
+    <ul>
+      <li><a href="#endpoint">Endpoint</a></li>
+      <li><a href="#languages">Ngôn ngữ</a></li>
+      <li><a href="#basic">Dịch cơ bản</a></li>
+      <li><a href="#batch">Batch</a></li>
+      <li><a href="#python">Python</a></li>
+      <li><a href="#format">Giữ format</a></li>
+      <li><a href="#usecases">Use cases</a></li>
+      <li><a href="#pricing">Chi phí</a></li>
+      <li><a href="#quality">Chất lượng</a></li>
+    </ul>
+  </aside>
+
+</div>
+
+<footer class="footer">
+  <div>
+    <a href="https://zenicloud.io/">Trang chủ</a>
+    <a href="https://zenicloud.io/pricing">Giá</a>
+    <a href="https://zenicloud.io/legal/privacy.html">Bảo mật</a>
+    <a href="mailto:support@zenicloud.io">Liên hệ</a>
+  </div>
+  <p style="margin-top:12px;">Zeni Cloud Co., Ltd. — TPHCM, Việt Nam</p>
+  <span class="version">v0.4.0 · Cập nhật 30/04/2026</span>
+</footer>
+
+</body>
+</html>

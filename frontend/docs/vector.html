@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vector Search & RAG — Zeni Cloud Docs</title>
+<meta name="description" content="Xây chatbot biết tài liệu công ty với pgvector trên Cloud SQL — embed, upsert, search, RAG.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root { --bg-void:#0a0a14; --bg-elev:#11111d; --bg-card:#14142a; --border:rgba(168,139,250,0.15); --border-strong:rgba(168,139,250,0.3); --ink-100:#e5e7eb; --ink-200:#c4b5fd; --ink-300:#9e8be5; --ink-400:#7c6bb0; --gold:#fde68a; --indigo:#7d68ff; --crown:#a855f7; --aurora:#22d3ee; --code-bg:#0d1117; --font:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace; }
+* { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior:smooth; scroll-padding-top:80px; }
+body { font-family:var(--font); background:var(--bg-void); color:var(--ink-100); font-size:15px; line-height:1.7; min-height:100vh; }
+body::before { content:''; position:fixed; inset:0; background: radial-gradient(ellipse 1000px 700px at 80% 5%, rgba(168,85,247,0.08), transparent 55%), radial-gradient(ellipse 900px 600px at 5% 90%, rgba(99,102,241,0.06), transparent 55%); z-index:-1; pointer-events:none; }
+a { color:var(--indigo); text-decoration:none; }
+a:hover { color:var(--gold); }
+header.topbar { position:sticky; top:0; z-index:100; background:rgba(10,10,20,0.85); backdrop-filter:blur(12px); border-bottom:1px solid var(--border); }
+.topbar-inner { max-width:1400px; margin:0 auto; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:24px; }
+.logo { display:flex; align-items:center; gap:10px; font-weight:800; font-size:18px; color:var(--ink-100); }
+.logo-mark { width:32px; height:32px; background:linear-gradient(135deg, var(--indigo), var(--crown)); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; color:white; }
+.breadcrumb { color:var(--ink-300); font-size:14px; display:flex; align-items:center; gap:8px; }
+.breadcrumb-sep { opacity:.4; }
+nav.header-nav { display:flex; align-items:center; gap:20px; font-size:14px; }
+nav.header-nav a { color:var(--ink-200); }
+nav.header-nav a.cta { background:var(--indigo); color:white; padding:8px 16px; border-radius:8px; font-weight:600; }
+.layout { max-width:1400px; margin:0 auto; display:grid; grid-template-columns:240px 1fr 220px; gap:32px; padding:32px 24px; }
+aside.sidebar { position:sticky; top:80px; height:calc(100vh - 100px); overflow-y:auto; padding-right:8px; }
+.sidebar h4 { font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-300); margin:24px 0 8px; font-weight:700; }
+.sidebar h4:first-child { margin-top:0; }
+.sidebar ul { list-style:none; }
+.sidebar li a { display:block; padding:7px 12px; border-radius:6px; color:var(--ink-200); font-size:14px; }
+.sidebar li a:hover { background:var(--bg-elev); color:var(--gold); }
+.sidebar li a.active { background:rgba(125,104,255,0.12); color:var(--gold); border-left:2px solid var(--gold); padding-left:10px; }
+aside.toc { position:sticky; top:80px; height:calc(100vh - 100px); overflow-y:auto; font-size:13px; }
+.toc h5 { font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-300); margin-bottom:12px; font-weight:700; }
+.toc ul { list-style:none; border-left:2px solid var(--border); }
+.toc li a { display:block; padding:6px 14px; color:var(--ink-300); }
+.toc li a:hover { color:var(--gold); }
+main.content { min-width:0; max-width:820px; }
+.meta-bar { display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--ink-400); margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid var(--border); font-family:var(--mono); }
+.meta-bar .dot { width:4px; height:4px; border-radius:50%; background:var(--ink-400); display:inline-block; }
+.content h1 { font-size:36px; font-weight:800; line-height:1.2; margin-bottom:14px; background:linear-gradient(135deg, var(--ink-100) 0%, var(--ink-200) 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+.content h2 { font-size:24px; font-weight:700; margin:40px 0 14px; }
+.content h3 { font-size:18px; font-weight:700; margin:28px 0 10px; color:var(--gold); }
+.content p { margin-bottom:14px; }
+.content ul, .content ol { margin:14px 0 14px 24px; }
+.content li { margin-bottom:8px; }
+.content strong { color:var(--gold); font-weight:600; }
+.content code { font-family:var(--mono); font-size:13px; background:var(--bg-elev); padding:2px 7px; border-radius:4px; color:var(--gold); border:1px solid var(--border); }
+.content pre { background:var(--code-bg); border:1px solid var(--border); border-radius:10px; padding:18px 20px; margin:18px 0; overflow-x:auto; position:relative; }
+.content pre code { background:transparent; border:none; padding:0; color:var(--ink-100); font-size:13px; }
+.lang-tag { position:absolute; top:8px; right:12px; font-family:var(--mono); font-size:11px; color:var(--ink-400); background:var(--bg-elev); padding:2px 8px; border-radius:4px; border:1px solid var(--border); }
+.lead { font-size:17px; color:var(--ink-200); margin-bottom:24px; }
+.callout { padding:16px 20px; border-radius:10px; margin:18px 0; border-left:3px solid; background:var(--bg-elev); }
+.callout.tip { border-left-color:var(--aurora); }
+.callout.warn { border-left-color:var(--gold); }
+.callout.info { border-left-color:var(--indigo); }
+.callout-title { font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; }
+.callout.tip .callout-title { color:var(--aurora); }
+.callout.warn .callout-title { color:var(--gold); }
+.callout.info .callout-title { color:var(--indigo); }
+.table { width:100%; border-collapse:collapse; margin:18px 0; font-size:14px; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.table th, .table td { padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); }
+.table th { background:var(--bg-elev); color:var(--gold); font-weight:600; font-size:13px; text-transform:uppercase; letter-spacing:0.05em; }
+.table tr:last-child td { border-bottom:none; }
+.table td.code { font-family:var(--mono); font-size:13px; color:var(--gold); }
+.flow { display:flex; flex-direction:column; gap:14px; margin:24px 0; }
+.flow-step { display:flex; gap:14px; padding:16px; background:var(--bg-card); border:1px solid var(--border); border-radius:10px; }
+.flow-num { width:28px; height:28px; flex-shrink:0; border-radius:50%; background:linear-gradient(135deg, var(--indigo), var(--crown)); color:white; font-weight:700; font-family:var(--mono); display:flex; align-items:center; justify-content:center; }
+.flow-text { flex:1; }
+.flow-text strong { display:block; color:var(--ink-100); font-size:15px; margin-bottom:4px; }
+.flow-text p { color:var(--ink-300); font-size:14px; margin:0; }
+footer.footer { margin-top:64px; padding:32px 0 24px; border-top:1px solid var(--border); text-align:center; color:var(--ink-300); font-size:13px; }
+footer.footer a { color:var(--ink-200); margin:0 12px; }
+footer .version { display:inline-block; font-family:var(--mono); font-size:11px; color:var(--ink-400); margin-top:12px; padding:4px 10px; background:var(--bg-elev); border-radius:999px; border:1px solid var(--border); }
+@media (max-width:1100px) { .layout { grid-template-columns:220px 1fr; } aside.toc { display:none; } }
+@media (max-width:800px) { .layout { grid-template-columns:1fr; padding:20px 16px; } aside.sidebar { position:static; height:auto; } .topbar-inner { flex-wrap:wrap; gap:10px; } .breadcrumb { display:none; } .content h1 { font-size:28px; } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="index.html" class="logo">
+      <span class="logo-mark">Z</span>
+      <span>Zeni Cloud</span>
+    </a>
+    <div class="breadcrumb">
+      <a href="index.html">Docs</a>
+      <span class="breadcrumb-sep">/</span>
+      <span>Vector Search</span>
+    </div>
+    <nav class="header-nav">
+      <a href="/">Trang chủ</a>
+      <a href="index.html">Docs</a>
+      <a href="/pricing">Giá</a>
+      <a href="/login">Đăng nhập</a>
+      <a href="/signup" class="cta">Đăng ký</a>
+    </nav>
+  </div>
+</header>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <h4>Bắt đầu</h4>
+    <ul>
+      <li><a href="quickstart.html">Quickstart 5 phút</a></li>
+      <li><a href="ai-call.html">Authentication & API</a></li>
+    </ul>
+    <h4>Hạ tầng</h4>
+    <ul>
+      <li><a href="custom-domain.html">Custom Domain</a></li>
+      <li><a href="vector.html" class="active">Database & Vector</a></li>
+      <li><a href="cost-dashboard.html">Cost & Quota</a></li>
+    </ul>
+    <h4>AI & Tự động hoá</h4>
+    <ul>
+      <li><a href="ai-call.html">AI Router</a></li>
+      <li><a href="ocr.html">OCR Tiếng Việt</a></li>
+      <li><a href="translate.html">Dịch thuật</a></li>
+      <li><a href="vector.html" class="active">Vector Search</a></li>
+      <li><a href="cron.html">Cron Job</a></li>
+      <li><a href="webhook.html">Webhook</a></li>
+    </ul>
+    <h4>Khác</h4>
+    <ul><li><a href="faq.html">FAQ</a></li></ul>
+  </aside>
+
+  <main class="content">
+    <div class="meta-bar">
+      <span>Đọc · 15 phút</span>
+      <span class="dot"></span>
+      <span>Cập nhật 30/04/2026</span>
+      <span class="dot"></span>
+      <span>Cấp độ · Trung cấp</span>
+    </div>
+
+    <h1>Vector Search trên Cloud SQL pgvector</h1>
+    <p class="lead">Xây hệ thống tìm kiếm theo ngữ nghĩa — không chỉ match từ khoá mà hiểu được ý định người dùng. Nền tảng RAG cho chatbot biết tài liệu công ty, hệ thống đề xuất sản phẩm, và semantic search nội bộ.</p>
+
+    <h2 id="concept">Nguyên lý hoạt động</h2>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-text">
+          <strong>Embedding</strong>
+          <p>Convert text thành vector 768 chiều bằng model <code>text-embedding-004</code>. Mỗi câu/đoạn văn được biểu diễn bởi 768 số float.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-text">
+          <strong>Lưu vào pgvector</strong>
+          <p>Cloud SQL Postgres có extension pgvector — index HNSW cho phép tìm 1M vector trong dưới 50ms.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div class="flow-text">
+          <strong>Truy vấn</strong>
+          <p>Embed câu hỏi → tìm top-k vector gần nhất (cosine similarity) → trả về metadata gốc.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div class="flow-text">
+          <strong>RAG (Retrieval-Augmented Generation)</strong>
+          <p>Đưa kết quả tìm được vào context cho ZeniRouter — AI trả lời dựa trên tài liệu thật, không hallucination.</p>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="create-collection">Tạo collection</h2>
+    <pre><span class="lang-tag">bash</span><code>curl -X POST "https://zenicloud.io/api/v1/vector/collections?ws=prod" \
+  -H "Authorization: Bearer $ZENI_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "company_docs",
+    "dimension": 768,
+    "metric": "cosine",
+    "metadata_schema": {
+      "title": "string",
+      "category": "string",
+      "created_at": "timestamp"
+    }
+  }'</code></pre>
+
+    <p>Response:</p>
+    <pre><span class="lang-tag">json</span><code>{
+  "collection_id": "col_8f3a9b1c",
+  "name": "company_docs",
+  "dimension": 768,
+  "metric": "cosine",
+  "vector_count": 0,
+  "created_at": "2026-04-30T10:15:32Z"
+}</code></pre>
+
+    <h2 id="upsert">Upsert vector — thêm dữ liệu</h2>
+    <p>Endpoint <code>upsert</code> nhận text (Zeni tự embed) hoặc vector tự tính sẵn:</p>
+
+    <pre><span class="lang-tag">bash</span><code>curl -X POST "https://zenicloud.io/api/v1/vector/upsert?ws=prod" \
+  -H "Authorization: Bearer $ZENI_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "collection": "company_docs",
+    "items": [
+      {
+        "id": "doc_001",
+        "text": "Quy định nghỉ phép: nhân viên được nghỉ 12 ngày phép có lương mỗi năm.",
+        "metadata": {
+          "title": "Quy định nhân sự 2026",
+          "category": "hr",
+          "created_at": "2026-01-15T00:00:00Z"
+        }
+      },
+      {
+        "id": "doc_002",
+        "text": "Chính sách OT: làm thêm giờ tính 150% mức lương cơ bản.",
+        "metadata": {
+          "title": "Chính sách lương",
+          "category": "hr"
+        }
+      }
+    ]
+  }'</code></pre>
+
+    <h2 id="search">Search top-k similarity</h2>
+    <pre><span class="lang-tag">bash</span><code>curl -X POST "https://zenicloud.io/api/v1/vector/search?ws=prod" \
+  -H "Authorization: Bearer $ZENI_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "collection": "company_docs",
+    "query_text": "Tôi có bao nhiêu ngày nghỉ một năm?",
+    "top_k": 3,
+    "filter": {"category": "hr"},
+    "include_metadata": true
+  }'</code></pre>
+
+    <p>Response:</p>
+    <pre><span class="lang-tag">json</span><code>{
+  "results": [
+    {
+      "id": "doc_001",
+      "score": 0.91,
+      "text": "Quy định nghỉ phép: nhân viên được nghỉ 12 ngày phép có lương mỗi năm.",
+      "metadata": {"title": "Quy định nhân sự 2026", "category": "hr"}
+    },
+    {
+      "id": "doc_002",
+      "score": 0.42,
+      "text": "Chính sách OT: làm thêm giờ tính 150% mức lương cơ bản.",
+      "metadata": {"title": "Chính sách lương", "category": "hr"}
+    }
+  ],
+  "search_time_ms": 23
+}</code></pre>
+
+    <h2 id="rag-example">Ví dụ Python — chatbot RAG hoàn chỉnh</h2>
+    <pre><span class="lang-tag">python</span><code>import os, requests
+
+ZENI = "https://zenicloud.io/api/v1"
+TOKEN = os.environ["ZENI_TOKEN"]
+HEADERS = {"Authorization": f"Bearer {TOKEN}"}
+
+def vector_search(query, top_k=5):
+    r = requests.post(
+        f"{ZENI}/vector/search?ws=prod",
+        headers=HEADERS,
+        json={
+            "collection": "company_docs",
+            "query_text": query,
+            "top_k": top_k,
+            "include_metadata": True,
+        },
+    )
+    return r.json()["results"]
+
+def rag_answer(question):
+    # 1. Tìm tài liệu liên quan
+    docs = vector_search(question, top_k=3)
+
+    # 2. Build context từ docs
+    context = "\n\n".join([
+        f"[Nguồn: {d['metadata']['title']}]\n{d['text']}"
+        for d in docs
+    ])
+
+    # 3. Gọi AI với context
+    r = requests.post(
+        f"{ZENI}/router/complete?ws=prod",
+        headers=HEADERS,
+        json={
+            "messages": [
+                {"role": "system", "content": (
+                    "Bạn là trợ lý nội bộ. Chỉ trả lời dựa trên TÀI LIỆU "
+                    "được cung cấp. Nếu không có thông tin, nói rõ là "
+                    "không tìm thấy trong tài liệu."
+                )},
+                {"role": "user", "content": (
+                    f"TÀI LIỆU:\n{context}\n\n"
+                    f"CÂU HỎI: {question}"
+                )},
+            ],
+            "task_type": "qa_simple",
+        },
+    )
+    return r.json()["text"]
+
+# Sử dụng
+print(rag_answer("Tôi có bao nhiêu ngày nghỉ phép một năm?"))
+# → "Theo quy định nhân sự 2026, bạn được nghỉ 12 ngày phép có lương mỗi năm."
+
+print(rag_answer("Chính sách thưởng Tết như thế nào?"))
+# → "Tôi không tìm thấy thông tin về chính sách thưởng Tết trong tài liệu."
+</code></pre>
+
+    <h2 id="chunking">Chunking — chia tài liệu lớn</h2>
+    <p>Văn bản dài cần chia nhỏ trước khi embed (tối đa 8000 tokens/vector). Khuyến nghị:</p>
+    <ul>
+      <li><strong>Kích thước</strong> — 500-1000 tokens/chunk</li>
+      <li><strong>Overlap</strong> — 100-150 tokens giữa các chunk để giữ context</li>
+      <li><strong>Cắt theo paragraph</strong> — tốt hơn cắt theo số ký tự</li>
+    </ul>
+
+    <pre><span class="lang-tag">python</span><code>def chunk_text(text, chunk_size=800, overlap=120):
+    """Chia text theo paragraph với overlap."""
+    paragraphs = text.split("\n\n")
+    chunks, current, current_len = [], [], 0
+
+    for p in paragraphs:
+        p_len = len(p.split())
+        if current_len + p_len > chunk_size and current:
+            chunks.append("\n\n".join(current))
+            # Giữ vài para cuối làm overlap
+            current = current[-2:] if len(current) > 2 else current
+            current_len = sum(len(x.split()) for x in current)
+        current.append(p)
+        current_len += p_len
+
+    if current:
+        chunks.append("\n\n".join(current))
+    return chunks
+
+# Index toàn bộ file PDF (sau khi OCR)
+with open("policy.txt") as f:
+    full_text = f.read()
+
+chunks = chunk_text(full_text)
+items = [
+    {
+        "id": f"policy_chunk_{i}",
+        "text": chunk,
+        "metadata": {"source": "policy.txt", "chunk_index": i}
+    }
+    for i, chunk in enumerate(chunks)
+]
+
+requests.post(
+    f"{ZENI}/vector/upsert?ws=prod",
+    headers=HEADERS,
+    json={"collection": "company_docs", "items": items},
+)
+print(f"Đã index {len(items)} chunks")
+</code></pre>
+
+    <h2 id="metadata-filter">Filter theo metadata</h2>
+    <p>Kết hợp similarity search với filter SQL-like:</p>
+    <pre><span class="lang-tag">json</span><code>{
+  "collection": "products",
+  "query_text": "ghế công thái học",
+  "top_k": 10,
+  "filter": {
+    "$and": [
+      {"category": "office"},
+      {"price": {"$lt": 5000000}},
+      {"in_stock": true}
+    ]
+  }
+}</code></pre>
+
+    <h2 id="usecases">Use cases</h2>
+    <ul>
+      <li><strong>Chatbot doanh nghiệp</strong> — trả lời câu hỏi nhân sự, quy định, FAQ dựa trên handbook</li>
+      <li><strong>Semantic search</strong> — tìm tài liệu liên quan trên website thay vì chỉ match keyword</li>
+      <li><strong>Recommendation</strong> — gợi ý sản phẩm/bài viết tương tự</li>
+      <li><strong>Code search</strong> — tìm function trong codebase theo mô tả tiếng Việt</li>
+      <li><strong>Customer support</strong> — auto-route ticket dựa trên ngữ nghĩa nội dung</li>
+    </ul>
+
+    <h2 id="pricing">Chi phí</h2>
+    <table class="table">
+      <thead><tr><th>Mục</th><th>Đơn giá</th></tr></thead>
+      <tbody>
+        <tr><td>Embedding text</td><td>$0.025 / 1M tokens</td></tr>
+        <tr><td>Lưu trữ vector</td><td>$0.30 / 1M vector / tháng</td></tr>
+        <tr><td>Query search</td><td>$0.10 / 1K queries</td></tr>
+        <tr><td>Free tier</td><td>10K vectors lưu, 1K queries/tháng</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout tip">
+      <div class="callout-title">Best practice production</div>
+      <div>
+        <strong>1.</strong> Chunk size 600-800 tokens cho tiếng Việt — câu thường dài hơn EN.<br>
+        <strong>2.</strong> Re-embed lại mỗi 6 tháng nếu model có version mới.<br>
+        <strong>3.</strong> Cache kết quả search 5 phút cho query lặp lại.<br>
+        <strong>4.</strong> Set <code>top_k</code> ban đầu 5-10, không nên quá cao (giảm chất lượng RAG).
+      </div>
+    </div>
+
+    <h2 id="next">Bước tiếp theo</h2>
+    <ul>
+      <li><a href="ai-call.html">AI Router</a> — kết hợp với RAG cho chatbot</li>
+      <li><a href="ocr.html">OCR</a> — index PDF, hoá đơn, hợp đồng</li>
+      <li><a href="cron.html">Cron</a> — re-index database tự động hằng đêm</li>
+    </ul>
+
+  </main>
+
+  <aside class="toc">
+    <h5>Trên trang này</h5>
+    <ul>
+      <li><a href="#concept">Nguyên lý</a></li>
+      <li><a href="#create-collection">Tạo collection</a></li>
+      <li><a href="#upsert">Upsert vector</a></li>
+      <li><a href="#search">Search</a></li>
+      <li><a href="#rag-example">Chatbot RAG</a></li>
+      <li><a href="#chunking">Chunking</a></li>
+      <li><a href="#metadata-filter">Filter metadata</a></li>
+      <li><a href="#usecases">Use cases</a></li>
+      <li><a href="#pricing">Chi phí</a></li>
+    </ul>
+  </aside>
+
+</div>
+
+<footer class="footer">
+  <div>
+    <a href="https://zenicloud.io/">Trang chủ</a>
+    <a href="https://zenicloud.io/pricing">Giá</a>
+    <a href="https://zenicloud.io/legal/privacy.html">Bảo mật</a>
+    <a href="mailto:support@zenicloud.io">Liên hệ</a>
+  </div>
+  <p style="margin-top:12px;">Zeni Cloud Co., Ltd. — TPHCM, Việt Nam</p>
+  <span class="version">v0.4.0 · Cập nhật 30/04/2026</span>
+</footer>
+
+</body>
+</html>

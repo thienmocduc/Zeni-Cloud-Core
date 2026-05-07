@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Điều khoản dịch vụ — Zeni Cloud</title>
+<meta name="description" content="Điều khoản và điều kiện sử dụng nền tảng Zeni Cloud — pháp luật điều chỉnh: Việt Nam, tòa TP.HCM." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a14;
+    --bg-card: #14141f;
+    --ink: #e5e7eb;
+    --ink-muted: #9ca3af;
+    --ink-soft: #6e6e80;
+    --accent: #fde68a;
+    --accent-2: #f59e0b;
+    --accent-soft: rgba(253, 230, 138, 0.10);
+    --border: rgba(253, 230, 138, 0.18);
+    --border-soft: rgba(255, 255, 255, 0.06);
+  }
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    line-height: 1.7;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background:
+      radial-gradient(ellipse at top, rgba(253, 230, 138, 0.05), transparent 60%),
+      var(--bg);
+  }
+  header.site {
+    border-bottom: 1px solid var(--border-soft);
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(12px);
+    background: rgba(10, 10, 20, 0.85);
+    position: sticky; top: 0; z-index: 50;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 12px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700; font-size: 18px;
+    color: var(--ink); text-decoration: none;
+  }
+  .brand-dot {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: flex; align-items: center; justify-content: center;
+    color: var(--bg); font-weight: 800;
+  }
+  nav.top-nav { display: flex; gap: 12px; align-items: center; }
+  nav.top-nav a {
+    color: var(--ink-muted); text-decoration: none;
+    font-size: 14px; font-weight: 500;
+    padding: 8px 14px; border-radius: 8px;
+    transition: all 0.2s;
+  }
+  nav.top-nav a:hover { color: var(--accent); background: var(--accent-soft); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: var(--bg) !important;
+    font-weight: 700;
+  }
+  .btn-primary:hover { filter: brightness(1.1); }
+  .lang-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--ink-muted);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer;
+  }
+  .lang-btn:hover { color: var(--accent); border-color: var(--accent); }
+  main {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 48px 40px 80px;
+  }
+  .doc-header { margin-bottom: 48px; padding-bottom: 32px; border-bottom: 1px solid var(--border-soft); }
+  .doc-eyebrow {
+    color: var(--accent); font-size: 12px;
+    font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; margin-bottom: 14px;
+  }
+  h1 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 40px; font-weight: 800;
+    margin-bottom: 14px;
+    background: linear-gradient(135deg, #ffffff 0%, var(--accent) 70%, var(--accent-2) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  .doc-meta {
+    display: flex; flex-wrap: wrap; gap: 14px;
+    margin-top: 18px; font-size: 13px; color: var(--ink-soft);
+  }
+  .doc-meta span {
+    padding: 4px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 999px;
+  }
+  .doc-meta strong { color: var(--accent); font-weight: 600; }
+  .toc {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 48px;
+  }
+  .toc h3 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 14px;
+  }
+  .toc ol {
+    list-style: none; counter-reset: item;
+    columns: 2; column-gap: 24px;
+  }
+  .toc ol li {
+    counter-increment: item;
+    margin-bottom: 8px; break-inside: avoid;
+  }
+  .toc ol li::before {
+    content: counter(item) ". ";
+    color: var(--accent);
+    font-weight: 600;
+    margin-right: 4px;
+  }
+  .toc a {
+    color: var(--ink-muted);
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+  }
+  .toc a:hover { color: var(--accent); }
+  h2 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 24px; font-weight: 700;
+    margin: 56px 0 18px;
+    color: var(--ink);
+    padding-left: 16px;
+    border-left: 4px solid var(--accent);
+    line-height: 1.3;
+    scroll-margin-top: 80px;
+  }
+  h3 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 17px; font-weight: 600;
+    margin: 28px 0 12px;
+    color: var(--accent);
+  }
+  p { color: var(--ink); font-size: 15px; margin-bottom: 16px; }
+  ul, ol { margin: 0 0 18px 24px; }
+  li { color: var(--ink); font-size: 15px; margin-bottom: 8px; }
+  li strong { color: var(--accent); font-weight: 600; }
+  table {
+    width: 100%; border-collapse: collapse;
+    margin: 18px 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    overflow: hidden;
+    font-size: 14px;
+  }
+  th, td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  th {
+    background: rgba(253, 230, 138, 0.06);
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  td { color: var(--ink-muted); }
+  td:first-child { color: var(--ink); font-weight: 500; }
+  tr:last-child td { border-bottom: none; }
+  .callout {
+    background: linear-gradient(135deg, rgba(253, 230, 138, 0.06), rgba(245, 158, 11, 0.03));
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 22px 0;
+  }
+  .callout strong { color: var(--accent); }
+  code {
+    background: rgba(253, 230, 138, 0.08);
+    border: 1px solid var(--border-soft);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-size: 13px;
+    font-family: 'Courier New', monospace;
+  }
+  a.inline { color: var(--accent); text-decoration: underline; text-decoration-color: rgba(253, 230, 138, 0.4); }
+  a.inline:hover { text-decoration-color: var(--accent); }
+  footer.doc {
+    margin-top: 64px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border-soft);
+    color: var(--ink-soft);
+    font-size: 13px;
+    display: flex; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+  }
+  footer.doc a { color: var(--accent); text-decoration: none; }
+  footer.doc a:hover { text-decoration: underline; }
+  @media (max-width: 640px) {
+    main { padding: 32px 20px 60px; }
+    h1 { font-size: 28px; }
+    h2 { font-size: 20px; }
+    .toc ol { columns: 1; }
+    nav.top-nav a:not(.btn-primary):not(.lang-btn) { display: none; }
+  }
+</style>
+</head>
+<body>
+<header class="site">
+  <a href="/" class="brand">
+    <span class="brand-dot">Z</span>
+    <span>Zeni Cloud</span>
+  </a>
+  <nav class="top-nav">
+    <a href="index.html">← Tài liệu pháp lý</a>
+    <a href="/" class="btn-primary">Về Zeni Cloud</a>
+    <a href="/app" class="btn-primary">Mở ứng dụng</a>
+    <button class="lang-btn" onclick="alert('English version coming Q3/2026.')">EN</button>
+  </nav>
+</header>
+
+<main>
+
+<div class="doc-header">
+  <div class="doc-eyebrow">Tài liệu pháp lý / Terms of Service</div>
+  <h1>Điều khoản dịch vụ Zeni Cloud</h1>
+  <p style="color: var(--ink-muted); font-size: 16px; margin-top: 8px;">Tài liệu này quy định toàn bộ quyền và nghĩa vụ giữa Zeni Cloud và Khách hàng khi sử dụng nền tảng. Bằng cách đăng ký tài khoản hoặc tiếp tục sử dụng dịch vụ, Khách hàng được coi là đã đọc, hiểu và đồng ý với các điều khoản dưới đây.</p>
+  <div class="doc-meta">
+    <span>Phiên bản <strong>v1.0</strong></span>
+    <span>Hiệu lực <strong>30/04/2026</strong></span>
+    <span>Pháp luật điều chỉnh <strong>Việt Nam</strong></span>
+  </div>
+</div>
+
+<div class="toc">
+  <h3>Mục lục</h3>
+  <ol>
+    <li><a href="#dinh-nghia">Định nghĩa</a></li>
+    <li><a href="#tai-khoan">Tài khoản và đăng ký</a></li>
+    <li><a href="#su-dung">Sử dụng dịch vụ (AUP)</a></li>
+    <li><a href="#thanh-toan">Thanh toán và hoàn tiền</a></li>
+    <li><a href="#so-huu">Sở hữu trí tuệ</a></li>
+    <li><a href="#trach-nhiem">Giới hạn trách nhiệm</a></li>
+    <li><a href="#cham-dut">Chấm dứt dịch vụ</a></li>
+    <li><a href="#tranh-chap">Giải quyết tranh chấp</a></li>
+    <li><a href="#sua-doi">Sửa đổi điều khoản</a></li>
+    <li><a href="#lien-he">Liên hệ</a></li>
+  </ol>
+</div>
+
+<h2 id="dinh-nghia">1. Định nghĩa</h2>
+
+<p>Trong phạm vi tài liệu này, các thuật ngữ dưới đây được hiểu như sau:</p>
+
+<ul>
+  <li><strong>Zeni Cloud</strong> hoặc <strong>Chúng tôi</strong>: nền tảng điện toán đám mây thống nhất do Zeni Holdings Vietnam vận hành, truy cập tại <a class="inline" href="https://zenicloud.io">https://zenicloud.io</a>. Hạ tầng triển khai 100% trên Google Cloud Platform.</li>
+  <li><strong>Khách hàng</strong> hoặc <strong>Người dùng</strong>: cá nhân hoặc tổ chức đã đăng ký tài khoản và sử dụng dịch vụ của Zeni Cloud, bao gồm cả người dùng miễn phí và người dùng trả phí.</li>
+  <li><strong>Dịch vụ</strong>: toàn bộ chức năng do Zeni Cloud cung cấp, gồm sáu lớp hạ tầng L1 Compute, L2 Data, L3 AI, L4 Automation, L5 Identity, L6 Web3, các API, SDK, dashboard quản trị và tài liệu kỹ thuật đi kèm.</li>
+  <li><strong>Tài khoản</strong>: phương tiện xác thực và quản lý dịch vụ của Khách hàng, bao gồm thông tin đăng nhập, không gian làm việc, dữ liệu và lịch sử sử dụng.</li>
+  <li><strong>Dữ liệu Khách hàng</strong>: mọi thông tin do Khách hàng tải lên, lưu trữ, xử lý hoặc tạo ra trên nền tảng, bao gồm dữ liệu cấu hình, file người dùng, log hoạt động và đầu ra của các agent AI.</li>
+  <li><strong>Agent AI</strong>: các tác nhân AI do Zeni vận hành, gồm Zeni Claw (agent đa năng), Zeni Make (agent thiết kế và sáng tạo) và các agent chuyên biệt như NexBuild, BTHome, KOC.</li>
+  <li><strong>Smart Contract ZeniAccessControl</strong>: hợp đồng thông minh triển khai trên blockchain Polygon, ghi nhận bất biến mọi lượt truy cập của quản trị viên Zeni vào dữ liệu Khách hàng.</li>
+  <li><strong>CMEK</strong> (Customer-Managed Encryption Keys): khoá mã hoá do Khách hàng kiểm soát, áp dụng riêng cho từng không gian làm việc.</li>
+</ul>
+
+<h2 id="tai-khoan">2. Tài khoản và đăng ký</h2>
+
+<h3>2.1. Điều kiện đăng ký</h3>
+<p>Khách hàng phải đáp ứng đồng thời các điều kiện sau để đăng ký tài khoản Zeni Cloud:</p>
+<ul>
+  <li>Đủ 18 tuổi trở lên hoặc là pháp nhân được thành lập hợp pháp tại Việt Nam hoặc tại quốc gia khác có quan hệ ngoại giao bình thường với Việt Nam.</li>
+  <li>Cung cấp thông tin chính xác, đầy đủ và cập nhật khi đăng ký, bao gồm họ tên, email liên hệ chính chủ, số điện thoại và (đối với tổ chức) mã số thuế hoặc giấy chứng nhận đăng ký doanh nghiệp.</li>
+  <li>Xác minh email qua liên kết kích hoạt được Zeni Cloud gửi.</li>
+  <li>Đồng ý với Điều khoản dịch vụ này, Chính sách bảo mật, và (nếu áp dụng) Hợp đồng xử lý dữ liệu (DPA).</li>
+</ul>
+
+<h3>2.2. Bảo mật tài khoản</h3>
+<p>Khách hàng có trách nhiệm bảo mật thông tin đăng nhập, gồm mật khẩu, khoá API, token OAuth và mã xác thực hai lớp. Mọi hoạt động phát sinh từ tài khoản (kể cả do bên thứ ba đăng nhập trái phép) đều thuộc trách nhiệm của Khách hàng cho đến khi Khách hàng thông báo cho Zeni Cloud về sự cố và Zeni Cloud xác nhận khoá tài khoản.</p>
+
+<h3>2.3. Một tài khoản, nhiều thành viên</h3>
+<p>Khách hàng là tổ chức có thể tạo nhiều tài khoản con (sub-account) cho nhân viên, với phân quyền chi tiết theo vai trò. Quản trị viên tổ chức (Owner) chịu trách nhiệm cuối cùng về hành vi của tất cả tài khoản con thuộc tổ chức.</p>
+
+<h3>2.4. Email chính chủ</h3>
+<p>Email chính chủ là email Khách hàng đã sử dụng khi đăng ký và đã được xác minh. Mọi yêu cầu hỗ trợ, thay đổi cấu hình bảo mật, yêu cầu cấp quyền truy cập tạm thời cho đội Zeni đều phải được gửi từ email chính chủ. Yêu cầu gửi từ email khác sẽ không được xử lý.</p>
+
+<h2 id="su-dung">3. Sử dụng dịch vụ (Acceptable Use Policy)</h2>
+
+<h3>3.1. Hành vi được phép</h3>
+<p>Khách hàng được phép sử dụng Zeni Cloud cho mọi mục đích kinh doanh hợp pháp, gồm nhưng không giới hạn ở: vận hành ứng dụng, lưu trữ dữ liệu doanh nghiệp, phát triển sản phẩm, huấn luyện và triển khai mô hình AI nội bộ, tự động hoá quy trình, xác thực người dùng, và xây dựng các giải pháp Web3.</p>
+
+<h3>3.2. Hành vi bị nghiêm cấm</h3>
+<p>Khách hàng cam kết KHÔNG sử dụng Zeni Cloud để:</p>
+<ul>
+  <li>Vi phạm pháp luật Việt Nam hoặc pháp luật của quốc gia mà Khách hàng đang vận hành, bao gồm Luật An ninh mạng, Luật Sở hữu trí tuệ, Luật Phòng chống rửa tiền và các quy định liên quan.</li>
+  <li>Phát tán phần mềm độc hại (mã độc, ransomware, trojan, keylogger), thực hiện tấn công DDoS, dò mật khẩu, khai thác lỗ hổng, hoặc bất kỳ hoạt động xâm nhập trái phép nào.</li>
+  <li>Lưu trữ, xử lý, truyền tải nội dung phạm pháp gồm: nội dung khiêu dâm trẻ em, kích động bạo lực, kích động ly khai, xâm phạm an ninh quốc gia, vi phạm quyền sở hữu trí tuệ của bên thứ ba, hoặc lừa đảo.</li>
+  <li>Thực hiện hoạt động khai thác tiền điện tử (mining) trên hạ tầng Compute mà không có gói dịch vụ phù hợp được Zeni Cloud phê duyệt riêng.</li>
+  <li>Tạo nội dung deepfake, mạo danh người khác, hoặc sử dụng các agent AI để tạo nội dung gây tổn hại danh dự, nhân phẩm của bên thứ ba.</li>
+  <li>Reverse engineering, decompile, dịch ngược mã nguồn của các agent AI Zeni hoặc cố tình trích xuất dữ liệu huấn luyện qua prompt injection.</li>
+  <li>Chuyển bán lại dịch vụ Zeni Cloud cho bên thứ ba dưới hình thức white-label mà không có thoả thuận đại lý chính thức.</li>
+  <li>Sử dụng tài nguyên tính toán vượt quá hạn mức gói đăng ký để gây ảnh hưởng tới chất lượng dịch vụ của Khách hàng khác.</li>
+</ul>
+
+<h3>3.3. Hậu quả vi phạm</h3>
+<p>Tuỳ mức độ nghiêm trọng, Zeni Cloud có quyền (theo thứ tự áp dụng):</p>
+<ol>
+  <li>Cảnh báo qua email và yêu cầu Khách hàng dừng hành vi vi phạm trong thời gian xác định.</li>
+  <li>Tạm khoá một phần hoặc toàn bộ chức năng tài khoản trong khi điều tra.</li>
+  <li>Chấm dứt dịch vụ đơn phương mà không hoàn tiền các kỳ phí đã trả.</li>
+  <li>Báo cáo cơ quan thẩm quyền nếu hành vi có dấu hiệu vi phạm hình sự.</li>
+</ol>
+
+<h2 id="thanh-toan">4. Thanh toán và hoàn tiền</h2>
+
+<h3>4.1. Gói dịch vụ và giá</h3>
+<p>Zeni Cloud cung cấp ba nhóm gói chính:</p>
+<table>
+  <thead>
+    <tr><th>Gói</th><th>Đối tượng</th><th>Hình thức</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Free</td><td>Cá nhân, học tập</td><td>Miễn phí, hạn mức tài nguyên thấp</td></tr>
+    <tr><td>Pro</td><td>SME, startup</td><td>Trả theo tháng / năm</td></tr>
+    <tr><td>Enterprise</td><td>Doanh nghiệp lớn</td><td>Hợp đồng riêng, có DPA và SLA</td></tr>
+  </tbody>
+</table>
+
+<h3>4.2. Phương thức thanh toán</h3>
+<p>Khách hàng có thể thanh toán qua: thẻ tín dụng quốc tế (Visa, Mastercard, JCB), chuyển khoản ngân hàng tại Việt Nam, ví điện tử được hỗ trợ (Momo, ZaloPay, VNPay) hoặc hoá đơn doanh nghiệp đối với gói Enterprise. Mọi giao dịch xuất hoá đơn điện tử theo Thông tư 78/2021/TT-BTC.</p>
+
+<h3>4.3. Chu kỳ thanh toán</h3>
+<p>Phí gói Pro và Enterprise được thu trước theo chu kỳ tháng hoặc năm. Phí sử dụng vượt định mức (overage) được tính cuối mỗi chu kỳ và xuất hoá đơn riêng. Khách hàng nhận được thông báo bảy ngày trước ngày gia hạn tự động.</p>
+
+<h3>4.4. Chính sách hoàn tiền</h3>
+<p>Khách hàng có quyền yêu cầu hoàn tiền trong các trường hợp sau:</p>
+<ul>
+  <li><strong>Hoàn 100%</strong> nếu hủy đăng ký gói Pro trong vòng 14 ngày kể từ lần đầu thanh toán và chưa sử dụng quá 10% hạn mức tài nguyên của gói.</li>
+  <li><strong>Hoàn theo tỷ lệ thời gian chưa sử dụng</strong> đối với gói Pro năm khi hủy giữa kỳ, trừ phí xử lý 5%.</li>
+  <li><strong>Hoàn 100% phần phí của tháng/năm hiện hành</strong> nếu Zeni Cloud vi phạm cam kết SLA dẫn đến downtime tích luỹ vượt quá ngưỡng cam kết.</li>
+  <li><strong>Không hoàn tiền</strong> đối với phí overage đã phát sinh, dịch vụ đã sử dụng vượt 10% hạn mức trong 14 ngày đầu, hoặc khi tài khoản bị chấm dứt do vi phạm Mục 3.</li>
+</ul>
+
+<div class="callout">
+  <strong>Lưu ý:</strong> Yêu cầu hoàn tiền phải gửi từ email chính chủ đã đăng ký, kèm lý do và số hoá đơn. Zeni Cloud xử lý trong vòng tối đa 14 ngày làm việc kể từ ngày nhận yêu cầu hợp lệ.
+</div>
+
+<h3>4.5. Thay đổi giá</h3>
+<p>Zeni Cloud có quyền điều chỉnh giá dịch vụ. Đối với khách hàng đang sử dụng gói trả phí, mức giá mới chỉ áp dụng cho chu kỳ kế tiếp và Zeni sẽ thông báo trước tối thiểu 30 ngày qua email.</p>
+
+<h2 id="so-huu">5. Sở hữu trí tuệ</h2>
+
+<h3>5.1. Sở hữu của Zeni Cloud</h3>
+<p>Zeni Holdings Vietnam là chủ sở hữu duy nhất của: nền tảng Zeni Cloud, mã nguồn lõi, kiến trúc sáu lớp hạ tầng, các agent AI Zeni Claw, Zeni Make, NexBuild, BTHome, KOC, thương hiệu, logo, tài liệu kỹ thuật và mọi tài sản trí tuệ liên quan. Khách hàng được cấp quyền sử dụng theo phạm vi gói đăng ký, không được sao chép, phân phối hoặc tạo sản phẩm phái sinh từ các tài sản nêu trên.</p>
+
+<h3>5.2. Sở hữu của Khách hàng</h3>
+<p>Khách hàng giữ nguyên toàn bộ quyền sở hữu trí tuệ đối với Dữ liệu Khách hàng và mọi nội dung do Khách hàng tải lên hoặc tạo ra trên nền tảng. Zeni Cloud không yêu cầu chuyển nhượng quyền sở hữu trí tuệ của Khách hàng.</p>
+
+<h3>5.3. Cấp quyền sử dụng cho Zeni Cloud</h3>
+<p>Để cung cấp dịch vụ, Khách hàng cấp cho Zeni Cloud một giấy phép có giới hạn, không độc quyền, có thể chuyển giao cho nhà cung cấp hạ tầng (Google Cloud) để: lưu trữ, xử lý, truyền tải, hiển thị Dữ liệu Khách hàng nhằm thực hiện đúng yêu cầu của Khách hàng. Giấy phép này tự động chấm dứt khi Khách hàng xoá dữ liệu hoặc đóng tài khoản.</p>
+
+<h3>5.4. Đầu ra AI</h3>
+<p>Mọi đầu ra do các agent AI Zeni tạo ra theo yêu cầu của Khách hàng (văn bản, hình ảnh, mã nguồn, thiết kế) thuộc quyền sở hữu của Khách hàng, với điều kiện Khách hàng chịu trách nhiệm đảm bảo nội dung đầu vào (prompt) không vi phạm quyền sở hữu trí tuệ của bên thứ ba.</p>
+
+<h3>5.5. Phản hồi và đề xuất</h3>
+<p>Nếu Khách hàng gửi phản hồi, đề xuất tính năng hoặc báo cáo lỗi cho Zeni Cloud, Khách hàng đồng ý cấp cho Zeni Cloud một giấy phép vĩnh viễn, không độc quyền, miễn phí bản quyền để sử dụng các phản hồi đó nhằm cải thiện dịch vụ.</p>
+
+<h2 id="trach-nhiem">6. Giới hạn trách nhiệm</h2>
+
+<h3>6.1. Cam kết chất lượng dịch vụ (SLA)</h3>
+<p>Zeni Cloud cam kết tỷ lệ uptime tối thiểu cho từng gói:</p>
+<table>
+  <thead>
+    <tr><th>Gói</th><th>SLA Uptime</th><th>Bồi thường downtime</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Free</td><td>Best effort</td><td>Không bồi thường</td></tr>
+    <tr><td>Pro</td><td>99.5% mỗi tháng</td><td>Credit 10% phí tháng</td></tr>
+    <tr><td>Enterprise</td><td>99.95% mỗi tháng</td><td>Credit theo hợp đồng SLA riêng</td></tr>
+  </tbody>
+</table>
+<p>Bồi thường được trả dưới dạng credit gia hạn dịch vụ, không quy đổi tiền mặt, trừ trường hợp hợp đồng Enterprise có quy định khác.</p>
+
+<h3>6.2. Loại trừ trách nhiệm</h3>
+<p>Trong phạm vi pháp luật cho phép, Zeni Cloud KHÔNG chịu trách nhiệm đối với:</p>
+<ul>
+  <li>Thiệt hại gián tiếp, hệ quả, mất lợi nhuận, mất cơ hội kinh doanh, mất uy tín thương hiệu phát sinh từ việc sử dụng dịch vụ.</li>
+  <li>Mất mát hoặc hư hỏng dữ liệu do Khách hàng tự xoá, do bên thứ ba xâm nhập với thông tin đăng nhập của Khách hàng, hoặc do Khách hàng không thực hiện sao lưu định kỳ.</li>
+  <li>Sự cố do hạ tầng bên thứ ba (Google Cloud, đối tác viễn thông) vượt khả năng kiểm soát hợp lý của Zeni Cloud.</li>
+  <li>Quyết định kinh doanh hoặc đầu tư của Khách hàng dựa trên đầu ra của các agent AI Zeni — Khách hàng tự chịu trách nhiệm thẩm định và xác minh thông tin trước khi sử dụng.</li>
+  <li>Sự kiện bất khả kháng theo định nghĩa Bộ luật Dân sự Việt Nam, gồm thiên tai, dịch bệnh, chiến tranh, đình công, can thiệp của cơ quan nhà nước.</li>
+</ul>
+
+<h3>6.3. Mức trần trách nhiệm</h3>
+<p>Tổng trách nhiệm tối đa của Zeni Cloud đối với Khách hàng phát sinh từ hoặc liên quan đến hợp đồng dịch vụ này, dưới mọi hình thức (hợp đồng, ngoài hợp đồng, bao gồm cả lỗi sơ suất), không vượt quá tổng phí dịch vụ Khách hàng đã thanh toán cho Zeni Cloud trong 12 tháng liền kề trước khi sự kiện phát sinh.</p>
+
+<h2 id="cham-dut">7. Chấm dứt dịch vụ</h2>
+
+<h3>7.1. Chấm dứt bởi Khách hàng</h3>
+<p>Khách hàng có quyền chấm dứt sử dụng dịch vụ bất kỳ lúc nào bằng cách hủy đăng ký trong dashboard quản trị hoặc gửi yêu cầu qua email từ địa chỉ chính chủ. Việc chấm dứt có hiệu lực vào cuối chu kỳ thanh toán hiện hành (trừ trường hợp yêu cầu hoàn tiền theo Mục 4.4).</p>
+
+<h3>7.2. Chấm dứt bởi Zeni Cloud</h3>
+<p>Zeni Cloud có quyền chấm dứt dịch vụ trong các trường hợp:</p>
+<ul>
+  <li>Khách hàng vi phạm nghiêm trọng Mục 3 (AUP) và không khắc phục sau cảnh báo.</li>
+  <li>Khách hàng chậm thanh toán quá 30 ngày kể từ ngày đến hạn, mặc dù đã được nhắc nhở qua email tối thiểu hai lần.</li>
+  <li>Cơ quan thẩm quyền yêu cầu chấm dứt dịch vụ đối với Khách hàng cụ thể bằng văn bản hợp lệ.</li>
+  <li>Zeni Cloud quyết định ngừng vận hành toàn bộ một dịch vụ hoặc nền tảng (sẽ thông báo trước tối thiểu 90 ngày).</li>
+</ul>
+
+<h3>7.3. Xử lý dữ liệu sau chấm dứt</h3>
+<p>Sau khi tài khoản bị chấm dứt, Zeni Cloud thực hiện theo trình tự:</p>
+<ol>
+  <li><strong>30 ngày grace period</strong>: dữ liệu được giữ ở trạng thái chỉ đọc, Khách hàng có thể đăng nhập để xuất dữ liệu (export JSON, CSV, hoặc dump database).</li>
+  <li><strong>Sau 30 ngày</strong>: Zeni Cloud xoá vĩnh viễn dữ liệu khỏi hệ thống production. Bản sao lưu (backup) còn được giữ tối đa 90 ngày tiếp theo trước khi xoá hoàn toàn.</li>
+  <li><strong>Log tài chính và hoá đơn</strong>: Zeni Cloud lưu trữ tối thiểu bảy năm theo Luật Kế toán Việt Nam.</li>
+</ol>
+
+<h2 id="tranh-chap">8. Giải quyết tranh chấp</h2>
+
+<h3>8.1. Pháp luật điều chỉnh</h3>
+<p>Hợp đồng dịch vụ này và mọi tranh chấp phát sinh được điều chỉnh và giải thích theo pháp luật Việt Nam, không áp dụng nguyên tắc xung đột pháp luật.</p>
+
+<h3>8.2. Thương lượng thiện chí</h3>
+<p>Khi có tranh chấp, hai bên cam kết ưu tiên giải quyết bằng thương lượng thiện chí trong vòng 30 ngày kể từ ngày một bên gửi văn bản thông báo. Email của Khách hàng phải gửi tới <a class="inline" href="mailto:legal@zenicloud.io">legal@zenicloud.io</a>.</p>
+
+<h3>8.3. Toà án có thẩm quyền</h3>
+<p>Nếu thương lượng không đạt kết quả, tranh chấp được giải quyết tại Toà án Nhân dân có thẩm quyền tại Thành phố Hồ Chí Minh, Việt Nam. Mọi chi phí pháp lý do bên thua kiện chịu, trừ trường hợp toà án quyết định khác.</p>
+
+<h3>8.4. Trọng tài (tuỳ chọn)</h3>
+<p>Đối với hợp đồng Enterprise có ghi nhận điều khoản trọng tài, tranh chấp có thể được giải quyết tại Trung tâm Trọng tài Quốc tế Việt Nam (VIAC) theo Quy tắc tố tụng VIAC. Địa điểm trọng tài: Thành phố Hồ Chí Minh. Ngôn ngữ: tiếng Việt.</p>
+
+<h2 id="sua-doi">9. Sửa đổi điều khoản</h2>
+
+<p>Zeni Cloud có thể sửa đổi tài liệu này theo thời gian để phản ánh thay đổi của dịch vụ hoặc pháp luật. Quy trình sửa đổi:</p>
+
+<ul>
+  <li>Phiên bản mới được công bố tại <a class="inline" href="https://zenicloud.io/legal/terms.html">zenicloud.io/legal/terms.html</a> và đánh dấu ngày hiệu lực rõ ràng.</li>
+  <li>Đối với thay đổi <strong>không làm giảm quyền của Khách hàng</strong>: thông báo qua email tối thiểu 14 ngày trước ngày hiệu lực.</li>
+  <li>Đối với thay đổi <strong>có thể giảm quyền của Khách hàng</strong> (như thay đổi giá, thay đổi SLA): thông báo qua email tối thiểu 30 ngày trước ngày hiệu lực, kèm tóm tắt thay đổi.</li>
+  <li>Nếu Khách hàng tiếp tục sử dụng dịch vụ sau ngày hiệu lực của phiên bản mới, Khách hàng được coi là đã chấp nhận. Nếu không đồng ý, Khách hàng có quyền chấm dứt dịch vụ và yêu cầu hoàn phần phí chưa sử dụng theo Mục 4.4.</li>
+</ul>
+
+<h2 id="lien-he">10. Liên hệ</h2>
+
+<p>Mọi thắc mắc, yêu cầu hoặc thông báo chính thức liên quan đến tài liệu này, vui lòng gửi đến:</p>
+
+<table>
+  <tbody>
+    <tr><td>Pháp nhân vận hành</td><td>Zeni Holdings Vietnam</td></tr>
+    <tr><td>Người đại diện</td><td>Cao Tuấn Phát — Chủ tịch HĐQT</td></tr>
+    <tr><td>Email pháp lý</td><td><a class="inline" href="mailto:legal@zenicloud.io">legal@zenicloud.io</a></td></tr>
+    <tr><td>Email DPO</td><td><a class="inline" href="mailto:dpo@zenicloud.io">dpo@zenicloud.io</a></td></tr>
+    <tr><td>Website</td><td><a class="inline" href="https://zenicloud.io">https://zenicloud.io</a></td></tr>
+    <tr><td>Email người đại diện</td><td><a class="inline" href="mailto:caotuanphat581@gmail.com">caotuanphat581@gmail.com</a></td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <strong>Tài liệu liên quan:</strong> Khách hàng nên đọc kèm <a class="inline" href="privacy.html">Chính sách bảo mật</a>, <a class="inline" href="ai-data-usage.html">Chính sách sử dụng dữ liệu cho AI</a> và (đối với doanh nghiệp) <a class="inline" href="dpa.html">Hợp đồng xử lý dữ liệu (DPA)</a> để hiểu đầy đủ quyền và nghĩa vụ.
+</div>
+
+<footer class="doc">
+  <div>Zeni Holdings Vietnam — <a href="https://zenicloud.io">zenicloud.io</a></div>
+  <div>Phiên bản v1.0 — Cập nhật 30/04/2026</div>
+</footer>
+
+</main>
+</body>
+</html>

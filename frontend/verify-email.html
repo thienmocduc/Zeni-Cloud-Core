@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<title>Xác thực email · Zeni Cloud</title>
+<meta name="description" content="Xác thực địa chỉ email cho tài khoản Zeni Cloud của bạn.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-void: #030014; --bg-base: #08051F;
+  --ink-50: #FAF5FF; --ink-100: #EDE9FE; --ink-200: #C4B5FD; --ink-300: #9E8BE5; --ink-400: #7C6BB0;
+  --crown: #A855F7; --crown-deep: #7E22CE; --crown-gold: #FDE68A;
+  --ok: #22D3EE; --err: #F87171;
+  --border: rgba(168, 139, 250, 0.18);
+  --border-strong: rgba(168, 139, 250, 0.32);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg-void); color: var(--ink-100);
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px 16px;
+  background:
+    radial-gradient(ellipse 1100px 800px at 75% 10%, rgba(168, 85, 247, 0.14), transparent 55%),
+    radial-gradient(ellipse 900px 650px at 10% 92%, rgba(34, 211, 238, 0.10), transparent 55%),
+    var(--bg-void);
+}
+.card {
+  width: 100%; max-width: 460px;
+  background: rgba(10, 5, 32, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-strong);
+  border-radius: 20px;
+  padding: 40px 32px 32px;
+  text-align: center;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+}
+.brand { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 26px; }
+.brand-logo {
+  width: 44px; height: 44px; border-radius: 11px;
+  background: linear-gradient(135deg, var(--crown-gold), var(--crown), var(--crown-deep));
+  color: #1a0938; font-weight: 900; font-size: 22px;
+  display: grid; place-items: center;
+}
+.brand-name { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; text-align: left; }
+.brand-name em { font-style: normal; color: var(--crown-gold); }
+.brand-sub { font-size: 10px; font-family: 'Roboto Mono', ui-monospace, monospace;
+  color: var(--ink-400); letter-spacing: 0.1em; text-align: left; }
+
+.icon-wrap {
+  width: 88px; height: 88px; margin: 0 auto 22px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  position: relative;
+  transition: 0.3s;
+}
+.icon-wrap.loading {
+  background: rgba(168, 139, 250, 0.10);
+  border: 1px solid rgba(168, 139, 250, 0.22);
+}
+.icon-wrap.ok {
+  background: rgba(34, 211, 238, 0.10);
+  border: 1px solid rgba(34, 211, 238, 0.40);
+  box-shadow: 0 0 32px rgba(34, 211, 238, 0.20);
+}
+.icon-wrap.err {
+  background: rgba(248, 113, 113, 0.10);
+  border: 1px solid rgba(248, 113, 113, 0.40);
+}
+.spinner {
+  width: 38px; height: 38px;
+  border: 3px solid rgba(168, 139, 250, 0.18);
+  border-top-color: var(--crown-gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.checkmark, .crossmark {
+  font-size: 44px; font-weight: 900; line-height: 1;
+}
+.checkmark { color: var(--ok); }
+.crossmark { color: var(--err); }
+
+h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 10px; }
+h1.ok { color: var(--ok); }
+h1.err { color: var(--err); }
+h1.loading { color: var(--ink-100); }
+.msg {
+  font-size: 13px; color: var(--ink-300);
+  line-height: 1.55; margin-bottom: 24px;
+  min-height: 40px;
+}
+.email-pill {
+  display: inline-block;
+  padding: 4px 12px;
+  background: rgba(253, 230, 138, 0.10);
+  border: 1px solid rgba(253, 230, 138, 0.30);
+  border-radius: 20px;
+  font-family: 'Roboto Mono', ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--crown-gold);
+  margin-top: 4px;
+}
+
+.btn {
+  display: inline-block;
+  padding: 13px 28px; border-radius: 10px;
+  font-size: 13px; font-weight: 800; letter-spacing: 0.02em;
+  cursor: pointer; border: 0;
+  text-decoration: none; font-family: inherit;
+  transition: 0.15s;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--crown-gold), #F59E0B);
+  color: #1a0938;
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(253, 230, 138, 0.32); }
+.btn-ghost {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  color: var(--ink-100);
+}
+.btn-ghost:hover { border-color: var(--crown-gold); color: var(--crown-gold); }
+
+.actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.foot {
+  margin-top: 22px;
+  font-size: 11px;
+  color: var(--ink-400);
+}
+.foot a { color: var(--crown-gold); text-decoration: none; font-weight: 600; }
+.hidden { display: none !important; }
+
+@media (max-width: 460px) {
+  .card { padding: 30px 22px 26px; border-radius: 16px; }
+  h1 { font-size: 18px; }
+  .icon-wrap { width: 72px; height: 72px; margin-bottom: 18px; }
+  .actions { flex-direction: column; }
+  .btn { width: 100%; }
+}
+</style>
+</head>
+<body>
+  <main class="card" role="main">
+    <a class="brand" href="/" aria-label="Về trang chủ Zeni Cloud" style="text-decoration:none;color:inherit;">
+      <div class="brand-logo">Z</div>
+      <div>
+        <div class="brand-name">Zeni<em>Cloud</em></div>
+        <div class="brand-sub">UNIFIED CLOUD OS · VN</div>
+      </div>
+    </a>
+
+    <div class="icon-wrap loading" id="icon-wrap" aria-hidden="true">
+      <div class="spinner" id="ico-spin"></div>
+      <div class="checkmark hidden" id="ico-ok">&#10003;</div>
+      <div class="crossmark hidden" id="ico-err">&times;</div>
+    </div>
+
+    <h1 id="title" class="loading">Đang xác thực email...</h1>
+    <p class="msg" id="msg">Vui lòng đợi trong giây lát.</p>
+
+    <div class="actions hidden" id="actions">
+      <a class="btn btn-primary" id="go-app" href="/app">Vào ứng dụng</a>
+      <a class="btn btn-ghost hidden" id="go-signup" href="/signup.html">Đăng ký lại</a>
+    </div>
+
+    <div class="foot">
+      Cần hỗ trợ? <a href="mailto:support@zenicloud.io">support@zenicloud.io</a>
+    </div>
+  </main>
+
+<script>
+(function() {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const token = params.get('token');
+
+  function setOk(email) {
+    $('icon-wrap').classList.remove('loading', 'err');
+    $('icon-wrap').classList.add('ok');
+    $('ico-spin').classList.add('hidden');
+    $('ico-ok').classList.remove('hidden');
+    const t = $('title');
+    t.classList.remove('loading'); t.classList.add('ok');
+    t.textContent = 'Xác thực email thành công';
+    $('msg').innerHTML = 'Tài khoản của bạn đã được kích hoạt' +
+      (email ? '<br><span class="email-pill">' + escHtml(email) + '</span>' : '.') +
+      '<br><br>Bạn có thể đăng nhập vào Zeni Cloud ngay bây giờ.';
+    $('actions').classList.remove('hidden');
+    $('go-app').classList.remove('hidden');
+  }
+
+  function setErr(reason) {
+    $('icon-wrap').classList.remove('loading', 'ok');
+    $('icon-wrap').classList.add('err');
+    $('ico-spin').classList.add('hidden');
+    $('ico-err').classList.remove('hidden');
+    const t = $('title');
+    t.classList.remove('loading'); t.classList.add('err');
+    t.textContent = 'Liên kết không hợp lệ hoặc đã hết hạn';
+    $('msg').textContent = reason ||
+      'Liên kết xác thực đã hết hạn (24h) hoặc đã được sử dụng. Vui lòng đăng ký lại hoặc yêu cầu gửi email mới.';
+    $('actions').classList.remove('hidden');
+    $('go-signup').classList.remove('hidden');
+    $('go-app').textContent = 'Đăng nhập';
+  }
+
+  function escHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  async function verify() {
+    if (!token) {
+      setErr('Không tìm thấy token trong URL. Vui lòng kiểm tra lại liên kết trong email.');
+      return;
+    }
+    try {
+      const r = await fetch('/api/v1/auth/email/verify?token=' + encodeURIComponent(token), {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+      });
+      if (r.ok) {
+        let body = {};
+        try { body = await r.json(); } catch {}
+        // If backend returned tokens, save them so user is auto-logged-in
+        if (body && body.access_token) {
+          try { localStorage.setItem('zeni.jwt.access', body.access_token); } catch {}
+        }
+        if (body && body.refresh_token) {
+          try { localStorage.setItem('zeni.jwt.refresh', body.refresh_token); } catch {}
+        }
+        setOk(body && body.email);
+      } else {
+        let detail = '';
+        try {
+          const b = await r.json();
+          detail = (b && (b.detail || b.message)) || '';
+        } catch {}
+        setErr(detail);
+      }
+    } catch (err) {
+      setErr('Không kết nối được máy chủ. Vui lòng thử lại sau.');
+    }
+  }
+
+  verify();
+})();
+</script>
+</body>
+</html>

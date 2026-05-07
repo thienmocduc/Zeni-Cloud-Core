@@ -1,0 +1,61 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-zeni}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zeni_dev_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-zeni_cloud}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-zeni}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-zeni}:${POSTGRES_PASSWORD:-zeni_dev_pass}@postgres:5432/${POSTGRES_DB:-zeni_cloud}
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_me_in_prod_32chars_min}
+      VAULT_KEY: ${VAULT_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-zeni-cloud-core}
+      GCP_REGION: ${GCP_REGION:-us-central1}
+      GOOGLE_APPLICATION_CREDENTIALS: /app/gcp-sa-key.json
+      GCS_BUCKET_PREFIX: ${GCS_BUCKET_PREFIX:-zeni-}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8080}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-ceo@zeni-holdings.vn}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-ChangeMeImmediately123!}
+      ADMIN_NAME: ${ADMIN_NAME:-CEO Zeni}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend:/app
+      - ./frontend:/app/static
+
+volumes:
+  pgdata:
+  redis-data:

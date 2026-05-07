@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quickstart 5 phút — Zeni Cloud Docs</title>
+<meta name="description" content="Hướng dẫn Hello World với Zeni Cloud — từ đăng ký đến lệnh API đầu tiên trong vòng 5 phút.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-void: #0a0a14;
+  --bg-elev: #11111d;
+  --bg-card: #14142a;
+  --border: rgba(168, 139, 250, 0.15);
+  --border-strong: rgba(168, 139, 250, 0.3);
+  --ink-100: #e5e7eb;
+  --ink-200: #c4b5fd;
+  --ink-300: #9e8be5;
+  --ink-400: #7c6bb0;
+  --gold: #fde68a;
+  --indigo: #7d68ff;
+  --crown: #a855f7;
+  --aurora: #22d3ee;
+  --code-bg: #0d1117;
+  --font: 'Inter', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+body { font-family: var(--font); background: var(--bg-void); color: var(--ink-100); font-size: 15px; line-height: 1.7; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(ellipse 1000px 700px at 80% 5%, rgba(168, 85, 247, 0.08), transparent 55%), radial-gradient(ellipse 900px 600px at 5% 90%, rgba(99, 102, 241, 0.06), transparent 55%); z-index: -1; pointer-events: none; }
+a { color: var(--indigo); text-decoration: none; transition: color .2s; }
+a:hover { color: var(--gold); }
+
+header.topbar { position: sticky; top: 0; z-index: 100; background: rgba(10, 10, 20, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+.topbar-inner { max-width: 1400px; margin: 0 auto; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; color: var(--ink-100); }
+.logo-mark { width: 32px; height: 32px; background: linear-gradient(135deg, var(--indigo), var(--crown)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white; }
+.breadcrumb { color: var(--ink-300); font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.breadcrumb-sep { opacity: .4; }
+nav.header-nav { display: flex; align-items: center; gap: 20px; font-size: 14px; }
+nav.header-nav a { color: var(--ink-200); }
+nav.header-nav a.cta { background: var(--indigo); color: white; padding: 8px 16px; border-radius: 8px; font-weight: 600; }
+
+.layout { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 240px 1fr 220px; gap: 32px; padding: 32px 24px; }
+aside.sidebar { position: sticky; top: 80px; height: calc(100vh - 100px); overflow-y: auto; padding-right: 8px; }
+.sidebar h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-300); margin: 24px 0 8px; font-weight: 700; }
+.sidebar h4:first-child { margin-top: 0; }
+.sidebar ul { list-style: none; }
+.sidebar li a { display: block; padding: 7px 12px; border-radius: 6px; color: var(--ink-200); font-size: 14px; }
+.sidebar li a:hover { background: var(--bg-elev); color: var(--gold); }
+.sidebar li a.active { background: rgba(125, 104, 255, 0.12); color: var(--gold); border-left: 2px solid var(--gold); padding-left: 10px; }
+
+aside.toc { position: sticky; top: 80px; height: calc(100vh - 100px); overflow-y: auto; font-size: 13px; }
+.toc h5 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-300); margin-bottom: 12px; font-weight: 700; }
+.toc ul { list-style: none; border-left: 2px solid var(--border); }
+.toc li a { display: block; padding: 6px 14px; color: var(--ink-300); transition: all .15s; }
+.toc li a:hover { color: var(--gold); border-left: 2px solid var(--gold); margin-left: -2px; }
+
+main.content { min-width: 0; max-width: 800px; }
+.meta-bar { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--ink-400); margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border); font-family: var(--mono); }
+.meta-bar span { display: inline-flex; align-items: center; gap: 6px; }
+.meta-bar .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--ink-400); }
+
+.content h1 { font-size: 36px; font-weight: 800; line-height: 1.2; margin-bottom: 14px; background: linear-gradient(135deg, var(--ink-100) 0%, var(--ink-200) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.content h2 { font-size: 24px; font-weight: 700; margin: 40px 0 14px; padding-top: 16px; }
+.content h3 { font-size: 18px; font-weight: 700; margin: 28px 0 10px; color: var(--gold); }
+.content p { margin-bottom: 14px; color: var(--ink-100); }
+.content ul, .content ol { margin: 14px 0 14px 24px; }
+.content li { margin-bottom: 8px; color: var(--ink-100); }
+.content strong { color: var(--gold); font-weight: 600; }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg-elev); padding: 2px 7px; border-radius: 4px; color: var(--gold); border: 1px solid var(--border); }
+.content pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 18px 0; overflow-x: auto; position: relative; }
+.content pre code { background: transparent; border: none; padding: 0; color: var(--ink-100); font-size: 13px; line-height: 1.7; }
+.lang-tag { position: absolute; top: 8px; right: 12px; font-family: var(--mono); font-size: 11px; color: var(--ink-400); background: var(--bg-elev); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border); }
+
+.lead { font-size: 17px; color: var(--ink-200); margin-bottom: 24px; }
+
+.step { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin: 18px 0; position: relative; }
+.step-num { position: absolute; top: -14px; left: 24px; background: linear-gradient(135deg, var(--indigo), var(--crown)); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-family: var(--mono); font-size: 14px; }
+.step h3 { margin-top: 4px; color: var(--ink-100); }
+
+.callout { padding: 16px 20px; border-radius: 10px; margin: 18px 0; border-left: 3px solid; background: var(--bg-elev); }
+.callout.tip { border-left-color: var(--aurora); }
+.callout.warn { border-left-color: var(--gold); }
+.callout.info { border-left-color: var(--indigo); }
+.callout-title { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.callout.tip .callout-title { color: var(--aurora); }
+.callout.warn .callout-title { color: var(--gold); }
+.callout.info .callout-title { color: var(--indigo); }
+
+.kbd { background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; font-family: var(--mono); font-size: 12px; color: var(--ink-100); }
+
+.next-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 18px; }
+.next-card { padding: 18px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; transition: all .2s; }
+.next-card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+.next-card .arrow { font-family: var(--mono); color: var(--gold); }
+.next-card .title { font-weight: 700; color: var(--ink-100); margin: 6px 0 4px; font-size: 15px; }
+.next-card .sub { font-size: 13px; color: var(--ink-300); }
+
+footer.footer { margin-top: 64px; padding: 32px 0 24px; border-top: 1px solid var(--border); text-align: center; color: var(--ink-300); font-size: 13px; }
+footer.footer a { color: var(--ink-200); margin: 0 12px; }
+footer .version { display: inline-block; font-family: var(--mono); font-size: 11px; color: var(--ink-400); margin-top: 12px; padding: 4px 10px; background: var(--bg-elev); border-radius: 999px; border: 1px solid var(--border); }
+
+@media (max-width: 1100px) {
+  .layout { grid-template-columns: 220px 1fr; }
+  aside.toc { display: none; }
+}
+@media (max-width: 800px) {
+  .layout { grid-template-columns: 1fr; padding: 20px 16px; }
+  aside.sidebar { position: static; height: auto; max-height: none; padding-right: 0; }
+  .topbar-inner { flex-wrap: wrap; gap: 10px; }
+  .breadcrumb { display: none; }
+  .content h1 { font-size: 28px; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="index.html" class="logo">
+      <span class="logo-mark">Z</span>
+      <span>Zeni Cloud</span>
+    </a>
+    <div class="breadcrumb">
+      <a href="index.html">Docs</a>
+      <span class="breadcrumb-sep">/</span>
+      <span>Quickstart</span>
+    </div>
+    <nav class="header-nav">
+      <a href="/">Trang chủ</a>
+      <a href="index.html">Docs</a>
+      <a href="/pricing">Giá</a>
+      <a href="/login">Đăng nhập</a>
+      <a href="/signup" class="cta">Đăng ký</a>
+    </nav>
+  </div>
+</header>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <h4>Bắt đầu</h4>
+    <ul>
+      <li><a href="quickstart.html" class="active">Quickstart 5 phút</a></li>
+      <li><a href="ai-call.html">Authentication & API</a></li>
+    </ul>
+    <h4>Hạ tầng</h4>
+    <ul>
+      <li><a href="custom-domain.html">Custom Domain</a></li>
+      <li><a href="vector.html">Database & Vector</a></li>
+      <li><a href="cost-dashboard.html">Cost & Quota</a></li>
+    </ul>
+    <h4>AI & Tự động hoá</h4>
+    <ul>
+      <li><a href="ai-call.html">AI Router</a></li>
+      <li><a href="ocr.html">OCR Tiếng Việt</a></li>
+      <li><a href="translate.html">Dịch thuật</a></li>
+      <li><a href="vector.html">Vector Search</a></li>
+      <li><a href="cron.html">Cron Job</a></li>
+      <li><a href="webhook.html">Webhook</a></li>
+    </ul>
+    <h4>Khác</h4>
+    <ul>
+      <li><a href="faq.html">FAQ</a></li>
+    </ul>
+  </aside>
+
+  <main class="content">
+    <div class="meta-bar">
+      <span>Đọc · 5 phút</span>
+      <span class="dot"></span>
+      <span>Cập nhật 30/04/2026</span>
+      <span class="dot"></span>
+      <span>Cấp độ · Người mới</span>
+    </div>
+
+    <h1>Quickstart — Hello World trong 5 phút</h1>
+    <p class="lead">Hướng dẫn này đưa bạn từ con số 0 đến lệnh gọi API đầu tiên với Zeni Cloud. Không cần cài đặt phức tạp, chỉ cần một trình duyệt và terminal có sẵn <code>curl</code>.</p>
+
+    <div class="callout info">
+      <div class="callout-title">Trước khi bắt đầu</div>
+      <div>Bạn cần một địa chỉ email và một terminal. Hệ điều hành Mac, Linux đều có sẵn <code>curl</code>; Windows 10 trở lên cũng đã tích hợp.</div>
+    </div>
+
+    <h2 id="dang-ky">Bước 1 — Đăng ký tài khoản (30 giây)</h2>
+    <div class="step">
+      <span class="step-num">1</span>
+      <h3>Tạo tài khoản miễn phí</h3>
+      <p>Truy cập <a href="https://zenicloud.io/signup" target="_blank">https://zenicloud.io/signup</a>. Bạn có thể đăng ký bằng email hoặc đăng nhập nhanh qua Google. Free tier không yêu cầu thẻ tín dụng và không có giới hạn thời gian.</p>
+      <p>Sau khi xác nhận email, bạn sẽ được đưa thẳng vào dashboard.</p>
+    </div>
+
+    <h2 id="lay-token">Bước 2 — Lấy API token</h2>
+    <div class="step">
+      <span class="step-num">2</span>
+      <h3>Tạo Personal Access Token</h3>
+      <p>Trong dashboard, mở menu bên trái và đi tới:</p>
+      <p><code>Settings</code> &nbsp;→&nbsp; <code>API Tokens</code> &nbsp;→&nbsp; <kbd class="kbd">+ New Token</kbd></p>
+      <p>Điền thông tin:</p>
+      <ul>
+        <li><strong>Name</strong> — đặt là <code>My First Token</code></li>
+        <li><strong>Scope</strong> — chọn <code>full</code> để có quyền với tất cả lớp</li>
+        <li><strong>Expiry</strong> — mặc định 90 ngày</li>
+      </ul>
+      <p>Sau khi nhấn <kbd class="kbd">Create</kbd>, hệ thống sẽ hiển thị token một lần duy nhất, dạng:</p>
+      <pre><span class="lang-tag">token</span><code>zeni_pat_3a8f9b2c1d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a</code></pre>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-title">Lưu ý quan trọng</div>
+      <div>Token chỉ hiển thị một lần — hãy lưu vào trình quản lý mật khẩu (1Password, Bitwarden, KeePass). Nếu mất, bạn cần tạo token mới và rotate khoá.</div>
+    </div>
+
+    <h2 id="export-token">Bước 3 — Export token vào terminal</h2>
+    <p>Trên Mac/Linux:</p>
+    <pre><span class="lang-tag">bash</span><code>export ZENI_TOKEN="zeni_pat_3a8f9b2c1d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a"</code></pre>
+
+    <p>Trên Windows PowerShell:</p>
+    <pre><span class="lang-tag">powershell</span><code>$env:ZENI_TOKEN = "zeni_pat_3a8f9b2c1d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a"</code></pre>
+
+    <h2 id="goi-api">Bước 4 — Gọi API đầu tiên</h2>
+    <div class="step">
+      <span class="step-num">3</span>
+      <h3>Test với curl</h3>
+      <p>Gửi câu hỏi đầu tiên đến ZeniRouter — engine định tuyến AI thông minh:</p>
+      <pre><span class="lang-tag">bash</span><code>curl -X POST "https://zenicloud.io/api/v1/router/complete?ws=my_workspace" \
+  -H "Authorization: Bearer $ZENI_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      {"role": "user", "content": "Xin chào Zeni!"}
+    ],
+    "task_type": "qa_simple"
+  }'</code></pre>
+      <p>Sau khoảng 1 giây, bạn sẽ nhận được phản hồi như sau:</p>
+      <pre><span class="lang-tag">json</span><code>{
+  "text": "Xin chào! Em là AI từ Zeni Cloud, sẵn sàng hỗ trợ bạn. Bạn cần em giúp việc gì hôm nay?",
+  "routing": {
+    "primary_model": "gemini-3-1-flash",
+    "tier": "fast",
+    "actual_cost_usd": 0.0001
+  },
+  "usage": {
+    "input_tokens": 12,
+    "output_tokens": 45,
+    "total_tokens": 57
+  },
+  "cache_hit": false,
+  "latency_ms": 1234
+}</code></pre>
+    </div>
+
+    <h2 id="hieu-response">Bước 5 — Hiểu response</h2>
+    <p>ZeniRouter trả về 4 nhóm thông tin chính:</p>
+    <ul>
+      <li><strong>text</strong> — câu trả lời do AI sinh ra</li>
+      <li><strong>routing</strong> — model nào đã được chọn, tier và chi phí thực tế (USD)</li>
+      <li><strong>usage</strong> — số token input/output để bạn theo dõi</li>
+      <li><strong>cache_hit</strong> — nếu là <code>true</code>, request đã được trả lời từ cache (rẻ và nhanh hơn)</li>
+    </ul>
+
+    <div class="callout tip">
+      <div class="callout-title">Mẹo tiết kiệm</div>
+      <div>ZeniRouter tự động chọn model rẻ nhất phù hợp. Nếu bạn đặt <code>task_type</code> chính xác, hệ thống sẽ định tuyến tối ưu theo chiến lược 80 phần trăm Flash, 15 phần trăm Sonnet, 5 phần trăm Opus — tiết kiệm khoảng 70 phần trăm so với gọi trực tiếp Anthropic.</div>
+    </div>
+
+    <h2 id="first-app">Bước 6 — Tạo app đầu tiên</h2>
+    <p>Bây giờ thử gọi API từ Python để hiểu cách tích hợp vào ứng dụng thực tế:</p>
+    <pre><span class="lang-tag">python</span><code>import os
+import requests
+
+ZENI = "https://zenicloud.io/api/v1"
+TOKEN = os.environ["ZENI_TOKEN"]
+
+def chat(question: str) -> str:
+    r = requests.post(
+        f"{ZENI}/router/complete?ws=my_workspace",
+        headers={"Authorization": f"Bearer {TOKEN}"},
+        json={
+            "messages": [{"role": "user", "content": question}],
+            "task_type": "qa_simple",
+        },
+        timeout=30,
+    )
+    r.raise_for_status()
+    return r.json()["text"]
+
+if __name__ == "__main__":
+    print(chat("Tóm tắt 50 chữ về Hà Nội."))
+    print(chat("Việt Nam có bao nhiêu tỉnh thành?"))
+</code></pre>
+
+    <p>Lưu file thành <code>hello_zeni.py</code> rồi chạy:</p>
+    <pre><span class="lang-tag">bash</span><code>python hello_zeni.py</code></pre>
+
+    <h2 id="next">Bước tiếp theo</h2>
+    <p>Bạn đã hoàn thành Hello World với Zeni Cloud. Hãy chọn một trong các hướng sau để khám phá tiếp:</p>
+
+    <div class="next-steps">
+      <a href="ai-call.html" class="next-card">
+        <div class="arrow">→</div>
+        <div class="title">Gọi AI nâng cao</div>
+        <div class="sub">Smart routing, cache, failover, model picker.</div>
+      </a>
+      <a href="ocr.html" class="next-card">
+        <div class="arrow">→</div>
+        <div class="title">OCR hoá đơn VN</div>
+        <div class="sub">Trích xuất MST, số HĐ, tổng tiền tự động.</div>
+      </a>
+      <a href="vector.html" class="next-card">
+        <div class="arrow">→</div>
+        <div class="title">Vector RAG</div>
+        <div class="sub">Xây chatbot biết tài liệu công ty.</div>
+      </a>
+      <a href="cron.html" class="next-card">
+        <div class="arrow">→</div>
+        <div class="title">Cron job</div>
+        <div class="sub">Lập lịch chạy tự động hằng ngày.</div>
+      </a>
+    </div>
+
+    <div class="callout info" style="margin-top: 32px;">
+      <div class="callout-title">Bị lỗi?</div>
+      <div>Email <a href="mailto:support@zenicloud.io">support@zenicloud.io</a> kèm response JSON đầy đủ. Đội Zeni trả lời trong 24 giờ ngày làm việc.</div>
+    </div>
+
+  </main>
+
+  <aside class="toc">
+    <h5>Trên trang này</h5>
+    <ul>
+      <li><a href="#dang-ky">Bước 1 — Đăng ký</a></li>
+      <li><a href="#lay-token">Bước 2 — Lấy token</a></li>
+      <li><a href="#export-token">Bước 3 — Export token</a></li>
+      <li><a href="#goi-api">Bước 4 — Gọi API</a></li>
+      <li><a href="#hieu-response">Bước 5 — Hiểu response</a></li>
+      <li><a href="#first-app">Bước 6 — App đầu tiên</a></li>
+      <li><a href="#next">Bước tiếp theo</a></li>
+    </ul>
+  </aside>
+
+</div>
+
+<footer class="footer">
+  <div>
+    <a href="https://zenicloud.io/">Trang chủ</a>
+    <a href="https://zenicloud.io/pricing">Giá</a>
+    <a href="https://zenicloud.io/legal/privacy.html">Bảo mật</a>
+    <a href="mailto:support@zenicloud.io">Liên hệ</a>
+  </div>
+  <p style="margin-top:12px;">Zeni Cloud Co., Ltd. — TPHCM, Việt Nam</p>
+  <span class="version">v0.4.0 · Cập nhật 30/04/2026</span>
+</footer>
+
+</body>
+</html>

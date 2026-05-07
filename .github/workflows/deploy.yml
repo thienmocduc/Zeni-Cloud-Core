@@ -1,0 +1,263 @@
+# ══════════════════════════════════════════════════════════════════
+#  Zeni Cloud Core — Deploy to Production
+#  Triggered: push to main, or manual workflow_dispatch
+#  Steps: auth → build → push → deploy Cloud Run → smoke → notify
+# ══════════════════════════════════════════════════════════════════
+
+name: Deploy Production
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".gitignore"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image tag (e.g. v56). Leave blank to auto-increment."
+        required: false
+        default: ""
+      skip_smoke:
+        description: "Skip smoke tests (emergency only)"
+        required: false
+        default: "false"
+
+# Only one production deploy at a time
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+env:
+  GCP_PROJECT_ID: zeni-cloud-core
+  GCP_REGION: us-central1
+  AR_REPO: zeni-images
+  IMAGE_NAME: zeni-backend
+  CLOUD_RUN_SERVICE: zeni-backend
+  CLOUD_RUN_SA: zeni-cloud-core-sa@zeni-cloud-core.iam.gserviceaccount.com
+  CLOUDSQL_INSTANCE: zeni-cloud-core:us-central1:zeni-cloud-db
+  PRODUCTION_URL: https://zenicloud.io
+
+jobs:
+  deploy:
+    name: Build · Push · Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: write       # for git tag push
+      id-token: write       # for Workload Identity Federation
+
+    steps:
+      # ─── 1. Checkout ─────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # need tags for auto-increment
+
+      # ─── 2. Determine version tag ────────────────────────────────
+      - name: Determine version tag
+        id: ver
+        run: |
+          set -euo pipefail
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+            echo "→ using manual tag: $TAG"
+          else
+            git fetch --tags --force --quiet || true
+            LATEST=$(git tag --list 'v*' | grep -E '^v[0-9]+$' | sort -V | tail -1 || echo "v0")
+            NUM=$(echo "$LATEST" | sed 's/^v//')
+            NEXT=$((NUM + 1))
+            TAG="v${NEXT}"
+            echo "→ auto-increment: $LATEST → $TAG"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "image=${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${AR_REPO}/${IMAGE_NAME}:${TAG}" >> $GITHUB_OUTPUT
+          echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      # ─── 3. Authenticate to GCP via Workload Identity Federation ─
+      - name: Auth to GCP (Workload Identity)
+        id: gcp-auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github/providers/github-provider
+          service_account: github-deployer@zeni-cloud-core.iam.gserviceaccount.com
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Configure Docker auth for Artifact Registry
+        run: gcloud auth configure-docker ${GCP_REGION}-docker.pkg.dev --quiet
+
+      # ─── 4. Build & push Docker image ────────────────────────────
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ steps.ver.outputs.image }}
+            ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.IMAGE_NAME }}:sha-${{ steps.ver.outputs.short_sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+      # ─── 5. Deploy to Cloud Run ──────────────────────────────────
+      - name: Deploy Cloud Run revision
+        id: deploy
+        run: |
+          set -euo pipefail
+          gcloud run deploy ${CLOUD_RUN_SERVICE} \
+            --image="${{ steps.ver.outputs.image }}" \
+            --region=${GCP_REGION} \
+            --platform=managed \
+            --service-account=${CLOUD_RUN_SA} \
+            --add-cloudsql-instances=${CLOUDSQL_INSTANCE} \
+            --allow-unauthenticated \
+            --port=8080 \
+            --memory=2Gi \
+            --cpu=2 \
+            --min-instances=1 \
+            --max-instances=15 \
+            --concurrency=40 \
+            --timeout=600 \
+            --env-vars-file=envs.yaml \
+            --set-secrets="DATABASE_URL=zeni-database-url:latest,JWT_SECRET=zeni-jwt-secret:latest,VAULT_KEY=zeni-vault-key:latest,ADMIN_PASSWORD=zeni-admin-password:latest,GMAIL_SMTP_USER=zeni-smtp-user:latest,GMAIL_SMTP_PASSWORD=zeni-smtp-password:latest,ZENI_CRON_SECRET=zeni-cron-secret:latest" \
+            --labels="version=${{ steps.ver.outputs.tag }},commit=${{ steps.ver.outputs.short_sha }}" \
+            --quiet
+
+          # Capture revision name for potential rollback
+          REVISION=$(gcloud run services describe ${CLOUD_RUN_SERVICE} \
+            --region=${GCP_REGION} \
+            --format='value(status.latestReadyRevisionName)')
+          echo "revision=$REVISION" >> $GITHUB_OUTPUT
+          echo "→ deployed revision: $REVISION"
+
+      # ─── 6. Smoke tests ──────────────────────────────────────────
+      - name: Smoke test (health + public endpoints)
+        if: github.event.inputs.skip_smoke != 'true'
+        id: smoke
+        run: |
+          set -euo pipefail
+          echo "⏳ waiting 30s for revision to be ready..."
+          sleep 30
+
+          FAILED=0
+          declare -a EXPECTED=(
+            "/health|200"
+            "/api/v1/pricing/plans|200,401,400"
+            "/api/v1/router/models|200,401,400"
+          )
+
+          for ENTRY in "${EXPECTED[@]}"; do
+            ROUTE="${ENTRY%%|*}"
+            ACCEPTED="${ENTRY##*|}"
+            URL="${PRODUCTION_URL}${ROUTE}"
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$URL" || echo "000")
+            if echo ",$ACCEPTED," | grep -q ",$CODE,"; then
+              echo "✓ $URL → $CODE"
+            else
+              echo "✗ $URL → $CODE (expected one of: $ACCEPTED)"
+              FAILED=$((FAILED+1))
+            fi
+          done
+
+          if [ $FAILED -gt 0 ]; then
+            echo "::error::$FAILED smoke test(s) failed"
+            exit 1
+          fi
+          echo "✅ all smoke tests passed"
+
+      # ─── 7. Tag git commit ───────────────────────────────────────
+      - name: Tag git commit
+        if: success() && github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.ver.outputs.tag }}" -m "Release ${{ steps.ver.outputs.tag }} (${{ steps.ver.outputs.short_sha }})"
+          git push origin "${{ steps.ver.outputs.tag }}"
+
+      # ─── 8. Slack notify on success ──────────────────────────────
+      - name: Notify Slack (success)
+        if: success() && env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": ":white_check_mark: Zeni Cloud deployed: ${{ steps.ver.outputs.tag }}",
+              "blocks": [
+                {"type":"header","text":{"type":"plain_text","text":":rocket: Production deploy succeeded"}},
+                {"type":"section","fields":[
+                  {"type":"mrkdwn","text":"*Tag:*\n${{ steps.ver.outputs.tag }}"},
+                  {"type":"mrkdwn","text":"*Commit:*\n${{ steps.ver.outputs.short_sha }}"},
+                  {"type":"mrkdwn","text":"*Revision:*\n${{ steps.deploy.outputs.revision }}"},
+                  {"type":"mrkdwn","text":"*URL:*\n<https://zenicloud.io|zenicloud.io>"}
+                ]},
+                {"type":"context","elements":[{"type":"mrkdwn","text":"<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|workflow run>"}]}
+              ]
+            }
+
+      # ─── 9. Slack notify on failure ──────────────────────────────
+      - name: Notify Slack (failure)
+        if: failure() && env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": ":x: Zeni Cloud deploy FAILED: ${{ steps.ver.outputs.tag }}",
+              "blocks": [
+                {"type":"header","text":{"type":"plain_text","text":":fire: Production deploy FAILED"}},
+                {"type":"section","fields":[
+                  {"type":"mrkdwn","text":"*Tag:*\n${{ steps.ver.outputs.tag }}"},
+                  {"type":"mrkdwn","text":"*Commit:*\n${{ steps.ver.outputs.short_sha }}"}
+                ]},
+                {"type":"context","elements":[{"type":"mrkdwn","text":"Check the <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|workflow logs>"}]}
+              ]
+            }
+
+      # ─── 10. GitHub release (optional, on success) ───────────────
+      - name: Create GitHub release
+        if: success() && github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: "Zeni Cloud ${{ steps.ver.outputs.tag }}"
+          body: |
+            ## Zeni Cloud Core — ${{ steps.ver.outputs.tag }}
+
+            **Image:** `${{ steps.ver.outputs.image }}`
+            **Cloud Run revision:** `${{ steps.deploy.outputs.revision }}`
+            **Commit:** ${{ steps.ver.outputs.short_sha }}
+            **Production:** https://zenicloud.io
+
+            See full change diff: ${{ github.server_url }}/${{ github.repository }}/commits/${{ steps.ver.outputs.tag }}
+          generate_release_notes: true
+        continue-on-error: true
+
+      # ─── 11. Deploy summary ──────────────────────────────────────
+      - name: Deploy summary
+        if: always()
+        run: |
+          echo "## Deploy summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Tag | \`${{ steps.ver.outputs.tag }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | \`${{ steps.ver.outputs.image }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Revision | \`${{ steps.deploy.outputs.revision }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ steps.ver.outputs.short_sha }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Production | https://zenicloud.io |" >> $GITHUB_STEP_SUMMARY

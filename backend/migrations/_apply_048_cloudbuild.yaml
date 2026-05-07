@@ -1,0 +1,12 @@
+steps:
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -e
+        apt-get update -qq && apt-get install -y postgresql-client -qq
+        gsutil cp gs://zeni-cloud-core_cloudbuild/sql-imports/048_pwa_template_framework.sql /tmp/048.sql
+        gcloud sql connect zeni-cloud-db --user=zeni --database=zenicore --quiet < /tmp/048.sql
+options:
+  logging: CLOUD_LOGGING_ONLY

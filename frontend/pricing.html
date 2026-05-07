@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+
+<title>Bảng giá · Zeni Cloud · Pricing đơn giản, minh bạch — Trả tiền VND</title>
+<meta name="description" content="5 gói Zeni Cloud: Free, Starter, Pro, Business, Enterprise. Trả tiền VND, hoá đơn VAT VN. Pro 4.9M VND/tháng — rẻ hơn Vercel 33%, AWS 87%.">
+<meta property="og:title" content="Bảng giá · Zeni Cloud">
+<meta property="og:description" content="Trả tiền VND, hoá đơn VAT, hỗ trợ tiếng Việt. Pro 4.9M VND — rẻ hơn Vercel 33%, AWS 87%.">
+<meta property="og:url" content="https://zenicloud.io/pricing">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg-void: #030014;
+  --bg-base: #08051F;
+  --bg-surface: rgba(168, 85, 247, 0.04);
+  --bg-elev: rgba(168, 85, 247, 0.08);
+  --border-soft: rgba(168, 139, 250, 0.08);
+  --border: rgba(168, 139, 250, 0.18);
+  --border-strong: rgba(168, 139, 250, 0.32);
+  --ink-50: #FAF5FF;
+  --ink-100: #EDE9FE;
+  --ink-200: #C4B5FD;
+  --ink-300: #9E8BE5;
+  --ink-400: #7C6BB0;
+  --ink-500: #5B4F85;
+  --ajna: #6366F1;
+  --crown: #A855F7;
+  --crown-light: #D8B4FE;
+  --crown-gold: #FDE68A;
+  --crown-gold-deep: #F59E0B;
+  --aurora-cyan: #22D3EE;
+  --ok: #22D3EE;
+  --font: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Roboto Mono', ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+body {
+  font-family: var(--font);
+  background: var(--bg-void);
+  color: var(--ink-100);
+  font-size: 15px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 1200px 900px at 80% 5%, rgba(168, 85, 247, 0.14), transparent 55%),
+    radial-gradient(ellipse 1000px 700px at 5% 90%, rgba(99, 102, 241, 0.11), transparent 55%),
+    radial-gradient(ellipse at 50% 50%, #0A0520 0%, #030014 70%);
+  z-index: -2;
+  pointer-events: none;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* ═══ TOPBAR ═══ */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 40px;
+  background: rgba(3, 0, 20, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-soft);
+}
+.brand {
+  display: flex; align-items: center; gap: 12px;
+}
+.brand-logo {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--crown), var(--ajna));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; color: var(--ink-50); font-size: 18px;
+}
+.brand-name { font-weight: 700; font-size: 17px; color: var(--ink-50); }
+.brand-name em { font-style: normal; font-weight: 500; color: var(--crown-gold); }
+.brand-sub { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-400); letter-spacing: 0.06em; }
+.topbar-nav {
+  display: flex; align-items: center; gap: 6px;
+}
+.topbar-nav a {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--ink-200);
+  font-weight: 500;
+  transition: all 0.15s;
+}
+.topbar-nav a:hover { background: rgba(168, 85, 247, 0.10); color: var(--ink-50); }
+.topbar-nav a.active { color: var(--crown-gold); }
+.topbar-cta {
+  display: flex; align-items: center; gap: 10px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 600; font-size: 14px;
+  cursor: pointer; border: 1px solid transparent;
+  transition: all 0.15s;
+  text-decoration: none;
+}
+.btn-ghost {
+  background: rgba(168, 85, 247, 0.06);
+  color: var(--ink-100);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { background: rgba(168, 85, 247, 0.14); border-color: var(--border-strong); }
+.btn-primary {
+  background: linear-gradient(135deg, #FDE68A, #F59E0B);
+  color: #1a0a0a;
+  border: 1px solid rgba(253, 230, 138, 0.5);
+  box-shadow: 0 8px 24px -8px rgba(253, 230, 138, 0.4);
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #fef3c7, #fbbf24);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px -8px rgba(253, 230, 138, 0.6);
+}
+.btn-primary.lg, .btn-ghost.lg { padding: 14px 26px; font-size: 15px; border-radius: 12px; }
+
+/* ═══ HERO ═══ */
+.hero-pricing {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 80px 40px 40px;
+  text-align: center;
+}
+.hero-pricing .kicker {
+  display: inline-flex;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--crown-light);
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+.hero-pricing h1 {
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--ink-50);
+  margin-bottom: 18px;
+}
+.hero-pricing h1 em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--crown-gold), var(--crown-light));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.hero-pricing .sub {
+  font-size: 17px;
+  color: var(--ink-300);
+  max-width: 720px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* ═══ TOGGLE ═══ */
+.cycle-toggle {
+  display: inline-flex;
+  margin: 36px auto 0;
+  padding: 4px;
+  background: rgba(168, 85, 247, 0.06);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  gap: 4px;
+}
+.cycle-toggle button {
+  padding: 10px 22px;
+  background: transparent;
+  border: none;
+  color: var(--ink-300);
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+.cycle-toggle button.active {
+  background: linear-gradient(135deg, rgba(253, 230, 138, 0.18), rgba(168, 85, 247, 0.10));
+  color: var(--crown-gold);
+  box-shadow: 0 2px 8px rgba(253, 230, 138, 0.18);
+}
+.cycle-save {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  background: var(--ok);
+  color: #0a1a18;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+  font-weight: 700;
+}
+
+/* ═══ TIER GRID ═══ */
+.tier-section {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 60px 40px 40px;
+}
+.tier-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+}
+.tier-card {
+  position: relative;
+  padding: 28px 22px 26px;
+  background:
+    linear-gradient(180deg, rgba(168, 85, 247, 0.05), transparent 80%),
+    rgba(10, 5, 32, 0.55);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  display: flex; flex-direction: column;
+  transition: all 0.2s;
+}
+.tier-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-strong);
+}
+.tier-card.featured {
+  border: 1.5px solid var(--crown-gold);
+  background:
+    linear-gradient(180deg, rgba(253, 230, 138, 0.10), transparent 60%),
+    rgba(10, 5, 32, 0.65);
+  box-shadow: 0 12px 36px -10px rgba(253, 230, 138, 0.22);
+}
+.tier-badge {
+  position: absolute;
+  top: -12px; left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #FDE68A, #F59E0B);
+  color: #1a0a0a;
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.tier-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-50);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.tier-tagline {
+  font-size: 13px;
+  color: var(--ink-400);
+  margin-top: 4px;
+  margin-bottom: 18px;
+}
+.tier-price {
+  display: flex; flex-direction: column;
+  margin-bottom: 8px;
+}
+.tier-price-vnd {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--ink-50);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.tier-price-vnd small { font-size: 13px; font-weight: 600; color: var(--ink-300); }
+.tier-card.featured .tier-price-vnd {
+  background: linear-gradient(135deg, var(--crown-gold), var(--crown-light));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.tier-price-usd {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-400);
+  margin-top: 4px;
+}
+.tier-features {
+  list-style: none;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-soft);
+  display: flex; flex-direction: column;
+  gap: 10px;
+  flex-grow: 1;
+}
+.tier-features li {
+  font-size: 13.5px;
+  color: var(--ink-200);
+  display: flex; align-items: flex-start; gap: 8px;
+  line-height: 1.5;
+}
+.tier-features li::before {
+  content: '✓';
+  color: var(--ok);
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.tier-cta {
+  margin-top: 20px;
+  display: block;
+  text-align: center;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13.5px;
+  border: 1px solid var(--border);
+  background: rgba(168, 85, 247, 0.06);
+  color: var(--ink-100);
+  transition: all 0.15s;
+}
+.tier-cta:hover { background: rgba(168, 85, 247, 0.14); }
+.tier-card.featured .tier-cta {
+  background: linear-gradient(135deg, #FDE68A, #F59E0B);
+  color: #1a0a0a;
+  border: 1px solid rgba(253, 230, 138, 0.5);
+}
+.tier-card.featured .tier-cta:hover {
+  background: linear-gradient(135deg, #fef3c7, #fbbf24);
+}
+
+/* ═══ COMPARISON ═══ */
+.compare-section {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 80px 40px;
+}
+.compare-section h2 {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-align: center;
+  color: var(--ink-50);
+  margin-bottom: 36px;
+}
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(10, 5, 32, 0.55);
+}
+.compare-table th {
+  padding: 18px;
+  text-align: center;
+  background: rgba(168, 85, 247, 0.05);
+  border-bottom: 1px solid var(--border);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink-100);
+}
+.compare-table th.feat {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-400);
+}
+.compare-table th.zeni { color: var(--crown-gold); background: rgba(253, 230, 138, 0.07); }
+.compare-table td {
+  padding: 16px 18px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--ink-300);
+  font-size: 13.5px;
+}
+.compare-table td.feat {
+  text-align: left;
+  font-weight: 600;
+  color: var(--ink-100);
+}
+.compare-table td.zeni { background: rgba(253, 230, 138, 0.04); color: var(--crown-gold); font-weight: 600; }
+.compare-table tr:last-child td { border-bottom: none; }
+
+/* ═══ FAQ ═══ */
+.faq-section {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 60px 40px 80px;
+}
+.faq-section h2 {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-align: center;
+  color: var(--ink-50);
+  margin-bottom: 36px;
+}
+.faq-item {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  background: rgba(10, 5, 32, 0.45);
+  overflow: hidden;
+}
+.faq-q {
+  padding: 18px 22px;
+  font-weight: 600;
+  font-size: 15.5px;
+  color: var(--ink-50);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  user-select: none;
+}
+.faq-q::after {
+  content: '+';
+  font-size: 22px;
+  font-weight: 300;
+  color: var(--crown-gold);
+  transition: transform 0.2s;
+}
+.faq-item.open .faq-q::after { transform: rotate(45deg); }
+.faq-a {
+  padding: 0 22px 18px;
+  font-size: 14.5px;
+  color: var(--ink-300);
+  line-height: 1.65;
+  display: none;
+}
+.faq-item.open .faq-a { display: block; }
+.faq-a strong { color: var(--ink-100); }
+.faq-a code {
+  font-family: var(--font-mono);
+  background: rgba(168, 85, 247, 0.1);
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: var(--crown-light);
+  font-size: 12.5px;
+}
+
+/* ═══ FOOTER ═══ */
+.footer {
+  max-width: 1440px;
+  margin: 60px auto 0;
+  padding: 50px 40px 30px;
+  border-top: 1px solid var(--border-soft);
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 40px;
+}
+.footer-brand .footer-tag {
+  margin-top: 14px;
+  font-size: 13.5px;
+  color: var(--ink-300);
+  max-width: 320px;
+  line-height: 1.6;
+}
+.footer-col h5 {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-400);
+  margin-bottom: 14px;
+  font-weight: 700;
+}
+.footer-col a {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13.5px;
+  color: var(--ink-200);
+}
+.footer-col a:hover { color: var(--crown-gold); }
+.footer-bottom {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 20px 40px 40px;
+  display: flex; justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-400);
+}
+
+@media (max-width: 1180px) {
+  .tier-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 760px) {
+  .topbar { padding: 12px 18px; }
+  .topbar-nav { display: none; }
+  .hero-pricing { padding: 50px 20px 24px; }
+  .hero-pricing h1 { font-size: 32px; }
+  .tier-section, .compare-section, .faq-section { padding: 40px 18px; }
+  .tier-grid { grid-template-columns: 1fr; }
+  .footer { grid-template-columns: 1fr; gap: 24px; padding: 40px 20px; }
+  .footer-bottom { flex-direction: column; gap: 6px; padding: 20px; }
+  .compare-table th, .compare-table td { padding: 12px 8px; font-size: 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════ TOPBAR ═══════ -->
+<header class="topbar">
+  <a class="brand" href="/landing.html">
+    <div class="brand-logo">Z</div>
+    <div>
+      <div class="brand-name">Zeni<em>Cloud</em></div>
+      <div class="brand-sub">zenicloud.io</div>
+    </div>
+  </a>
+  <nav class="topbar-nav">
+    <a href="/landing.html">Home</a>
+    <a href="/pricing.html" class="active">Pricing</a>
+    <a href="/docs/">Docs</a>
+  </nav>
+  <div class="topbar-cta">
+    <a href="/app" class="btn btn-ghost">Đăng nhập</a>
+    <a href="/signup" class="btn btn-primary">Đăng ký</a>
+  </div>
+</header>
+
+<!-- ═══════ HERO ═══════ -->
+<section class="hero-pricing">
+  <div class="kicker">● Bảng giá Zeni Cloud</div>
+  <h1>Pricing đơn giản, <em>minh bạch</em><br>— Trả tiền VND</h1>
+  <p class="sub">5 gói linh hoạt từ Free đến Enterprise. Không phí ẩn. Hoá đơn VAT VN. Thanh toán qua VietQR / chuyển khoản. Huỷ bất cứ lúc nào — không vendor lock-in.</p>
+  <div class="cycle-toggle" role="tablist">
+    <button id="bill-month" class="active" type="button">Tháng</button>
+    <button id="bill-year" type="button">Năm <span class="cycle-save">−17%</span></button>
+  </div>
+</section>
+
+<!-- ═══════ TIERS GRID ═══════ -->
+<section class="tier-section">
+  <div class="tier-grid" id="tier-grid">
+    <!-- Cards rendered by JS, fallback static content below in case JS off -->
+  </div>
+</section>
+
+<!-- ═══════ COMPARISON ═══════ -->
+<section class="compare-section">
+  <h2>So sánh với competitor</h2>
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th class="feat">Tính năng</th>
+        <th>Vercel</th>
+        <th>Supabase</th>
+        <th>AWS</th>
+        <th class="zeni">Zeni Cloud</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="feat">AI built-in</td>
+        <td>✗</td>
+        <td>✗</td>
+        <td>Bedrock thêm phí</td>
+        <td class="zeni">✓ Smart router</td>
+      </tr>
+      <tr>
+        <td class="feat">VND billing + VAT VN</td>
+        <td>✗</td>
+        <td>✗</td>
+        <td>✗</td>
+        <td class="zeni">✓</td>
+      </tr>
+      <tr>
+        <td class="feat">VietQR / VNPay / MoMo</td>
+        <td>✗</td>
+        <td>✗</td>
+        <td>✗</td>
+        <td class="zeni">✓</td>
+      </tr>
+      <tr>
+        <td class="feat">Web3 / Smart Contract</td>
+        <td>✗</td>
+        <td>✗</td>
+        <td>Managed Blockchain (đắt)</td>
+        <td class="zeni">✓ Polygon native</td>
+      </tr>
+      <tr>
+        <td class="feat">Tiếng Việt + support VN</td>
+        <td>✗</td>
+        <td>✗</td>
+        <td>✗</td>
+        <td class="zeni">✓</td>
+      </tr>
+      <tr>
+        <td class="feat">Free tier hào phóng</td>
+        <td>Hobby (limit)</td>
+        <td>Free</td>
+        <td>12 tháng đầu</td>
+        <td class="zeni">✓ Forever</td>
+      </tr>
+      <tr>
+        <td class="feat">Pro tier USD</td>
+        <td>$300/tháng</td>
+        <td>$300/tháng</td>
+        <td>$1,500+/tháng</td>
+        <td class="zeni">$200/tháng</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════ FAQ ═══════ -->
+<section class="faq-section">
+  <h2>Câu hỏi thường gặp</h2>
+  <div class="faq-item">
+    <div class="faq-q">Free tier có thực sự miễn phí mãi mãi không?</div>
+    <div class="faq-a"><strong>Có.</strong> Free tier không cần thẻ tín dụng. Bạn nhận 100K requests + 5K AI tokens + 1GB storage mỗi tháng forever. Không bao giờ tự động chuyển sang gói trả phí. Khi vượt giới hạn, bạn được thông báo để chọn nâng cấp hay dừng.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Tôi trả tiền bằng cách nào? Có VAT VN không?</div>
+    <div class="faq-a">Bạn có thể trả qua <strong>VietQR</strong> (chuyển khoản nội địa), <strong>VNPay</strong>, <strong>MoMo</strong> hoặc thẻ Visa/Mastercard quốc tế. Hoá đơn VAT điện tử <strong>VN tự động phát hành</strong> qua MISA — không cần thao tác thủ công.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Smart AI Router 80/15/5 là gì?</div>
+    <div class="faq-a">Smart router tự động phân loại request và route tới model phù hợp: <strong>80%</strong> request đơn giản → model rẻ (Haiku/Gemini Flash), <strong>15%</strong> trung bình → Sonnet/GPT-4o, <strong>5%</strong> phức tạp → Opus 4.7/GPT-5. Kết quả: tiết kiệm 12-18× chi phí so với gọi Opus mọi nơi.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Tôi có thể nâng cấp / hạ cấp / huỷ bất cứ lúc nào?</div>
+    <div class="faq-a">Có. Mọi thay đổi gói có hiệu lực ngay lập tức. Khi hạ cấp, bạn được prorated refund cho phần chưa dùng. Khi huỷ, data được lưu giữ <strong>30 ngày</strong> để bạn export ra qua S3-compat API trước khi xoá vĩnh viễn.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">AI tokens tính như thế nào? Có overage charge không?</div>
+    <div class="faq-a">1 token ≈ 0.75 từ tiếng Việt. Mỗi gói có quota tokens/tháng. Vượt quota: <strong>tự động dừng</strong> và yêu cầu nạp thêm credits — KHÔNG charge tự động overage. Bạn luôn nắm quyền chi phí.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Smart Contract trên Polygon có tính phí riêng không?</div>
+    <div class="faq-a">Deploy + invoke smart contract bao gồm trong gói Pro trở lên (10 deploy/tháng + 1000 tx). Vượt mức tính theo on-chain gas thực tế (Polygon, ~$0.001/tx). Free + Starter có thể test trên testnet.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Data của tôi lưu ở đâu? Có chuyển ra nước ngoài không?</div>
+    <div class="faq-a">Data center primary ở <strong>Singapore</strong> (asia-southeast1) với replica tại <strong>Việt Nam</strong> (Hà Nội · TP.HCM). Khách chọn region khi tạo workspace. Compliance Nghị định 13 đóng gói sẵn. Enterprise có thể chọn on-prem hoặc dedicated region.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Nếu tôi muốn migrate khỏi Zeni? Vendor lock-in?</div>
+    <div class="faq-a">Toàn bộ data export tự do qua <strong>S3-compatible API</strong>. Postgres dump bình thường. <code>zeni.yaml</code> nhỏ ~10 dòng, rewrite thành Docker Compose là chạy chỗ khác. <strong>Không egress penalty</strong> như AWS.</div>
+  </div>
+</section>
+
+<!-- ═══════ FOOTER ═══════ -->
+<footer class="footer">
+  <div class="footer-brand">
+    <a class="brand" href="/landing.html">
+      <div class="brand-logo">Z</div>
+      <div>
+        <div class="brand-name">Zeni<em>Cloud</em></div>
+        <div class="brand-sub">zenicloud.io</div>
+      </div>
+    </a>
+    <p class="footer-tag">Cloud thông minh cho doanh nghiệp Việt — AI built-in, trả tiền VND.</p>
+  </div>
+  <div class="footer-col">
+    <h5>Sản phẩm</h5>
+    <a href="/landing.html#strengths">6 điểm mạnh</a>
+    <a href="/pricing.html">Bảng giá</a>
+    <a href="/docs/">Docs &amp; API</a>
+  </div>
+  <div class="footer-col">
+    <h5>Công ty</h5>
+    <a href="/landing.html">Trang chủ</a>
+    <a href="/legal/terms.html">Điều khoản</a>
+    <a href="/legal/privacy.html">Chính sách</a>
+  </div>
+  <div class="footer-col">
+    <h5>Tài khoản</h5>
+    <a href="/signup">Đăng ký</a>
+    <a href="/app">Đăng nhập</a>
+    <a href="mailto:caotuanphat581@gmail.com">Liên hệ</a>
+  </div>
+</footer>
+<div class="footer-bottom">
+  <div>© 2026 Zeni Holdings · zenicloud.io</div>
+  <div>Built with Zeni Cloud · Polygon L2</div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  /* ═══ Hard-coded fallback data (used when API unavailable) ═══ */
+  var FALLBACK_PLANS = [
+    {
+      id: 'free',
+      name: 'Free',
+      tagline: 'Khám phá',
+      price_month_vnd: 0,
+      price_year_vnd: 0,
+      price_month_usd: 0,
+      featured: false,
+      cta: 'Bắt đầu',
+      cta_url: '/signup?plan=free',
+      features: [
+        '1 project',
+        '100K requests/tháng',
+        '5K AI tokens/tháng',
+        '1GB storage',
+        'Community support',
+        'Subdomain *.zenicloud.app',
+        'Forever free',
+        'Không cần thẻ tín dụng'
+      ]
+    },
+    {
+      id: 'starter',
+      name: 'Starter',
+      tagline: 'Khởi tạo',
+      price_month_vnd: 999000,
+      price_year_vnd: 9990000,
+      price_month_usd: 40,
+      featured: false,
+      cta: 'Đăng ký',
+      cta_url: '/signup?plan=starter',
+      features: [
+        '5 projects',
+        '1M requests/tháng',
+        '100K AI tokens/tháng',
+        '10GB storage',
+        'Email support',
+        'Custom domain',
+        'VietQR + VAT VN',
+        '2 connectors VN'
+      ]
+    },
+    {
+      id: 'pro',
+      name: 'Pro',
+      tagline: 'Doanh nghiệp',
+      price_month_vnd: 4900000,
+      price_year_vnd: 49000000,
+      price_month_usd: 200,
+      featured: true,
+      cta: 'Đăng ký',
+      cta_url: '/signup?plan=pro',
+      features: [
+        'Unlimited projects',
+        '10M requests/tháng',
+        '1M AI tokens/tháng',
+        '100GB storage',
+        'Priority support 24/5',
+        'Custom domain + SSL',
+        'Smart Contract deploy',
+        '10 connectors VN'
+      ]
+    },
+    {
+      id: 'business',
+      name: 'Business',
+      tagline: 'Tập đoàn',
+      price_month_vnd: 49000000,
+      price_year_vnd: 490000000,
+      price_month_usd: 2000,
+      featured: false,
+      cta: 'Đăng ký',
+      cta_url: '/signup?plan=business',
+      features: [
+        'Unlimited projects',
+        '100M requests/tháng',
+        '10M AI tokens/tháng',
+        '1TB storage',
+        'Dedicated CSM',
+        'SLA 99.9%',
+        'SSO SAML + SCIM',
+        'NĐ13 compliance pack'
+      ]
+    },
+    {
+      id: 'enterprise',
+      name: 'Enterprise',
+      tagline: 'Riêng biệt',
+      price_month_vnd: 199000000,
+      price_year_vnd: null,
+      price_month_usd: null,
+      featured: false,
+      cta: 'Liên hệ',
+      cta_url: 'mailto:caotuanphat581@gmail.com?subject=Enterprise%20Plan%20Zeni%20Cloud',
+      features: [
+        'Custom infrastructure',
+        'Unlimited everything',
+        'Custom AI quota',
+        'On-prem / dedicated',
+        '24/7 dedicated support',
+        'SLA 99.95% + ISO/SOC',
+        'BYOK + audit log',
+        'White-label option'
+      ]
+    }
+  ];
+
+  /* ═══ Format VND with comma separator + đ suffix ═══ */
+  function formatVND(amount) {
+    if (amount == null) return 'Liên hệ';
+    if (amount === 0) return '0';
+    return amount.toLocaleString('vi-VN').replace(/,/g, '.');
+  }
+  function formatUSD(amount) {
+    if (amount == null) return null;
+    if (amount === 0) return '$0';
+    return '$' + amount.toLocaleString('en-US');
+  }
+
+  /* ═══ Render tier grid ═══ */
+  var currentCycle = 'month';
+  function renderTiers(plans) {
+    var grid = document.getElementById('tier-grid');
+    if (!grid) return;
+    var html = '';
+    plans.forEach(function(plan) {
+      var price = currentCycle === 'year' ? plan.price_year_vnd : plan.price_month_vnd;
+      var usd = plan.price_month_usd;
+
+      var priceLabel, unit;
+      if (price === null || price === undefined) {
+        priceLabel = 'Liên hệ';
+        unit = '';
+      } else if (price === 0) {
+        priceLabel = '0 đ';
+        unit = '<small>/forever</small>';
+      } else {
+        priceLabel = formatVND(price) + ' đ';
+        unit = currentCycle === 'year' ? '<small>/năm</small>' : '<small>/tháng</small>';
+      }
+
+      var usdLabel = '';
+      if (usd === null || usd === undefined) {
+        usdLabel = '<div class="tier-price-usd">Custom contract</div>';
+      } else if (usd === 0) {
+        usdLabel = '<div class="tier-price-usd">≈ Free forever</div>';
+      } else {
+        usdLabel = '<div class="tier-price-usd">≈ ' + formatUSD(usd) + ' /tháng</div>';
+      }
+
+      var featuresHTML = '';
+      plan.features.forEach(function(f) {
+        featuresHTML += '<li>' + escapeHTML(f) + '</li>';
+      });
+
+      html += '<div class="tier-card' + (plan.featured ? ' featured' : '') + '">';
+      if (plan.featured) {
+        html += '<div class="tier-badge">★ Phổ biến nhất</div>';
+      }
+      html += '<div class="tier-name">' + escapeHTML(plan.name) + '</div>';
+      html += '<div class="tier-tagline">' + escapeHTML(plan.tagline) + '</div>';
+      html += '<div class="tier-price">';
+      html += '<div class="tier-price-vnd">' + priceLabel + ' ' + unit + '</div>';
+      html += usdLabel;
+      html += '</div>';
+      html += '<ul class="tier-features">' + featuresHTML + '</ul>';
+      html += '<a class="tier-cta" href="' + escapeHTML(plan.cta_url) + '">' + escapeHTML(plan.cta) + '</a>';
+      html += '</div>';
+    });
+    grid.innerHTML = html;
+  }
+
+  function escapeHTML(s) {
+    return String(s).replace(/[&<>"']/g, function(c) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  /* ═══ Fetch from API, fallback to static ═══ */
+  function loadPlans() {
+    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var timeout = ctrl ? setTimeout(function() { ctrl.abort(); }, 4000) : null;
+    fetch('/api/v1/pricing/plans', {
+      headers: { 'Accept': 'application/json' },
+      signal: ctrl ? ctrl.signal : undefined
+    })
+      .then(function(r) {
+        if (timeout) clearTimeout(timeout);
+        if (!r.ok) throw new Error('API unavailable');
+        return r.json();
+      })
+      .then(function(data) {
+        if (data && Array.isArray(data.plans) && data.plans.length > 0) {
+          renderTiers(data.plans);
+        } else {
+          renderTiers(FALLBACK_PLANS);
+        }
+      })
+      .catch(function() {
+        if (timeout) clearTimeout(timeout);
+        renderTiers(FALLBACK_PLANS);
+      });
+  }
+
+  /* ═══ Toggle billing cycle ═══ */
+  document.getElementById('bill-month').addEventListener('click', function() {
+    currentCycle = 'month';
+    document.getElementById('bill-month').classList.add('active');
+    document.getElementById('bill-year').classList.remove('active');
+    loadPlans();
+  });
+  document.getElementById('bill-year').addEventListener('click', function() {
+    currentCycle = 'year';
+    document.getElementById('bill-year').classList.add('active');
+    document.getElementById('bill-month').classList.remove('active');
+    loadPlans();
+  });
+
+  /* ═══ FAQ accordion ═══ */
+  document.querySelectorAll('.faq-q').forEach(function(q) {
+    q.addEventListener('click', function() {
+      var item = q.parentElement;
+      item.classList.toggle('open');
+    });
+  });
+
+  /* ═══ Init ═══ */
+  loadPlans();
+})();
+</script>
+
+</body>
+</html>

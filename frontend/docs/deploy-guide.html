@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deploy app trong 60 giây — Zeni Cloud</title>
+<style>
+:root {
+  --bg-void:#0a0a14; --bg-card:#14142a; --border:rgba(168,139,250,0.18);
+  --ink-50:#faf5ff; --ink-100:#e5e7eb; --ink-200:#c4b5fd; --ink-300:#9e8be5; --ink-400:#7c6bb0;
+  --gold:#fde68a; --indigo:#7d68ff; --crown:#a855f7; --emerald:#34d399; --rose:#fb7185;
+  --code-bg:#0d1117;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg-void);color:var(--ink-100);line-height:1.7;font-size:15px;padding:40px 20px}
+.wrap{max-width:900px;margin:0 auto}
+h1{font-size:36px;font-weight:800;background:linear-gradient(135deg,var(--gold),var(--indigo));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.lead{font-size:16px;color:var(--ink-200);margin-bottom:32px}
+h2{font-size:22px;font-weight:700;margin-top:36px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--border)}
+h3{font-size:17px;font-weight:700;margin-top:24px;margin-bottom:10px;color:var(--gold)}
+p{margin-bottom:14px;color:var(--ink-100)}
+ul,ol{margin-left:24px;margin-bottom:16px}
+li{margin-bottom:6px}
+strong{color:var(--gold)}
+code{background:var(--code-bg);padding:2px 8px;border-radius:4px;color:var(--gold);font-family:'JetBrains Mono',monospace;font-size:13px}
+pre{background:var(--code-bg);padding:16px;border-radius:8px;border:1px solid var(--border);overflow-x:auto;margin:14px 0;font-family:'JetBrains Mono',monospace;font-size:13px;color:#e5e7eb;line-height:1.55}
+a{color:var(--indigo);text-decoration:none}
+a:hover{color:var(--gold)}
+.step{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:18px 0;position:relative}
+.step .num{position:absolute;left:-12px;top:24px;background:linear-gradient(135deg,var(--indigo),var(--crown));color:white;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;box-shadow:0 4px 12px rgba(125,104,255,0.4)}
+.step h3{margin-top:0;margin-left:32px;color:var(--ink-50)}
+.step .body{margin-left:32px}
+.cta{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:8px;font-weight:600;text-decoration:none;font-size:14px;background:linear-gradient(135deg,var(--indigo),var(--crown));color:white;margin:8px 8px 0 0;transition:all .2s}
+.cta:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(125,104,255,0.4);color:white}
+.cta-ghost{background:transparent;border:1px solid var(--border);color:var(--ink-100)}
+.cta-ghost:hover{background:var(--bg-card);color:var(--gold)}
+.callout{padding:16px 20px;border-radius:10px;margin:14px 0;border-left:4px solid var(--indigo);background:rgba(125,104,255,0.08)}
+.callout.warn{border-left-color:var(--gold);background:rgba(253,230,138,0.08)}
+.callout.success{border-left-color:var(--emerald);background:rgba(52,211,153,0.08)}
+.tpl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:16px 0}
+.tpl-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:18px;cursor:pointer;transition:all .2s;text-decoration:none;color:var(--ink-100);display:block}
+.tpl-card:hover{transform:translateY(-2px);border-color:var(--indigo);box-shadow:0 8px 24px rgba(125,104,255,0.2);color:var(--gold)}
+.tpl-card .icon{font-size:32px;margin-bottom:8px}
+.tpl-card h4{font-size:15px;color:var(--ink-50);margin-bottom:4px}
+.tpl-card p{font-size:13px;color:var(--ink-300);margin:0}
+.tpl-card code{font-size:11px;display:block;margin-top:8px;background:transparent;padding:0;color:var(--ink-400)}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+th{color:var(--gold);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.06em;background:rgba(168,139,250,0.06)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>🚀 Deploy app trong 60 giây</h1>
+<p class="lead">Hướng dẫn từng bước cho người chưa từng dùng cloud — không cần biết Docker, không cần Linux. Chọn 1 trong 4 cách bên dưới.</p>
+
+<div class="callout success">
+  <strong>✅ Free trial 14 ngày:</strong> Đăng ký tài khoản → 14 ngày dùng full Pro miễn phí, không cần thẻ.
+</div>
+
+<h2>Chọn cách deploy phù hợp</h2>
+
+<div class="tpl-grid">
+  <a href="#static-html" class="tpl-card">
+    <div class="icon">📄</div>
+    <h4>Static HTML/CSS</h4>
+    <p>Có sẵn file HTML, chỉ cần upload</p>
+    <code>nginx + your /public folder</code>
+  </a>
+  <a href="#nextjs" class="tpl-card">
+    <div class="icon">▲</div>
+    <h4>Next.js</h4>
+    <p>App đã có ở GitHub → 1 click deploy</p>
+    <code>node20 + Next.js standalone</code>
+  </a>
+  <a href="#docker" class="tpl-card">
+    <div class="icon">🐳</div>
+    <h4>Có sẵn Docker image</h4>
+    <p>Chỉ paste URL image vào Zeni</p>
+    <code>gcr.io/... or docker.io/...</code>
+  </a>
+  <a href="#templates" class="tpl-card">
+    <div class="icon">🎯</div>
+    <h4>Template có sẵn</h4>
+    <p>"Hello World" / "FastAPI" / "Express"</p>
+    <code>1-click no-config</code>
+  </a>
+</div>
+
+<!-- ════════════════ TEMPLATES ════════════════ -->
+<h2 id="templates">🎯 Cách 1 — Deploy template có sẵn (DỄ NHẤT)</h2>
+<p>Không cần code, không cần config. Click 1 phát có URL public.</p>
+
+<div class="step">
+  <div class="num">1</div>
+  <h3>Vào Dashboard → Tab "Projects"</h3>
+  <div class="body">
+    Mở <a href="https://zenicloud.io/app">zenicloud.io/app</a> → click "<strong>+ Project mới</strong>" ở góc trên phải.
+  </div>
+</div>
+
+<div class="step">
+  <div class="num">2</div>
+  <h3>Chọn template "Hello World"</h3>
+  <div class="body">
+    <p>Trong form deploy, dùng các thông số mẫu sau:</p>
+    <table>
+      <tr><th>Trường</th><th>Giá trị</th></tr>
+      <tr><td>Tên</td><td><code>my-first-app</code></td></tr>
+      <tr><td>Type</td><td><code>web</code></td></tr>
+      <tr><td>Runtime</td><td><code>container</code></td></tr>
+      <tr><td>Size</td><td><code>s</code> (512MB, đủ cho hello world)</td></tr>
+      <tr><td>Region</td><td><code>asia-southeast1</code> (Singapore, gần VN)</td></tr>
+      <tr><td>Image</td><td><code>gcr.io/google-samples/hello-app:1.0</code></td></tr>
+      <tr><td>Port</td><td><code>8080</code></td></tr>
+      <tr><td>Allow public</td><td>✓ checked</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="step">
+  <div class="num">3</div>
+  <h3>Click "Deploy" — chờ 30-60 giây</h3>
+  <div class="body">
+    Status sẽ chuyển <code>deploying</code> → <code>running</code>. Sau đó click vào project xem URL public dạng <code>https://zeni-{ws}-{name}-xxx.run.app</code>.
+  </div>
+</div>
+
+<div class="callout success">
+  <strong>✅ Done!</strong> App đã LIVE. Bây giờ thay <code>image</code> bằng image của riêng bạn để deploy app thật.
+</div>
+
+<!-- ════════════════ STATIC HTML ════════════════ -->
+<h2 id="static-html">📄 Cách 2 — Deploy site HTML/CSS sẵn có</h2>
+
+<div class="step">
+  <div class="num">1</div>
+  <h3>Tạo Dockerfile đơn giản</h3>
+  <div class="body">
+    <p>Trong folder website của bạn, tạo file tên <code>Dockerfile</code> (không có đuôi):</p>
+<pre>FROM nginx:alpine
+COPY . /usr/share/nginx/html
+EXPOSE 80</pre>
+  </div>
+</div>
+
+<div class="step">
+  <div class="num">2</div>
+  <h3>Build + push image lên Docker Hub</h3>
+  <div class="body">
+    <p>Cần cài Docker trên máy. Chạy 3 lệnh:</p>
+<pre><span style="color:#6e7681"># 1. Build image (đặt tên theo username Docker Hub của bạn)</span>
+docker build -t myname/my-site:v1 .
+
+<span style="color:#6e7681"># 2. Login Docker Hub (1 lần)</span>
+docker login
+
+<span style="color:#6e7681"># 3. Push lên</span>
+docker push myname/my-site:v1</pre>
+    <p>Image URL của bạn: <code>docker.io/myname/my-site:v1</code></p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="num">3</div>
+  <h3>Deploy trên Zeni Cloud</h3>
+  <div class="body">
+    <p>Vào Dashboard → "+ Project mới" → paste URL image vừa push → port <code>80</code> → Deploy.</p>
+  </div>
+</div>
+
+<!-- ════════════════ NEXTJS ════════════════ -->
+<h2 id="nextjs">▲ Cách 3 — Deploy Next.js từ GitHub</h2>
+
+<div class="step">
+  <div class="num">1</div>
+  <h3>Setup Next.js standalone build</h3>
+  <div class="body">
+    <p>Trong <code>next.config.js</code> thêm:</p>
+<pre>module.exports = {
+  output: 'standalone',
+}</pre>
+  </div>
+</div>
+
+<div class="step">
+  <div class="num">2</div>
+  <h3>Tạo Dockerfile</h3>
+  <div class="body">
+<pre>FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:20-alpine
+WORKDIR /app
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+EXPOSE 3000
+CMD ["node", "server.js"]</pre>
+  </div>
+</div>
+
+<div class="step">
+  <div class="num">3</div>
+  <h3>Build + push + deploy</h3>
+  <div class="body">
+<pre>docker build -t myname/my-nextjs:v1 .
+docker push myname/my-nextjs:v1</pre>
+    <p>Trên Zeni Cloud: deploy với image <code>docker.io/myname/my-nextjs:v1</code>, port <code>3000</code>.</p>
+  </div>
+</div>
+
+<!-- ════════════════ DOCKER ════════════════ -->
+<h2 id="docker">🐳 Cách 4 — Có sẵn Docker image</h2>
+
+<div class="step">
+  <div class="num">1</div>
+  <h3>Image phải public hoặc trong Artifact Registry Zeni</h3>
+  <div class="body">
+    <p>Image phải đến từ 1 trong:</p>
+    <ul>
+      <li><code>gcr.io/zeni-cloud-core/...</code> (Artifact Registry của Zeni)</li>
+      <li><code>gcr.io/google-samples/...</code> (Google samples public)</li>
+      <li><code>docker.io/library/...</code> (Docker Hub official: nginx, redis, postgres, node...)</li>
+      <li><code>docker.io/{user}/...</code> (Docker Hub public của bạn)</li>
+    </ul>
+  </div>
+</div>
+
+<div class="step">
+  <div class="num">2</div>
+  <h3>API call deploy</h3>
+  <div class="body">
+<pre>curl -X POST "https://zenicloud.io/api/v1/projects?ws=YOUR_WS" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "my-app",
+    "type": "api",
+    "runtime": "container",
+    "size": "m",
+    "region": "asia-southeast1",
+    "image": "docker.io/library/nginx:alpine",
+    "port": 80,
+    "env_vars": {"NODE_ENV":"production"},
+    "allow_unauthenticated": true
+  }'</pre>
+  </div>
+</div>
+
+<!-- ════════════════ ENV VARS ════════════════ -->
+<h2>🔧 Env vars + Secrets</h2>
+<p>Khi deploy có 2 cách truyền config:</p>
+
+<h3>Plain env vars (không nhạy cảm)</h3>
+<pre>"env_vars": {
+  "NODE_ENV": "production",
+  "API_BASE_URL": "https://api.example.com"
+}</pre>
+
+<h3>Secrets (API keys, passwords — encrypt qua KMS)</h3>
+<p>Bước 1: Tạo secret trong Settings → Identity → Secrets:</p>
+<pre>POST /api/v1/identity/secrets?ws=YOUR_WS
+{ "name":"db-password", "value":"super-secret-123" }</pre>
+<p>Bước 2: Reference khi deploy:</p>
+<pre>"secrets": {
+  "DB_PASSWORD": "db-password:latest"
+}</pre>
+
+<!-- ════════════════ DOMAIN ════════════════ -->
+<h2>🌐 Custom domain</h2>
+
+<div class="step">
+  <div class="num">1</div>
+  <h3>Map domain trong Zeni</h3>
+  <div class="body">
+<pre>POST /api/v1/projects/{project_id}/domain?ws=YOUR_WS
+{ "domain": "myapp.com" }</pre>
+    <p>Zeni sẽ trả về 1 record CNAME cần add vào DNS provider của bạn.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="num">2</div>
+  <h3>Add CNAME record vào DNS</h3>
+  <div class="body">
+    <p>Vào DNS provider (Cloudflare, Namecheap, GoDaddy...) → add CNAME:</p>
+    <ul>
+      <li><strong>Name</strong>: <code>myapp.com</code> (hoặc <code>www</code>)</li>
+      <li><strong>Type</strong>: <code>CNAME</code></li>
+      <li><strong>Target</strong>: <code>ghs.googlehosted.com</code></li>
+      <li><strong>TTL</strong>: 3600</li>
+    </ul>
+  </div>
+</div>
+
+<div class="step">
+  <div class="num">3</div>
+  <h3>Verify (sau 5-10 phút DNS propagate)</h3>
+  <div class="body">
+<pre>POST /api/v1/projects/{project_id}/domain/verify</pre>
+    <p>Sau khi verify OK → SSL Let's Encrypt tự generate trong 1-2 phút.</p>
+  </div>
+</div>
+
+<!-- ════════════════ COMMON ERRORS ════════════════ -->
+<h2>🔧 Lỗi thường gặp</h2>
+
+<h3>❌ "Image phải từ Artifact Registry zeni-cloud-core, Docker Hub library, hoặc Google samples"</h3>
+<p>Image của bạn không nằm trong whitelist. Cách giải quyết:</p>
+<ul>
+  <li>Push image lên Docker Hub (public): <code>docker.io/yourname/image:tag</code></li>
+  <li>Hoặc dùng image official từ Docker Hub library: <code>docker.io/library/nginx</code></li>
+  <li>Hoặc upgrade lên Pro để dùng private Artifact Registry</li>
+</ul>
+
+<h3>❌ Deploy status "failed"</h3>
+<p>Check chi tiết error qua <code>GET /api/v1/projects/{id}</code>. Lý do thường:</p>
+<ul>
+  <li><strong>Container không listen port</strong>: app phải listen <code>0.0.0.0:8080</code> (không phải <code>localhost</code>)</li>
+  <li><strong>Out of memory</strong>: tăng size <code>s</code> → <code>m</code> hoặc <code>l</code></li>
+  <li><strong>Image private</strong>: image cần public (xem lỗi trên)</li>
+</ul>
+
+<h3>❌ HTTP 500 khi gọi API</h3>
+<p>Backend bug — báo support kèm <code>request_id</code> trong response header.</p>
+
+<!-- ════════════════ NEXT STEPS ════════════════ -->
+<h2>🎓 Tiếp theo nên học gì?</h2>
+<div class="tpl-grid">
+  <a href="/docs/master.html#l2" class="tpl-card">
+    <div class="icon">🗄️</div>
+    <h4>L2 Data — Vector DB + Cache</h4>
+    <p>Lưu data + RAG pipeline cho AI</p>
+  </a>
+  <a href="/docs/master.html#l3" class="tpl-card">
+    <div class="icon">🤖</div>
+    <h4>L3 AI — ZeniRouter</h4>
+    <p>Smart route Claude/GPT/Gemini</p>
+  </a>
+  <a href="/docs/master.html#l5" class="tpl-card">
+    <div class="icon">🔐</div>
+    <h4>L5 Identity — OAuth</h4>
+    <p>Login Google/GitHub/Zalo cho khách</p>
+  </a>
+  <a href="/docs/master.html" class="tpl-card">
+    <div class="icon">📚</div>
+    <h4>Master Guide</h4>
+    <p>Toàn bộ 6 lục đạo + workflows</p>
+  </a>
+</div>
+
+<div style="text-align:center;margin-top:40px;">
+  <a href="https://zenicloud.io/app" class="cta">🚀 Vào Dashboard deploy ngay</a>
+  <a href="mailto:support@zenicloud.io" class="cta cta-ghost">✉️ Hỏi support</a>
+</div>
+
+</div>
+</body>
+</html>

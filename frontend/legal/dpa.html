@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hợp đồng xử lý dữ liệu (DPA) — Zeni Cloud</title>
+<meta name="description" content="Hợp đồng xử lý dữ liệu B2B chuẩn giữa Khách hàng (Bên Kiểm soát Dữ liệu) và Zeni Cloud (Bên Xử lý Dữ liệu). Tuân thủ Nghị định 13/2023/NĐ-CP." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a14;
+    --bg-card: #14141f;
+    --ink: #e5e7eb;
+    --ink-muted: #9ca3af;
+    --ink-soft: #6e6e80;
+    --accent: #fde68a;
+    --accent-2: #f59e0b;
+    --accent-soft: rgba(253, 230, 138, 0.10);
+    --border: rgba(253, 230, 138, 0.18);
+    --border-soft: rgba(255, 255, 255, 0.06);
+  }
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    line-height: 1.7;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background:
+      radial-gradient(ellipse at top, rgba(253, 230, 138, 0.05), transparent 60%),
+      var(--bg);
+  }
+  header.site {
+    border-bottom: 1px solid var(--border-soft);
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(12px);
+    background: rgba(10, 10, 20, 0.85);
+    position: sticky; top: 0; z-index: 50;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 12px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700; font-size: 18px;
+    color: var(--ink); text-decoration: none;
+  }
+  .brand-dot {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: flex; align-items: center; justify-content: center;
+    color: var(--bg); font-weight: 800;
+  }
+  nav.top-nav { display: flex; gap: 12px; align-items: center; }
+  nav.top-nav a {
+    color: var(--ink-muted); text-decoration: none;
+    font-size: 14px; font-weight: 500;
+    padding: 8px 14px; border-radius: 8px;
+    transition: all 0.2s;
+  }
+  nav.top-nav a:hover { color: var(--accent); background: var(--accent-soft); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: var(--bg) !important;
+    font-weight: 700;
+  }
+  .btn-primary:hover { filter: brightness(1.1); }
+  .lang-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--ink-muted);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer;
+  }
+  .lang-btn:hover { color: var(--accent); border-color: var(--accent); }
+  main {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 48px 40px 80px;
+  }
+  .doc-header { margin-bottom: 48px; padding-bottom: 32px; border-bottom: 1px solid var(--border-soft); }
+  .doc-eyebrow {
+    color: var(--accent); font-size: 12px;
+    font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; margin-bottom: 14px;
+  }
+  h1 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 38px; font-weight: 800;
+    margin-bottom: 14px;
+    background: linear-gradient(135deg, #ffffff 0%, var(--accent) 70%, var(--accent-2) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  .doc-meta {
+    display: flex; flex-wrap: wrap; gap: 14px;
+    margin-top: 18px; font-size: 13px; color: var(--ink-soft);
+  }
+  .doc-meta span {
+    padding: 4px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 999px;
+  }
+  .doc-meta strong { color: var(--accent); font-weight: 600; }
+  .toc {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 48px;
+  }
+  .toc h3 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 14px;
+  }
+  .toc ol {
+    list-style: none; counter-reset: item;
+    columns: 2; column-gap: 24px;
+  }
+  .toc ol li { counter-increment: item; margin-bottom: 8px; break-inside: avoid; }
+  .toc ol li::before {
+    content: counter(item) ". ";
+    color: var(--accent);
+    font-weight: 600;
+    margin-right: 4px;
+  }
+  .toc a {
+    color: var(--ink-muted);
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+  }
+  .toc a:hover { color: var(--accent); }
+  h2 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 24px; font-weight: 700;
+    margin: 56px 0 18px;
+    color: var(--ink);
+    padding-left: 16px;
+    border-left: 4px solid var(--accent);
+    line-height: 1.3;
+    scroll-margin-top: 80px;
+  }
+  h3 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 17px; font-weight: 600;
+    margin: 28px 0 12px;
+    color: var(--accent);
+  }
+  h4 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 15px; font-weight: 600;
+    margin: 20px 0 10px;
+    color: var(--ink);
+  }
+  p { color: var(--ink); font-size: 15px; margin-bottom: 16px; }
+  ul, ol { margin: 0 0 18px 24px; }
+  li { color: var(--ink); font-size: 15px; margin-bottom: 8px; }
+  li strong { color: var(--accent); font-weight: 600; }
+  table {
+    width: 100%; border-collapse: collapse;
+    margin: 18px 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    overflow: hidden;
+    font-size: 14px;
+  }
+  th, td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-soft);
+    vertical-align: top;
+  }
+  th {
+    background: rgba(253, 230, 138, 0.06);
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  td { color: var(--ink-muted); }
+  td:first-child { color: var(--ink); font-weight: 500; }
+  tr:last-child td { border-bottom: none; }
+  .callout {
+    background: linear-gradient(135deg, rgba(253, 230, 138, 0.06), rgba(245, 158, 11, 0.03));
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 22px 0;
+  }
+  .callout strong { color: var(--accent); }
+  code {
+    background: rgba(253, 230, 138, 0.08);
+    border: 1px solid var(--border-soft);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-size: 13px;
+    font-family: 'Courier New', monospace;
+  }
+  a.inline {
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-color: rgba(253, 230, 138, 0.4);
+  }
+  a.inline:hover { text-decoration-color: var(--accent); }
+  .signature-block {
+    background: var(--bg-card);
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin: 32px 0;
+  }
+  .signature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-top: 16px;
+  }
+  .signature-col {
+    border-top: 1px solid var(--border-soft);
+    padding-top: 14px;
+  }
+  .signature-col h4 {
+    color: var(--accent);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+  .signature-col p { font-size: 14px; color: var(--ink-muted); }
+  .signature-col strong { color: var(--ink); }
+  footer.doc {
+    margin-top: 64px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border-soft);
+    color: var(--ink-soft);
+    font-size: 13px;
+    display: flex; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+  }
+  footer.doc a { color: var(--accent); text-decoration: none; }
+  footer.doc a:hover { text-decoration: underline; }
+  @media (max-width: 640px) {
+    main { padding: 32px 20px 60px; }
+    h1 { font-size: 26px; }
+    h2 { font-size: 20px; }
+    .toc ol { columns: 1; }
+    nav.top-nav a:not(.btn-primary):not(.lang-btn) { display: none; }
+    .signature-grid { grid-template-columns: 1fr; gap: 16px; }
+  }
+</style>
+</head>
+<body>
+<header class="site">
+  <a href="/" class="brand">
+    <span class="brand-dot">Z</span>
+    <span>Zeni Cloud</span>
+  </a>
+  <nav class="top-nav">
+    <a href="index.html">← Tài liệu pháp lý</a>
+    <a href="/" class="btn-primary">Về Zeni Cloud</a>
+    <a href="/app" class="btn-primary">Mở ứng dụng</a>
+    <button class="lang-btn" onclick="alert('English version coming Q3/2026.')">EN</button>
+  </nav>
+</header>
+
+<main>
+
+<div class="doc-header">
+  <div class="doc-eyebrow">Tài liệu pháp lý / Data Processing Agreement</div>
+  <h1>Hợp đồng xử lý dữ liệu (DPA)</h1>
+  <p style="color: var(--ink-muted); font-size: 16px; margin-top: 8px;">Mẫu hợp đồng xử lý dữ liệu chuẩn áp dụng giữa Khách hàng doanh nghiệp (Bên Kiểm soát Dữ liệu) và Zeni Holdings Vietnam (Bên Xử lý Dữ liệu) khi Khách hàng sử dụng nền tảng Zeni Cloud để lưu trữ, xử lý dữ liệu cá nhân của khách hàng cuối hoặc nhân viên của Khách hàng. Tài liệu này tự động áp dụng cho Khách hàng gói Enterprise; Khách hàng gói Pro có thể yêu cầu ký riêng.</p>
+  <div class="doc-meta">
+    <span>Phiên bản <strong>v1.0</strong></span>
+    <span>Hiệu lực <strong>30/04/2026</strong></span>
+    <span>Mẫu B2B chuẩn</span>
+  </div>
+</div>
+
+<div class="toc">
+  <h3>Mục lục</h3>
+  <ol>
+    <li><a href="#cac-ben">Các bên tham gia</a></li>
+    <li><a href="#dinh-nghia">Định nghĩa</a></li>
+    <li><a href="#pham-vi">Phạm vi và đối tượng xử lý</a></li>
+    <li><a href="#nghia-vu-zeni">Nghĩa vụ của Zeni</a></li>
+    <li><a href="#nghia-vu-kh">Nghĩa vụ của Khách hàng</a></li>
+    <li><a href="#sub-processor">Bên xử lý phụ (Sub-processor)</a></li>
+    <li><a href="#chuyen-quoc-te">Chuyển dữ liệu quốc tế</a></li>
+    <li><a href="#audit">Quyền kiểm toán</a></li>
+    <li><a href="#vi-pham">Vi phạm dữ liệu cá nhân</a></li>
+    <li><a href="#cham-dut">Chấm dứt và xử lý dữ liệu</a></li>
+    <li><a href="#trach-nhiem">Trách nhiệm và bồi thường</a></li>
+    <li><a href="#luat">Pháp luật điều chỉnh</a></li>
+    <li><a href="#hieu-luc">Hiệu lực và sửa đổi</a></li>
+  </ol>
+</div>
+
+<h2 id="cac-ben">1. Các bên tham gia</h2>
+
+<p>Hợp đồng xử lý dữ liệu này (sau đây gọi là "DPA") được ký kết giữa hai bên:</p>
+
+<h3>1.1. Bên Kiểm soát Dữ liệu (Data Controller)</h3>
+<p>Khách hàng doanh nghiệp đã đăng ký tài khoản Zeni Cloud, có thông tin pháp nhân được ghi nhận trong hồ sơ đăng ký gói Enterprise hoặc Pro tại nền tảng. Khách hàng được hiểu là chủ thể quyết định mục đích và phương tiện xử lý dữ liệu cá nhân của khách hàng cuối hoặc nhân viên của mình.</p>
+
+<h3>1.2. Bên Xử lý Dữ liệu (Data Processor)</h3>
+<table>
+  <tbody>
+    <tr><td>Tên đầy đủ</td><td>Zeni Holdings Vietnam</td></tr>
+    <tr><td>Người đại diện</td><td>Cao Tuấn Phát — Chủ tịch HĐQT</td></tr>
+    <tr><td>Email pháp lý</td><td><a class="inline" href="mailto:legal@zenicloud.io">legal@zenicloud.io</a></td></tr>
+    <tr><td>Email DPO</td><td><a class="inline" href="mailto:dpo@zenicloud.io">dpo@zenicloud.io</a></td></tr>
+    <tr><td>Email người đại diện</td><td><a class="inline" href="mailto:caotuanphat581@gmail.com">caotuanphat581@gmail.com</a></td></tr>
+    <tr><td>Website</td><td><a class="inline" href="https://zenicloud.io">https://zenicloud.io</a></td></tr>
+  </tbody>
+</table>
+
+<h2 id="dinh-nghia">2. Định nghĩa</h2>
+
+<p>Trong DPA này, các thuật ngữ sau được hiểu thống nhất với Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân:</p>
+
+<ul>
+  <li><strong>Dữ liệu cá nhân</strong>: thông tin gắn với một cá nhân cụ thể hoặc giúp xác định một cá nhân cụ thể.</li>
+  <li><strong>Chủ thể dữ liệu</strong>: cá nhân được dữ liệu cá nhân phản ánh.</li>
+  <li><strong>Xử lý dữ liệu cá nhân</strong>: bất kỳ thao tác nào trên dữ liệu cá nhân: thu thập, ghi nhận, lưu trữ, sửa đổi, truyền, chia sẻ, công bố, xoá.</li>
+  <li><strong>Bên Kiểm soát</strong>: chủ thể quyết định mục đích và phương tiện xử lý.</li>
+  <li><strong>Bên Xử lý</strong>: chủ thể thực hiện xử lý theo chỉ định và thay mặt Bên Kiểm soát.</li>
+  <li><strong>Bên xử lý phụ</strong> (Sub-processor): bên thứ ba do Bên Xử lý uỷ quyền tham gia xử lý một phần dữ liệu.</li>
+  <li><strong>Vi phạm dữ liệu cá nhân</strong>: sự cố làm lộ, mất, sửa đổi trái phép, truy cập trái phép dữ liệu cá nhân.</li>
+  <li><strong>Dịch vụ</strong>: nền tảng Zeni Cloud bao gồm sáu lớp hạ tầng L1 đến L6.</li>
+</ul>
+
+<h2 id="pham-vi">3. Phạm vi và đối tượng xử lý</h2>
+
+<h3>3.1. Đối tượng dữ liệu</h3>
+<p>Zeni xử lý dữ liệu cá nhân do Khách hàng tải lên nền tảng để cung cấp Dịch vụ. Đối tượng dữ liệu có thể bao gồm: khách hàng cuối của Khách hàng, nhân viên của Khách hàng, đối tác kinh doanh, nhà cung cấp.</p>
+
+<h3>3.2. Loại dữ liệu cá nhân</h3>
+<table>
+  <thead>
+    <tr><th>Nhóm</th><th>Ví dụ</th><th>Mức nhạy cảm</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Định danh</td><td>Họ tên, email, số điện thoại</td><td>Cơ bản</td></tr>
+    <tr><td>Tài chính</td><td>Lịch sử giao dịch, số dư tài khoản nội bộ Khách hàng</td><td>Trung bình</td></tr>
+    <tr><td>Hành vi</td><td>Lịch sử mua, hành vi sử dụng sản phẩm</td><td>Trung bình</td></tr>
+    <tr><td>Nhạy cảm (nếu có)</td><td>Sức khoẻ, sinh trắc học, tôn giáo</td><td>Cao — yêu cầu cơ sở pháp lý đặc biệt</td></tr>
+  </tbody>
+</table>
+
+<p>Khách hàng tự chịu trách nhiệm về tính hợp pháp của việc thu thập dữ liệu cá nhân từ chủ thể dữ liệu, bao gồm việc thông báo và xin đồng ý theo Nghị định 13/2023/NĐ-CP.</p>
+
+<h3>3.3. Mục đích xử lý</h3>
+<p>Zeni xử lý dữ liệu cá nhân chỉ để cung cấp Dịch vụ theo chỉ định của Khách hàng, gồm:</p>
+<ul>
+  <li>Lưu trữ dữ liệu trên hạ tầng Cloud Storage, BigQuery, Cloud SQL, Firestore.</li>
+  <li>Xử lý truy vấn API và trả kết quả.</li>
+  <li>Chạy các agent AI Zeni khi Khách hàng gọi (chỉ khi Khách hàng cấu hình bật).</li>
+  <li>Tự động hoá quy trình theo workflow do Khách hàng định nghĩa.</li>
+  <li>Sao lưu định kỳ để phòng tránh mất mát dữ liệu.</li>
+</ul>
+
+<h3>3.4. Thời gian xử lý</h3>
+<p>Suốt thời gian Khách hàng còn sử dụng Dịch vụ, cộng thêm 30 ngày grace period và 90 ngày backup theo Mục 7.3 Điều khoản dịch vụ.</p>
+
+<h2 id="nghia-vu-zeni">4. Nghĩa vụ của Zeni</h2>
+
+<p>Zeni cam kết:</p>
+
+<h3>4.1. Chỉ xử lý theo chỉ định</h3>
+<p>Zeni chỉ xử lý dữ liệu cá nhân theo chỉ định bằng văn bản của Khách hàng (bao gồm cả chỉ định qua việc Khách hàng cấu hình tính năng trên nền tảng), trừ trường hợp pháp luật yêu cầu khác. Nếu có quy định pháp luật yêu cầu Zeni xử lý ngoài chỉ định, Zeni sẽ thông báo cho Khách hàng trước khi xử lý, trừ khi pháp luật cấm thông báo đó.</p>
+
+<h3>4.2. Bảo mật</h3>
+<p>Zeni triển khai và duy trì các biện pháp kỹ thuật, tổ chức phù hợp để bảo vệ dữ liệu cá nhân, bao gồm tối thiểu:</p>
+<ul>
+  <li>Mã hoá AES-256 ở trạng thái lưu trữ với CMEK theo từng workspace.</li>
+  <li>TLS 1.3 ở trạng thái truyền tải.</li>
+  <li>Phân quyền RBAC chi tiết, audit log không thể sửa.</li>
+  <li>Audit on-chain Polygon cho mọi truy cập của quản trị viên Zeni.</li>
+  <li>Pentest định kỳ và bug bounty công khai.</li>
+  <li>Đào tạo bảo mật bắt buộc 6 tháng/lần cho mọi nhân sự có quyền truy cập hệ thống.</li>
+  <li>Kiểm soát truy cập vật lý tại data center theo chuẩn ISO 27001 (Google Cloud).</li>
+</ul>
+
+<h3>4.3. Không sử dụng ngoài mục đích</h3>
+<p>Zeni cam kết KHÔNG sử dụng dữ liệu cá nhân của Khách hàng cho bất kỳ mục đích nào ngoài việc cung cấp Dịch vụ theo chỉ định. Cụ thể:</p>
+<ul>
+  <li>Không bán, không cho thuê, không trao đổi dữ liệu Khách hàng cho bên thứ ba.</li>
+  <li>Không sử dụng dữ liệu Khách hàng để cạnh tranh với Khách hàng.</li>
+  <li>Không huấn luyện AI trừ khi Khách hàng đã opt-in tại cấu hình workspace, và nếu có thì <strong>luôn ẩn danh hoá năm bước</strong> trước khi đưa vào kho huấn luyện theo Mục 5 Chính sách bảo mật.</li>
+</ul>
+
+<h3>4.4. Cam kết bảo mật của nhân sự</h3>
+<p>Mọi nhân sự Zeni có khả năng tiếp xúc dữ liệu Khách hàng phải ký NDA và cam kết bảo mật. Vi phạm bảo mật từ phía nhân sự được xử lý theo nội quy lao động và có thể bị truy cứu trách nhiệm pháp lý.</p>
+
+<h3>4.5. Hỗ trợ Khách hàng thực hiện quyền của chủ thể dữ liệu</h3>
+<p>Khi chủ thể dữ liệu của Khách hàng yêu cầu thực hiện quyền (truy cập, chỉnh sửa, xoá, portability) và Khách hàng cần Zeni hỗ trợ kỹ thuật, Zeni cung cấp các công cụ và API tương ứng trong vòng 14 ngày làm việc kể từ ngày nhận yêu cầu.</p>
+
+<h3>4.6. Hỗ trợ DPIA và tham vấn</h3>
+<p>Khi Khách hàng cần thực hiện Đánh giá tác động bảo vệ dữ liệu (DPIA) hoặc tham vấn cơ quan thẩm quyền, Zeni cung cấp các tài liệu kỹ thuật cần thiết về biện pháp bảo mật của mình.</p>
+
+<h2 id="nghia-vu-kh">5. Nghĩa vụ của Khách hàng</h2>
+
+<p>Khách hàng cam kết:</p>
+
+<ul>
+  <li>Đảm bảo có cơ sở pháp lý hợp lệ để thu thập và chuyển dữ liệu cá nhân cho Zeni xử lý (đồng ý của chủ thể dữ liệu, thực hiện hợp đồng, nghĩa vụ pháp luật, lợi ích sống còn, lợi ích công, lợi ích hợp pháp).</li>
+  <li>Thông báo cho chủ thể dữ liệu của mình về việc dữ liệu được xử lý bởi Zeni với vai trò Bên Xử lý, và về quyền của chủ thể dữ liệu.</li>
+  <li>Cấu hình bảo mật phù hợp trong dashboard Zeni Cloud (bật xác thực hai lớp, phân quyền hợp lý, không chia sẻ thông tin đăng nhập).</li>
+  <li>Không tải lên dữ liệu cá nhân vượt quá phạm vi đã thông báo cho chủ thể dữ liệu.</li>
+  <li>Tự chịu trách nhiệm xử lý các yêu cầu thực hiện quyền của chủ thể dữ liệu cuối — Zeni chỉ là công cụ kỹ thuật hỗ trợ.</li>
+  <li>Thông báo cho Zeni về các yêu cầu của cơ quan thẩm quyền liên quan đến dữ liệu Khách hàng nếu Khách hàng nhận được yêu cầu trực tiếp (để Zeni hỗ trợ trích xuất dữ liệu nếu cần).</li>
+</ul>
+
+<h2 id="sub-processor">6. Bên xử lý phụ (Sub-processor)</h2>
+
+<h3>6.1. Danh sách Sub-processor hiện hành</h3>
+<p>Khách hàng đồng ý cho phép Zeni sử dụng các Sub-processor sau để cung cấp Dịch vụ:</p>
+
+<table>
+  <thead>
+    <tr><th>Sub-processor</th><th>Vai trò</th><th>Khu vực xử lý</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Google Cloud Platform</td><td>Hạ tầng lưu trữ, tính toán, KMS, BigQuery</td><td>us-central1 (Iowa) hoặc asia-southeast1 (Singapore)</td></tr>
+    <tr><td>SendGrid (Twilio)</td><td>Gửi email transactional (xác minh, đặt lại mật khẩu, hoá đơn)</td><td>Hoa Kỳ</td></tr>
+    <tr><td>Twilio</td><td>Gửi SMS xác thực hai lớp (tuỳ chọn)</td><td>Hoa Kỳ</td></tr>
+    <tr><td>Stripe (đối tác thanh toán)</td><td>Xử lý thanh toán thẻ tín dụng quốc tế</td><td>Hoa Kỳ</td></tr>
+    <tr><td>VNPay, Momo, ZaloPay</td><td>Xử lý thanh toán nội địa Việt Nam</td><td>Việt Nam</td></tr>
+    <tr><td>Polygon Network</td><td>Lưu trữ audit log bất biến (chỉ hash, không lưu dữ liệu Khách hàng)</td><td>Phi tập trung</td></tr>
+  </tbody>
+</table>
+
+<h3>6.2. Cam kết với Sub-processor</h3>
+<p>Zeni cam kết:</p>
+<ul>
+  <li>Ký hợp đồng phụ với mỗi Sub-processor có điều khoản bảo vệ dữ liệu tương đương DPA này.</li>
+  <li>Chịu trách nhiệm liên đới đối với hành vi của Sub-processor như đối với hành vi của chính Zeni.</li>
+  <li>Thông báo cho Khách hàng tối thiểu 30 ngày trước khi thêm hoặc thay đổi Sub-processor mới có ảnh hưởng đáng kể.</li>
+  <li>Khách hàng có quyền phản đối việc thay đổi Sub-processor có lý do chính đáng. Trong trường hợp đó, hai bên thương lượng giải pháp; nếu không đạt thoả thuận, Khách hàng có quyền chấm dứt DPA và Dịch vụ liên quan với hoàn phí phần chưa sử dụng.</li>
+</ul>
+
+<h2 id="chuyen-quoc-te">7. Chuyển dữ liệu quốc tế</h2>
+
+<p>Khi Sub-processor xử lý dữ liệu ngoài Việt Nam (chủ yếu Google Cloud tại us-central1 và các đối tác thanh toán quốc tế), Zeni đảm bảo tuân thủ Nghị định 13/2023/NĐ-CP về chuyển dữ liệu cá nhân ra nước ngoài, bao gồm:</p>
+
+<ul>
+  <li>Mã hoá AES-256 toàn bộ dữ liệu cả trạng thái lưu và truyền.</li>
+  <li>CMEK đảm bảo Zeni vẫn kiểm soát khoá ngay cả khi data center ở nước ngoài.</li>
+  <li>Hợp đồng phụ với Google Cloud có điều khoản bảo vệ dữ liệu chuẩn (Google Cloud Data Processing Addendum).</li>
+  <li>Đánh giá tác động chuyển dữ liệu cá nhân ra nước ngoài (Transfer Impact Assessment) cập nhật hằng năm và lưu hồ sơ.</li>
+  <li>Khách hàng Enterprise có thể yêu cầu khoá toàn bộ workspace tại region asia-southeast1 (Singapore) để giảm thiểu rủi ro địa chính trị.</li>
+</ul>
+
+<h2 id="audit">8. Quyền kiểm toán</h2>
+
+<h3>8.1. Audit on-chain bất kỳ lúc nào</h3>
+<p>Khách hàng có thể tự kiểm tra mọi lượt admin access đối với workspace của mình tại dashboard <code>/app/privacy</code> hoặc trực tiếp trên <a class="inline" href="https://polygonscan.com">polygonscan.com</a> với địa chỉ smart contract <code>ZeniAccessControl</code>. Đây là cơ chế kiểm toán liên tục, không cần xin phép.</p>
+
+<h3>8.2. Báo cáo SOC 2 hằng năm</h3>
+<p>Zeni cam kết công bố báo cáo SOC 2 Type II hằng năm sau khi đạt chứng nhận (dự kiến từ năm 2027). Khách hàng Enterprise có quyền yêu cầu bản đầy đủ kèm NDA.</p>
+
+<h3>8.3. Audit on-site</h3>
+<p>Khách hàng Enterprise có quyền yêu cầu audit on-site tại trụ sở Zeni Cloud không quá một lần mỗi năm, sau khi báo trước tối thiểu 60 ngày, với chi phí do Khách hàng tự chi trả. Audit chỉ tập trung vào quy trình bảo mật, không can thiệp vào hệ thống production. Phạm vi audit phải được hai bên thống nhất bằng văn bản trước.</p>
+
+<h3>8.4. Audit gián tiếp qua bên thứ ba</h3>
+<p>Khách hàng có thể uỷ quyền cho công ty kiểm toán độc lập có chứng chỉ phù hợp thực hiện audit thay mặt mình. Công ty kiểm toán phải ký NDA với Zeni trước khi tiếp cận thông tin.</p>
+
+<h2 id="vi-pham">9. Vi phạm dữ liệu cá nhân</h2>
+
+<h3>9.1. Cam kết thông báo 72 giờ</h3>
+<p>Khi phát hiện vi phạm dữ liệu cá nhân có thể ảnh hưởng đến Khách hàng, Zeni cam kết:</p>
+<ul>
+  <li>Thông báo cho Khách hàng <strong>trong vòng 72 giờ</strong> kể từ thời điểm phát hiện qua email DPO của Khách hàng và email Owner tài khoản.</li>
+  <li>Cung cấp thông tin: bản chất vi phạm, loại dữ liệu bị ảnh hưởng, số lượng chủ thể dữ liệu ước tính, hệ quả có thể xảy ra, biện pháp đã và sẽ thực hiện.</li>
+  <li>Hỗ trợ Khách hàng trong việc thông báo cho cơ quan thẩm quyền (Cục An ninh mạng A05) và chủ thể dữ liệu cuối nếu cần.</li>
+  <li>Cập nhật tiến độ điều tra và khắc phục theo định kỳ cho đến khi sự cố đóng.</li>
+</ul>
+
+<h3>9.2. Trách nhiệm khắc phục</h3>
+<p>Zeni chịu chi phí điều tra, khắc phục kỹ thuật, và (nếu cần) chi phí thông báo cho chủ thể dữ liệu trong phạm vi vi phạm xuất phát từ lỗi của Zeni.</p>
+
+<h2 id="cham-dut">10. Chấm dứt và xử lý dữ liệu sau chấm dứt</h2>
+
+<p>Sau khi DPA hoặc hợp đồng dịch vụ chấm dứt vì bất kỳ lý do gì, Zeni thực hiện theo chỉ định của Khách hàng:</p>
+
+<ul>
+  <li><strong>Hoàn trả dữ liệu</strong>: Zeni hỗ trợ Khách hàng xuất toàn bộ dữ liệu theo định dạng máy đọc được (JSON, CSV, hoặc dump database) trong vòng 30 ngày grace period.</li>
+  <li><strong>Xoá vĩnh viễn</strong>: Sau khi Khách hàng xác nhận đã xuất xong, hoặc sau khi 30 ngày grace period kết thúc, Zeni xoá toàn bộ dữ liệu khỏi production. Bản backup được giữ tối đa 90 ngày trước khi xoá hoàn toàn.</li>
+  <li><strong>Xác nhận xoá</strong>: Khách hàng có thể yêu cầu Zeni cung cấp văn bản xác nhận đã xoá xong, có chữ ký DPO.</li>
+  <li><strong>Ngoại lệ</strong>: Zeni vẫn lưu dữ liệu giao dịch tài chính tối thiểu bảy năm theo Luật Kế toán Việt Nam, và lưu hồ sơ DPA tối thiểu 10 năm theo Bộ luật Dân sự.</li>
+</ul>
+
+<h2 id="trach-nhiem">11. Trách nhiệm và bồi thường</h2>
+
+<h3>11.1. Phạm vi trách nhiệm</h3>
+<p>Mỗi bên chịu trách nhiệm về thiệt hại trực tiếp do vi phạm DPA này gây ra. Trách nhiệm bao gồm: chi phí điều tra, chi phí khắc phục, tiền phạt từ cơ quan thẩm quyền, bồi thường cho chủ thể dữ liệu được toà án quyết định.</p>
+
+<h3>11.2. Mức trần</h3>
+<p>Tổng trách nhiệm tối đa của Zeni đối với Khách hàng theo DPA này không vượt quá tổng phí dịch vụ Khách hàng đã thanh toán cho Zeni trong 12 tháng liền kề trước khi sự kiện phát sinh, trừ trường hợp Zeni cố ý hoặc lỗi nặng thì áp dụng mức trần theo pháp luật.</p>
+
+<h3>11.3. Loại trừ</h3>
+<p>Zeni không chịu trách nhiệm về vi phạm phát sinh từ:</p>
+<ul>
+  <li>Việc Khách hàng tải lên dữ liệu cá nhân không có cơ sở pháp lý.</li>
+  <li>Việc Khách hàng cấu hình bảo mật yếu (không bật 2FA, chia sẻ thông tin đăng nhập).</li>
+  <li>Việc nhân viên của Khách hàng làm rò rỉ dữ liệu sau khi tải xuống từ Zeni.</li>
+  <li>Sự kiện bất khả kháng theo Bộ luật Dân sự Việt Nam.</li>
+</ul>
+
+<h2 id="luat">12. Pháp luật điều chỉnh</h2>
+
+<p>DPA này được điều chỉnh và giải thích theo pháp luật Việt Nam, đặc biệt là:</p>
+<ul>
+  <li>Bộ luật Dân sự năm 2015.</li>
+  <li>Luật An ninh mạng năm 2018.</li>
+  <li>Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân.</li>
+  <li>Nghị định 53/2022/NĐ-CP về Luật An ninh mạng.</li>
+  <li>Luật Kế toán năm 2015.</li>
+  <li>Các văn bản pháp luật liên quan khác.</li>
+</ul>
+
+<p>Tranh chấp được giải quyết tại Toà án Nhân dân có thẩm quyền tại Thành phố Hồ Chí Minh, hoặc tại VIAC nếu hợp đồng Enterprise có điều khoản trọng tài.</p>
+
+<h2 id="hieu-luc">13. Hiệu lực và sửa đổi</h2>
+
+<p>DPA này có hiệu lực:</p>
+<ul>
+  <li><strong>Đối với Khách hàng Enterprise</strong>: từ ngày hai bên ký hợp đồng dịch vụ chính thức.</li>
+  <li><strong>Đối với Khách hàng Pro</strong>: từ ngày Khách hàng tích chọn đồng ý DPA trong dashboard hoặc gửi yêu cầu ký riêng tới <a class="inline" href="mailto:enterprise@zenicloud.io">enterprise@zenicloud.io</a>.</li>
+</ul>
+
+<p>DPA này có hiệu lực cho đến khi hợp đồng dịch vụ chính giữa hai bên chấm dứt và Zeni đã hoàn thành nghĩa vụ xoá dữ liệu theo Mục 10.</p>
+
+<p>Zeni có thể cập nhật DPA để phản ánh thay đổi pháp luật. Phiên bản mới được thông báo qua email tối thiểu 30 ngày trước ngày hiệu lực. Đối với thay đổi quan trọng (giảm quyền của Khách hàng, thay đổi Sub-processor lớn), Zeni xin lại sự đồng ý có lựa chọn của Khách hàng.</p>
+
+<div class="signature-block">
+  <h3 style="margin-top: 0;">Xác nhận giao kết</h3>
+  <p style="font-size: 14px; color: var(--ink-muted);">Hai bên xác nhận đã đọc, hiểu và đồng ý với toàn bộ điều khoản của DPA này. Việc Khách hàng tích chọn "Tôi đồng ý DPA" trong dashboard, hoặc ký số tài liệu này, được coi là chấp nhận giao kết hợp pháp tương đương ký tay.</p>
+  <div class="signature-grid">
+    <div class="signature-col">
+      <h4>Bên Kiểm soát Dữ liệu</h4>
+      <p><strong>Khách hàng:</strong> ............................................</p>
+      <p><strong>Người đại diện:</strong> ............................................</p>
+      <p><strong>Chức vụ:</strong> ............................................</p>
+      <p><strong>Ngày:</strong> ............................................</p>
+    </div>
+    <div class="signature-col">
+      <h4>Bên Xử lý Dữ liệu</h4>
+      <p><strong>Đơn vị:</strong> Zeni Holdings Vietnam</p>
+      <p><strong>Người đại diện:</strong> Cao Tuấn Phát</p>
+      <p><strong>Chức vụ:</strong> Chủ tịch HĐQT</p>
+      <p><strong>Ngày hiệu lực mẫu:</strong> 30/04/2026</p>
+    </div>
+  </div>
+</div>
+
+<div class="callout">
+  <strong>Tài liệu liên quan:</strong> <a class="inline" href="terms.html">Điều khoản dịch vụ</a> · <a class="inline" href="privacy.html">Chính sách bảo mật</a> · <a class="inline" href="ai-data-usage.html">Chính sách sử dụng dữ liệu cho AI</a>.
+</div>
+
+<footer class="doc">
+  <div>Zeni Holdings Vietnam — <a href="https://zenicloud.io">zenicloud.io</a></div>
+  <div>Phiên bản v1.0 — Cập nhật 30/04/2026</div>
+</footer>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,45 @@
+# ═══════════════════════════════════════════════════════════════
+#  Zeni Cloud Core — Cloud Build config
+#  Build backend image, push to Artifact Registry, tag with SHA + latest
+# ═══════════════════════════════════════════════════════════════
+
+substitutions:
+  _REGION: us-central1
+  _REPO: zeni-images
+  _IMAGE: zeni-backend
+
+steps:
+  # Build image (BuildKit enabled for better caching)
+  - name: gcr.io/cloud-builders/docker
+    id: build
+    env:
+      - DOCKER_BUILDKIT=1
+    args:
+      - build
+      - "-t"
+      - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:$SHORT_SHA"
+      - "-t"
+      - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:latest"
+      - "."
+
+  # Push SHA-tagged image
+  - name: gcr.io/cloud-builders/docker
+    id: push-sha
+    args:
+      - push
+      - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:$SHORT_SHA"
+
+  # Push latest tag
+  - name: gcr.io/cloud-builders/docker
+    id: push-latest
+    args:
+      - push
+      - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:latest"
+
+images:
+  - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:$SHORT_SHA"
+  - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:latest"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8

@@ -1,0 +1,37 @@
+{
+  "name": "@zenicloud/cli",
+  "version": "0.1.0",
+  "description": "Zeni Cloud CLI — deploy apps to zenicloud.io from terminal. Like Vercel CLI, no GitHub required.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "zeni": "./bin/zeni.js"
+  },
+  "files": ["bin/", "src/", "README.md"],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "test": "node --test tests/",
+    "start": "node ./bin/zeni.js"
+  },
+  "dependencies": {
+    "ignore": "^5.3.2"
+  },
+  "keywords": [
+    "zeni",
+    "zenicloud",
+    "cloud",
+    "deploy",
+    "paas",
+    "vietnam",
+    "ai",
+    "vercel-alternative"
+  ],
+  "author": "Zeni Cloud Team <hello@zenicloud.io>",
+  "homepage": "https://zenicloud.io/docs/cli",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zenicloud/cli"
+  }
+}

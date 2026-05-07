@@ -1,0 +1,48 @@
+{
+  "name": "@zenicloud/sdk",
+  "version": "1.0.0",
+  "description": "Official Node.js SDK for Zeni Cloud — Cloud OS thống nhất cho doanh nghiệp Việt Nam (100% Google Cloud)",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc && rollup -c",
+    "test": "vitest",
+    "lint": "eslint src/**/*.ts"
+  },
+  "keywords": [
+    "zenicloud",
+    "ai-design",
+    "imagen-3",
+    "gemini",
+    "vietnam",
+    "architecture-ai",
+    "interior-design-ai",
+    "fashion-ai",
+    "vietnamese"
+  ],
+  "author": "Zeni Holdings <caotuanphat581@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://zenicloud.io",
+  "repository": "github:zenicloud/sdk-node",
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

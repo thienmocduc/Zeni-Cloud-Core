@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gọi AI từ app của bạn — Zeni Cloud Docs</title>
+<meta name="description" content="Hướng dẫn gọi AI qua ZeniRouter — smart routing 80/15/5, cache, failover và cost optimization.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root { --bg-void:#0a0a14; --bg-elev:#11111d; --bg-card:#14142a; --border:rgba(168,139,250,0.15); --border-strong:rgba(168,139,250,0.3); --ink-100:#e5e7eb; --ink-200:#c4b5fd; --ink-300:#9e8be5; --ink-400:#7c6bb0; --gold:#fde68a; --indigo:#7d68ff; --crown:#a855f7; --aurora:#22d3ee; --code-bg:#0d1117; --font:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace; }
+* { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior:smooth; scroll-padding-top:80px; }
+body { font-family:var(--font); background:var(--bg-void); color:var(--ink-100); font-size:15px; line-height:1.7; -webkit-font-smoothing:antialiased; min-height:100vh; }
+body::before { content:''; position:fixed; inset:0; background: radial-gradient(ellipse 1000px 700px at 80% 5%, rgba(168,85,247,0.08), transparent 55%), radial-gradient(ellipse 900px 600px at 5% 90%, rgba(99,102,241,0.06), transparent 55%); z-index:-1; pointer-events:none; }
+a { color:var(--indigo); text-decoration:none; transition:color .2s; }
+a:hover { color:var(--gold); }
+
+header.topbar { position:sticky; top:0; z-index:100; background:rgba(10,10,20,0.85); backdrop-filter:blur(12px); border-bottom:1px solid var(--border); }
+.topbar-inner { max-width:1400px; margin:0 auto; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:24px; }
+.logo { display:flex; align-items:center; gap:10px; font-weight:800; font-size:18px; color:var(--ink-100); }
+.logo-mark { width:32px; height:32px; background:linear-gradient(135deg, var(--indigo), var(--crown)); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; color:white; }
+.breadcrumb { color:var(--ink-300); font-size:14px; display:flex; align-items:center; gap:8px; }
+.breadcrumb-sep { opacity:.4; }
+nav.header-nav { display:flex; align-items:center; gap:20px; font-size:14px; }
+nav.header-nav a { color:var(--ink-200); }
+nav.header-nav a.cta { background:var(--indigo); color:white; padding:8px 16px; border-radius:8px; font-weight:600; }
+
+.layout { max-width:1400px; margin:0 auto; display:grid; grid-template-columns:240px 1fr 220px; gap:32px; padding:32px 24px; }
+aside.sidebar { position:sticky; top:80px; height:calc(100vh - 100px); overflow-y:auto; padding-right:8px; }
+.sidebar h4 { font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-300); margin:24px 0 8px; font-weight:700; }
+.sidebar h4:first-child { margin-top:0; }
+.sidebar ul { list-style:none; }
+.sidebar li a { display:block; padding:7px 12px; border-radius:6px; color:var(--ink-200); font-size:14px; }
+.sidebar li a:hover { background:var(--bg-elev); color:var(--gold); }
+.sidebar li a.active { background:rgba(125,104,255,0.12); color:var(--gold); border-left:2px solid var(--gold); padding-left:10px; }
+
+aside.toc { position:sticky; top:80px; height:calc(100vh - 100px); overflow-y:auto; font-size:13px; }
+.toc h5 { font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-300); margin-bottom:12px; font-weight:700; }
+.toc ul { list-style:none; border-left:2px solid var(--border); }
+.toc li a { display:block; padding:6px 14px; color:var(--ink-300); transition:all .15s; }
+.toc li a:hover { color:var(--gold); border-left:2px solid var(--gold); margin-left:-2px; }
+
+main.content { min-width:0; max-width:820px; }
+.meta-bar { display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--ink-400); margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid var(--border); font-family:var(--mono); }
+.meta-bar .dot { width:4px; height:4px; border-radius:50%; background:var(--ink-400); display:inline-block; }
+
+.content h1 { font-size:36px; font-weight:800; line-height:1.2; margin-bottom:14px; background:linear-gradient(135deg, var(--ink-100) 0%, var(--ink-200) 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+.content h2 { font-size:24px; font-weight:700; margin:40px 0 14px; }
+.content h3 { font-size:18px; font-weight:700; margin:28px 0 10px; color:var(--gold); }
+.content p { margin-bottom:14px; }
+.content ul, .content ol { margin:14px 0 14px 24px; }
+.content li { margin-bottom:8px; }
+.content strong { color:var(--gold); font-weight:600; }
+.content code { font-family:var(--mono); font-size:13px; background:var(--bg-elev); padding:2px 7px; border-radius:4px; color:var(--gold); border:1px solid var(--border); }
+.content pre { background:var(--code-bg); border:1px solid var(--border); border-radius:10px; padding:18px 20px; margin:18px 0; overflow-x:auto; position:relative; }
+.content pre code { background:transparent; border:none; padding:0; color:var(--ink-100); font-size:13px; line-height:1.7; }
+.lang-tag { position:absolute; top:8px; right:12px; font-family:var(--mono); font-size:11px; color:var(--ink-400); background:var(--bg-elev); padding:2px 8px; border-radius:4px; border:1px solid var(--border); }
+
+.lead { font-size:17px; color:var(--ink-200); margin-bottom:24px; }
+
+.callout { padding:16px 20px; border-radius:10px; margin:18px 0; border-left:3px solid; background:var(--bg-elev); }
+.callout.tip { border-left-color:var(--aurora); }
+.callout.warn { border-left-color:var(--gold); }
+.callout.info { border-left-color:var(--indigo); }
+.callout-title { font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; }
+.callout.tip .callout-title { color:var(--aurora); }
+.callout.warn .callout-title { color:var(--gold); }
+.callout.info .callout-title { color:var(--indigo); }
+
+.tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); margin:24px 0 -1px; }
+.tab { padding:10px 16px; background:transparent; border:1px solid transparent; border-radius:8px 8px 0 0; color:var(--ink-300); font-family:var(--font); font-size:14px; cursor:pointer; transition:all .2s; }
+.tab.active { background:var(--code-bg); color:var(--gold); border-color:var(--border); border-bottom-color:var(--code-bg); }
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+
+.table { width:100%; border-collapse:collapse; margin:18px 0; font-size:14px; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.table th, .table td { padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); }
+.table th { background:var(--bg-elev); color:var(--gold); font-weight:600; font-size:13px; text-transform:uppercase; letter-spacing:0.05em; }
+.table tr:last-child td { border-bottom:none; }
+.table td.code { font-family:var(--mono); font-size:13px; color:var(--gold); }
+
+.strategy-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; margin:18px 0; }
+.strategy-tier { padding:18px; background:var(--bg-card); border:1px solid var(--border); border-radius:10px; border-top:3px solid; }
+.strategy-tier.fast { border-top-color:var(--aurora); }
+.strategy-tier.balanced { border-top-color:var(--indigo); }
+.strategy-tier.deep { border-top-color:var(--crown); }
+.strategy-tier .pct { font-size:32px; font-weight:800; font-family:var(--mono); }
+.strategy-tier.fast .pct { color:var(--aurora); }
+.strategy-tier.balanced .pct { color:var(--indigo); }
+.strategy-tier.deep .pct { color:var(--crown); }
+.strategy-tier .label { font-size:12px; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-300); margin-top:4px; }
+.strategy-tier .desc { font-size:13px; color:var(--ink-200); margin-top:8px; }
+
+footer.footer { margin-top:64px; padding:32px 0 24px; border-top:1px solid var(--border); text-align:center; color:var(--ink-300); font-size:13px; }
+footer.footer a { color:var(--ink-200); margin:0 12px; }
+footer .version { display:inline-block; font-family:var(--mono); font-size:11px; color:var(--ink-400); margin-top:12px; padding:4px 10px; background:var(--bg-elev); border-radius:999px; border:1px solid var(--border); }
+
+@media (max-width:1100px) { .layout { grid-template-columns:220px 1fr; } aside.toc { display:none; } }
+@media (max-width:800px) { .layout { grid-template-columns:1fr; padding:20px 16px; } aside.sidebar { position:static; height:auto; } .topbar-inner { flex-wrap:wrap; gap:10px; } .breadcrumb { display:none; } .strategy-grid { grid-template-columns:1fr; } .content h1 { font-size:28px; } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="index.html" class="logo">
+      <span class="logo-mark">Z</span>
+      <span>Zeni Cloud</span>
+    </a>
+    <div class="breadcrumb">
+      <a href="index.html">Docs</a>
+      <span class="breadcrumb-sep">/</span>
+      <span>AI Router</span>
+    </div>
+    <nav class="header-nav">
+      <a href="/">Trang chủ</a>
+      <a href="index.html">Docs</a>
+      <a href="/pricing">Giá</a>
+      <a href="/login">Đăng nhập</a>
+      <a href="/signup" class="cta">Đăng ký</a>
+    </nav>
+  </div>
+</header>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <h4>Bắt đầu</h4>
+    <ul>
+      <li><a href="quickstart.html">Quickstart 5 phút</a></li>
+      <li><a href="ai-call.html" class="active">Authentication & API</a></li>
+    </ul>
+    <h4>Hạ tầng</h4>
+    <ul>
+      <li><a href="custom-domain.html">Custom Domain</a></li>
+      <li><a href="vector.html">Database & Vector</a></li>
+      <li><a href="cost-dashboard.html">Cost & Quota</a></li>
+    </ul>
+    <h4>AI & Tự động hoá</h4>
+    <ul>
+      <li><a href="ai-call.html" class="active">AI Router</a></li>
+      <li><a href="ocr.html">OCR Tiếng Việt</a></li>
+      <li><a href="translate.html">Dịch thuật</a></li>
+      <li><a href="vector.html">Vector Search</a></li>
+      <li><a href="cron.html">Cron Job</a></li>
+      <li><a href="webhook.html">Webhook</a></li>
+    </ul>
+    <h4>Khác</h4>
+    <ul>
+      <li><a href="faq.html">FAQ</a></li>
+    </ul>
+  </aside>
+
+  <main class="content">
+    <div class="meta-bar">
+      <span>Đọc · 12 phút</span>
+      <span class="dot"></span>
+      <span>Cập nhật 30/04/2026</span>
+      <span class="dot"></span>
+      <span>Cấp độ · Trung cấp</span>
+    </div>
+
+    <h1>Gọi AI từ app của bạn</h1>
+    <p class="lead">ZeniRouter là engine định tuyến AI thông minh — tự động chọn model rẻ nhất phù hợp với task, cache câu hỏi lặp lại, và failover khi nhà cung cấp gặp sự cố. Tài liệu này hướng dẫn ba cách gọi từ cơ bản đến nâng cao.</p>
+
+    <h2 id="auth">Xác thực — Bearer JWT</h2>
+    <p>Mọi request đến API đều cần header <code>Authorization: Bearer zeni_pat_xxx</code>. Tham khảo <a href="quickstart.html#lay-token">Quickstart</a> để lấy token.</p>
+    <pre><span class="lang-tag">http</span><code>POST /api/v1/router/complete?ws=my_workspace
+Host: zenicloud.io
+Authorization: Bearer zeni_pat_3a8f9b2c1d...
+Content-Type: application/json</code></pre>
+
+    <p>Tham số <code>ws</code> (workspace) bắt buộc — dùng để phân tách dữ liệu giữa các môi trường (dev, staging, prod) hoặc giữa các app khác nhau trong cùng tài khoản.</p>
+
+    <h2 id="cach-1">Cách 1 — Direct REST với cURL</h2>
+    <p>Đơn giản nhất, dùng được trong shell script và CI/CD pipeline:</p>
+    <pre><span class="lang-tag">bash</span><code>curl -X POST "https://zenicloud.io/api/v1/router/complete?ws=prod" \
+  -H "Authorization: Bearer $ZENI_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      {"role": "system", "content": "Bạn là trợ lý của Zeni Cloud."},
+      {"role": "user", "content": "Tóm tắt 50 chữ về Sài Gòn."}
+    ],
+    "task_type": "qa_simple",
+    "max_tokens": 200
+  }'</code></pre>
+
+    <h3 id="python-example">Ví dụ Python</h3>
+    <pre><span class="lang-tag">python</span><code>import os, requests
+
+ZENI = "https://zenicloud.io/api/v1"
+TOKEN = os.environ["ZENI_TOKEN"]
+
+def ai_complete(prompt, task="qa_simple"):
+    r = requests.post(
+        f"{ZENI}/router/complete?ws=my_ws",
+        headers={"Authorization": f"Bearer {TOKEN}"},
+        json={
+            "messages": [{"role": "user", "content": prompt}],
+            "task_type": task,
+        },
+        timeout=60,
+    )
+    r.raise_for_status()
+    return r.json()
+
+# Use case 1 — câu hỏi đơn giản, định tuyến tới Flash
+print(ai_complete("Tóm tắt 100 chữ về Hà Nội"))
+# routing.primary_model = gemini-3-1-flash, cost ~ 0.0001 USD
+
+# Use case 2 — soạn hợp đồng, định tuyến tới Opus
+print(ai_complete("Soạn hợp đồng lao động Việt Nam mẫu", task="legal_contract"))
+# routing.primary_model = claude-opus-4-7, cost ~ 0.025 USD
+
+# Use case 3 — phân loại text
+print(ai_complete("Phân loại email: 'Anh ơi đơn hàng đến chưa?'", task="classify"))
+# routing.primary_model = gemma-4, cost ~ 0.00013 USD
+</code></pre>
+
+    <h3 id="node-example">Ví dụ Node.js</h3>
+    <pre><span class="lang-tag">javascript</span><code>const ZENI = "https://zenicloud.io/api/v1";
+const TOKEN = process.env.ZENI_TOKEN;
+
+async function aiComplete(prompt, task = "qa_simple") {
+  const res = await fetch(`${ZENI}/router/complete?ws=my_ws`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      messages: [{ role: "user", content: prompt }],
+      task_type: task,
+    }),
+  });
+  if (!res.ok) throw new Error(`Zeni ${res.status}`);
+  return res.json();
+}
+
+// Sử dụng
+const r = await aiComplete("Liệt kê 5 quận trung tâm Sài Gòn");
+console.log(r.text);
+console.log(`Model: ${r.routing.primary_model}, cost: $${r.routing.actual_cost_usd}`);
+</code></pre>
+
+    <h3 id="go-example">Ví dụ Go</h3>
+    <pre><span class="lang-tag">go</span><code>package main
+
+import (
+    "bytes"
+    "encoding/json"
+    "fmt"
+    "net/http"
+    "os"
+)
+
+type Msg struct { Role, Content string }
+type Req struct {
+    Messages []Msg  `json:"messages"`
+    TaskType string `json:"task_type"`
+}
+
+func aiComplete(prompt string) (string, error) {
+    body, _ := json.Marshal(Req{
+        Messages: []Msg{{Role: "user", Content: prompt}},
+        TaskType: "qa_simple",
+    })
+    req, _ := http.NewRequest("POST",
+        "https://zenicloud.io/api/v1/router/complete?ws=my_ws",
+        bytes.NewReader(body))
+    req.Header.Set("Authorization", "Bearer "+os.Getenv("ZENI_TOKEN"))
+    req.Header.Set("Content-Type", "application/json")
+
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil { return "", err }
+    defer resp.Body.Close()
+
+    var out map[string]interface{}
+    json.NewDecoder(resp.Body).Decode(&out)
+    return fmt.Sprint(out["text"]), nil
+}
+</code></pre>
+
+    <h2 id="cach-2">Cách 2 — Smart routing với task_type</h2>
+    <p>Đặt <code>task_type</code> chính xác để ZeniRouter chọn model rẻ nhất phù hợp. Đây là cách <strong>khuyến nghị</strong> cho hầu hết ứng dụng.</p>
+
+    <table class="table">
+      <thead>
+        <tr><th>task_type</th><th>Model định tuyến</th><th>Chi phí ước tính</th><th>Use case</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="code">qa_simple</td><td>gemini-3-1-flash</td><td>$0.0001/req</td><td>Hỏi đáp ngắn, FAQ, chatbot</td></tr>
+        <tr><td class="code">classify</td><td>gemma-4</td><td>$0.00013/req</td><td>Phân loại email, tag content</td></tr>
+        <tr><td class="code">summarize</td><td>gemini-3-1-flash</td><td>$0.0002/req</td><td>Tóm tắt văn bản dưới 5K từ</td></tr>
+        <tr><td class="code">code_gen</td><td>claude-sonnet-4-7</td><td>$0.003/req</td><td>Sinh code, review PR</td></tr>
+        <tr><td class="code">legal_contract</td><td>claude-opus-4-7</td><td>$0.025/req</td><td>Soạn hợp đồng, phân tích pháp lý</td></tr>
+        <tr><td class="code">creative_long</td><td>claude-opus-4-7</td><td>$0.030/req</td><td>Viết blog dài, kịch bản</td></tr>
+        <tr><td class="code">vision</td><td>gemini-3-1-pro</td><td>$0.005/req</td><td>Phân tích ảnh, biểu đồ</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="cach-3">Cách 3 — Explicit model selection</h2>
+    <p>Khi bạn chắc chắn muốn dùng một model cụ thể (ví dụ test benchmark, hoặc có hợp đồng commit), thêm trường <code>model</code>:</p>
+
+    <pre><span class="lang-tag">json</span><code>{
+  "messages": [{"role": "user", "content": "Viết bài SEO 1500 chữ về cà phê Việt Nam"}],
+  "model": "claude-opus-4-7",
+  "max_tokens": 3000,
+  "temperature": 0.7
+}</code></pre>
+
+    <div class="callout warn">
+      <div class="callout-title">Cảnh báo chi phí</div>
+      <div>Khi đặt <code>model</code> tường minh, ZeniRouter sẽ <strong>không</strong> downgrade sang model rẻ hơn dù task đơn giản. Hãy chắc chắn bạn cần đúng model đó.</div>
+    </div>
+
+    <h2 id="strategy">Chiến lược 80/15/5 — Tối ưu chi phí</h2>
+    <p>ZeniRouter hoạt động dựa trên giả định: <strong>phần lớn câu hỏi là đơn giản, chỉ một số ít cần model mạnh</strong>. Phân bổ mặc định:</p>
+
+    <div class="strategy-grid">
+      <div class="strategy-tier fast">
+        <div class="pct">80%</div>
+        <div class="label">FAST tier · Flash</div>
+        <div class="desc">Hỏi đáp ngắn, classify, summarize. Latency 1-2s, cost ~$0.0001/req.</div>
+      </div>
+      <div class="strategy-tier balanced">
+        <div class="pct">15%</div>
+        <div class="label">BALANCED tier · Sonnet</div>
+        <div class="desc">Code gen, phân tích trung bình. Latency 2-5s, cost ~$0.003/req.</div>
+      </div>
+      <div class="strategy-tier deep">
+        <div class="pct">5%</div>
+        <div class="label">DEEP tier · Opus</div>
+        <div class="desc">Hợp đồng, viết dài, reasoning sâu. Latency 5-15s, cost ~$0.025/req.</div>
+      </div>
+    </div>
+
+    <p>So với gọi trực tiếp Anthropic Opus cho mọi request, chiến lược 80/15/5 tiết kiệm <strong>khoảng 70 phần trăm chi phí</strong> mà chất lượng đầu ra không giảm rõ rệt với 95 phần trăm câu hỏi.</p>
+
+    <h2 id="cache">Cache settings</h2>
+    <p>Mỗi request tự động được hash và lưu cache. Có hai loại cache:</p>
+    <ul>
+      <li><strong>Exact cache</strong> — match chính xác messages + model, hit rate khoảng 20-30 phần trăm với chatbot</li>
+      <li><strong>Semantic cache</strong> — match theo embedding, áp dụng nếu bật <code>cache: "semantic"</code>. Tăng hit rate lên 50-60 phần trăm</li>
+    </ul>
+
+    <pre><span class="lang-tag">json</span><code>{
+  "messages": [{"role": "user", "content": "Sài Gòn có gì hay?"}],
+  "task_type": "qa_simple",
+  "cache": {
+    "mode": "semantic",
+    "ttl_seconds": 86400,
+    "similarity_threshold": 0.92
+  }
+}</code></pre>
+
+    <p>Cache TTL mặc định 1 giờ. Khi hit, bạn nhận response gần như tức thì (dưới 100ms) với <code>cache_hit: true</code> và <code>actual_cost_usd: 0</code>.</p>
+
+    <h2 id="rate-limit">Rate limit & quota</h2>
+    <table class="table">
+      <thead><tr><th>Gói</th><th>Req/phút</th><th>Tokens/ngày</th><th>USD/tháng</th></tr></thead>
+      <tbody>
+        <tr><td>Free</td><td>20</td><td>200K</td><td>0 (kèm $1 credit)</td></tr>
+        <tr><td>Starter</td><td>100</td><td>2M</td><td>9</td></tr>
+        <tr><td>Pro</td><td>500</td><td>20M</td><td>49</td></tr>
+        <tr><td>Enterprise</td><td>tuỳ chỉnh</td><td>tuỳ chỉnh</td><td>liên hệ</td></tr>
+      </tbody>
+    </table>
+
+    <p>Khi vượt quota, hệ thống trả 429 với header <code>Retry-After</code>. Tham khảo <a href="cost-dashboard.html">Cost Dashboard</a> để theo dõi tiêu thụ realtime.</p>
+
+    <h2 id="failover">Failover behavior</h2>
+    <p>Nếu nhà cung cấp chính (Google, Anthropic) gặp lỗi 5xx hoặc timeout >30s, ZeniRouter tự động:</p>
+    <ol>
+      <li>Retry lần 1 sau 500ms với cùng model</li>
+      <li>Retry lần 2 sau 2s với cùng model</li>
+      <li>Failover sang model backup cùng tier (ví dụ Opus → Sonnet)</li>
+      <li>Trả về 503 cho client với <code>routing.failover_attempts</code></li>
+    </ol>
+    <p>Failover trong suốt với app — bạn chỉ thấy latency cao hơn bình thường trong trường hợp hiếm.</p>
+
+    <div class="callout tip">
+      <div class="callout-title">Production checklist</div>
+      <div>
+        <strong>1.</strong> Set timeout client tối thiểu 60s, vì DEEP tier có thể mất 15s.<br>
+        <strong>2.</strong> Log <code>routing.primary_model</code> và <code>actual_cost_usd</code> để theo dõi spend.<br>
+        <strong>3.</strong> Bật cache với mọi endpoint công cộng — hiệu quả ngay lập tức.<br>
+        <strong>4.</strong> Set quota alert tại 80 phần trăm để không bị 429 đột ngột.
+      </div>
+    </div>
+
+    <h2 id="errors">Mã lỗi thường gặp</h2>
+    <table class="table">
+      <thead><tr><th>Mã</th><th>Ý nghĩa</th><th>Xử lý</th></tr></thead>
+      <tbody>
+        <tr><td class="code">401</td><td>Token sai hoặc hết hạn</td><td>Tạo token mới trong dashboard</td></tr>
+        <tr><td class="code">403</td><td>Token không có scope</td><td>Cấp lại scope <code>ai:read,ai:write</code></td></tr>
+        <tr><td class="code">429</td><td>Vượt rate limit</td><td>Đợi <code>Retry-After</code> giây hoặc upgrade gói</td></tr>
+        <tr><td class="code">503</td><td>Tất cả model failover đều fail</td><td>Hiếm. Thử lại sau 30s, liên hệ support nếu lặp</td></tr>
+      </tbody>
+    </table>
+
+  </main>
+
+  <aside class="toc">
+    <h5>Trên trang này</h5>
+    <ul>
+      <li><a href="#auth">Xác thực JWT</a></li>
+      <li><a href="#cach-1">Cách 1 — REST</a></li>
+      <li><a href="#python-example">Python</a></li>
+      <li><a href="#node-example">Node.js</a></li>
+      <li><a href="#go-example">Go</a></li>
+      <li><a href="#cach-2">Cách 2 — task_type</a></li>
+      <li><a href="#cach-3">Cách 3 — model</a></li>
+      <li><a href="#strategy">Chiến lược 80/15/5</a></li>
+      <li><a href="#cache">Cache</a></li>
+      <li><a href="#rate-limit">Rate limit</a></li>
+      <li><a href="#failover">Failover</a></li>
+      <li><a href="#errors">Mã lỗi</a></li>
+    </ul>
+  </aside>
+
+</div>
+
+<footer class="footer">
+  <div>
+    <a href="https://zenicloud.io/">Trang chủ</a>
+    <a href="https://zenicloud.io/pricing">Giá</a>
+    <a href="https://zenicloud.io/legal/privacy.html">Bảo mật</a>
+    <a href="mailto:support@zenicloud.io">Liên hệ</a>
+  </div>
+  <p style="margin-top:12px;">Zeni Cloud Co., Ltd. — TPHCM, Việt Nam</p>
+  <span class="version">v0.4.0 · Cập nhật 30/04/2026</span>
+</footer>
+
+</body>
+</html>

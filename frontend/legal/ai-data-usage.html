@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Chính sách sử dụng dữ liệu cho AI — Zeni Cloud</title>
+<meta name="description" content="Cách Zeni Cloud sử dụng dữ liệu (đã ẩn danh hoá) để huấn luyện Zeni Claw, Zeni Make và các agent. Differential Privacy ε=1.0, năm lớp chống rò rỉ, opt-in/opt-out, ưu đãi 20%." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a14;
+    --bg-card: #14141f;
+    --ink: #e5e7eb;
+    --ink-muted: #9ca3af;
+    --ink-soft: #6e6e80;
+    --accent: #fde68a;
+    --accent-2: #f59e0b;
+    --accent-soft: rgba(253, 230, 138, 0.10);
+    --border: rgba(253, 230, 138, 0.18);
+    --border-soft: rgba(255, 255, 255, 0.06);
+    --success: #10b981;
+    --warning: #fbbf24;
+    --info: #60a5fa;
+  }
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    line-height: 1.7;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background:
+      radial-gradient(ellipse at top, rgba(253, 230, 138, 0.05), transparent 60%),
+      var(--bg);
+  }
+  header.site {
+    border-bottom: 1px solid var(--border-soft);
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(12px);
+    background: rgba(10, 10, 20, 0.85);
+    position: sticky; top: 0; z-index: 50;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 12px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700; font-size: 18px;
+    color: var(--ink); text-decoration: none;
+  }
+  .brand-dot {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: flex; align-items: center; justify-content: center;
+    color: var(--bg); font-weight: 800;
+  }
+  nav.top-nav { display: flex; gap: 12px; align-items: center; }
+  nav.top-nav a {
+    color: var(--ink-muted); text-decoration: none;
+    font-size: 14px; font-weight: 500;
+    padding: 8px 14px; border-radius: 8px;
+    transition: all 0.2s;
+  }
+  nav.top-nav a:hover { color: var(--accent); background: var(--accent-soft); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: var(--bg) !important;
+    font-weight: 700;
+  }
+  .btn-primary:hover { filter: brightness(1.1); }
+  .lang-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--ink-muted);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer;
+  }
+  .lang-btn:hover { color: var(--accent); border-color: var(--accent); }
+  main {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 48px 40px 80px;
+  }
+  .doc-header { margin-bottom: 48px; padding-bottom: 32px; border-bottom: 1px solid var(--border-soft); }
+  .doc-eyebrow {
+    color: var(--accent); font-size: 12px;
+    font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; margin-bottom: 14px;
+  }
+  h1 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 38px; font-weight: 800;
+    margin-bottom: 14px;
+    background: linear-gradient(135deg, #ffffff 0%, var(--accent) 70%, var(--accent-2) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  .doc-meta {
+    display: flex; flex-wrap: wrap; gap: 14px;
+    margin-top: 18px; font-size: 13px; color: var(--ink-soft);
+  }
+  .doc-meta span {
+    padding: 4px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 999px;
+  }
+  .doc-meta strong { color: var(--accent); font-weight: 600; }
+  .toc {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 48px;
+  }
+  .toc h3 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px; color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 14px;
+  }
+  .toc ol {
+    list-style: none; counter-reset: item;
+    columns: 2; column-gap: 24px;
+  }
+  .toc ol li { counter-increment: item; margin-bottom: 8px; break-inside: avoid; }
+  .toc ol li::before {
+    content: counter(item) ". ";
+    color: var(--accent);
+    font-weight: 600;
+    margin-right: 4px;
+  }
+  .toc a {
+    color: var(--ink-muted);
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+  }
+  .toc a:hover { color: var(--accent); }
+  h2 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 24px; font-weight: 700;
+    margin: 56px 0 18px;
+    color: var(--ink);
+    padding-left: 16px;
+    border-left: 4px solid var(--accent);
+    line-height: 1.3;
+    scroll-margin-top: 80px;
+  }
+  h3 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 17px; font-weight: 600;
+    margin: 28px 0 12px;
+    color: var(--accent);
+  }
+  h4 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 15px; font-weight: 600;
+    margin: 20px 0 10px;
+    color: var(--ink);
+  }
+  p { color: var(--ink); font-size: 15px; margin-bottom: 16px; }
+  ul, ol { margin: 0 0 18px 24px; }
+  li { color: var(--ink); font-size: 15px; margin-bottom: 8px; }
+  li strong { color: var(--accent); font-weight: 600; }
+  table {
+    width: 100%; border-collapse: collapse;
+    margin: 18px 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    overflow: hidden;
+    font-size: 14px;
+  }
+  th, td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-soft);
+    vertical-align: top;
+  }
+  th {
+    background: rgba(253, 230, 138, 0.06);
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  td { color: var(--ink-muted); }
+  td:first-child { color: var(--ink); font-weight: 500; }
+  tr:last-child td { border-bottom: none; }
+  .callout {
+    background: linear-gradient(135deg, rgba(253, 230, 138, 0.06), rgba(245, 158, 11, 0.03));
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 22px 0;
+  }
+  .callout strong { color: var(--accent); }
+  .callout-success {
+    background: rgba(16, 185, 129, 0.06);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-left: 3px solid var(--success);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 22px 0;
+  }
+  .callout-success strong { color: var(--success); }
+  .callout-info {
+    background: rgba(96, 165, 250, 0.06);
+    border: 1px solid rgba(96, 165, 250, 0.3);
+    border-left: 3px solid var(--info);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 22px 0;
+  }
+  .callout-info strong { color: var(--info); }
+  code {
+    background: rgba(253, 230, 138, 0.08);
+    border: 1px solid var(--border-soft);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+  }
+  pre {
+    background: #0d0d18;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 18px;
+    margin: 22px 0;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 12.5px;
+    color: var(--ink);
+    line-height: 1.55;
+    white-space: pre;
+  }
+  a.inline {
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-color: rgba(253, 230, 138, 0.4);
+  }
+  a.inline:hover { text-decoration-color: var(--accent); }
+
+  .pipeline-step {
+    display: flex;
+    gap: 18px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin-bottom: 14px;
+  }
+  .pipeline-step .num {
+    width: 38px; height: 38px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: var(--bg);
+    font-weight: 800;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Montserrat', sans-serif;
+  }
+  .pipeline-step .body h4 {
+    color: var(--accent);
+    font-size: 16px;
+    margin: 6px 0 6px;
+  }
+  .pipeline-step .body p {
+    font-size: 14px;
+    color: var(--ink-muted);
+    margin-bottom: 0;
+  }
+
+  .layer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin: 22px 0;
+  }
+  .layer-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .layer-card .layer-num {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+  .layer-card h4 {
+    font-size: 15px;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .layer-card p {
+    font-size: 13px;
+    color: var(--ink-muted);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  details.faq {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    margin-bottom: 12px;
+    padding: 0;
+  }
+  details.faq summary {
+    padding: 16px 22px;
+    cursor: pointer;
+    list-style: none;
+    color: var(--ink);
+    font-weight: 500;
+    font-size: 15px;
+    position: relative;
+    padding-right: 48px;
+  }
+  details.faq summary::-webkit-details-marker { display: none; }
+  details.faq summary::after {
+    content: '+';
+    position: absolute;
+    right: 22px; top: 14px;
+    color: var(--accent);
+    font-size: 22px;
+    transition: transform 0.2s;
+  }
+  details.faq[open] summary::after { content: '−'; }
+  details.faq[open] summary { color: var(--accent); border-bottom: 1px solid var(--border-soft); }
+  details.faq .answer {
+    padding: 16px 22px;
+    color: var(--ink-muted);
+    font-size: 14px;
+    line-height: 1.65;
+  }
+  details.faq .answer p { color: var(--ink-muted); margin-bottom: 12px; font-size: 14px; }
+  details.faq .answer p:last-child { margin-bottom: 0; }
+
+  .opt-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin: 22px 0;
+  }
+  .opt-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 22px;
+  }
+  .opt-card.opt-in {
+    border-color: rgba(16, 185, 129, 0.3);
+  }
+  .opt-card.opt-out {
+    border-color: var(--border-soft);
+  }
+  .opt-card h4 {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  .opt-card.opt-in h4 { color: var(--success); }
+  .opt-card.opt-out h4 { color: var(--ink-muted); }
+  .opt-card p { font-size: 14px; color: var(--ink-muted); margin: 0; }
+  .opt-card .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .opt-card.opt-in .badge {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--success);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+  .opt-card.opt-out .badge {
+    background: rgba(168, 168, 184, 0.08);
+    color: var(--ink-muted);
+    border: 1px solid var(--border-soft);
+  }
+
+  footer.doc {
+    margin-top: 64px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border-soft);
+    color: var(--ink-soft);
+    font-size: 13px;
+    display: flex; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+  }
+  footer.doc a { color: var(--accent); text-decoration: none; }
+  footer.doc a:hover { text-decoration: underline; }
+  @media (max-width: 640px) {
+    main { padding: 32px 20px 60px; }
+    h1 { font-size: 26px; }
+    h2 { font-size: 20px; }
+    .toc ol { columns: 1; }
+    nav.top-nav a:not(.btn-primary):not(.lang-btn) { display: none; }
+    .opt-toggle { grid-template-columns: 1fr; }
+    pre { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<header class="site">
+  <a href="/" class="brand">
+    <span class="brand-dot">Z</span>
+    <span>Zeni Cloud</span>
+  </a>
+  <nav class="top-nav">
+    <a href="index.html">← Tài liệu pháp lý</a>
+    <a href="/" class="btn-primary">Về Zeni Cloud</a>
+    <a href="/app" class="btn-primary">Mở ứng dụng</a>
+    <button class="lang-btn" onclick="alert('English version coming Q3/2026.')">EN</button>
+  </nav>
+</header>
+
+<main>
+
+<div class="doc-header">
+  <div class="doc-eyebrow">Tài liệu pháp lý / AI Data Usage Policy</div>
+  <h1>Chính sách sử dụng dữ liệu cho AI</h1>
+  <p style="color: var(--ink-muted); font-size: 16px; margin-top: 8px;">Tài liệu này giải thích chi tiết cách Zeni Cloud sử dụng dữ liệu Khách hàng để huấn luyện các agent AI nội bộ — Zeni Claw, Zeni Make và các agent chuyên biệt như NexBuild, BTHome, KOC. Chúng tôi cam kết minh bạch tuyệt đối: Khách hàng có toàn quyền opt-in hoặc opt-out, mọi dữ liệu phải đi qua quy trình ẩn danh hoá năm bước và năm lớp chống rò rỉ.</p>
+  <div class="doc-meta">
+    <span>Phiên bản <strong>v1.0</strong></span>
+    <span>Hiệu lực <strong>30/04/2026</strong></span>
+    <span>Differential Privacy <strong>ε = 1.0</strong></span>
+  </div>
+</div>
+
+<div class="toc">
+  <h3>Mục lục</h3>
+  <ol>
+    <li><a href="#tai-sao">Tại sao Zeni cần dữ liệu để train AI?</a></li>
+    <li><a href="#pipeline">Pipeline ẩn danh hoá 5 bước</a></li>
+    <li><a href="#dp">Differential Privacy là gì?</a></li>
+    <li><a href="#5-lop">5 lớp chống rò rỉ</a></li>
+    <li><a href="#cam-ket">Cam kết của Zeni</a></li>
+    <li><a href="#opt-in-out">Opt-in / Opt-out</a></li>
+    <li><a href="#uu-dai">Ưu đãi 20% khi opt-in</a></li>
+    <li><a href="#faq">Câu hỏi thường gặp</a></li>
+    <li><a href="#lien-he">Liên hệ</a></li>
+  </ol>
+</div>
+
+<h2 id="tai-sao">1. Tại sao Zeni cần dữ liệu để train AI?</h2>
+
+<p>Zeni Cloud xây dựng các agent AI riêng cho doanh nghiệp Việt Nam thay vì chỉ wrap các mô hình nước ngoài. Để mỗi agent thực sự hiểu ngữ cảnh kinh doanh tại Việt Nam, chúng tôi cần dữ liệu thực tế đã được ẩn danh hoá để huấn luyện và tinh chỉnh:</p>
+
+<ul>
+  <li><strong>Zeni Claw — agent đa năng</strong>: cần hiểu các nghiệp vụ phổ biến trong SME Việt Nam như quản lý kho, công nợ, chăm sóc khách hàng, báo cáo doanh thu.</li>
+  <li><strong>Zeni Make — agent thiết kế và sáng tạo</strong>: cần học style thiết kế phù hợp văn hoá Việt, từ font chữ, màu sắc đến bố cục poster, tờ rơi, ấn phẩm marketing.</li>
+  <li><strong>NexBuild — agent xây dựng web</strong>: cần hiểu cấu trúc website thương mại điện tử Việt, các chuẩn thanh toán nội địa, các tích hợp chuẩn (VNPay, Momo, Giao Hàng Nhanh).</li>
+  <li><strong>BTHome — agent bất động sản</strong>: cần dữ liệu về thị trường nhà đất theo khu vực, các thuật ngữ chuyên ngành, quy định pháp lý đặc thù.</li>
+  <li><strong>KOC — agent marketing</strong>: cần hiểu xu hướng nội dung, các nền tảng MXH phổ biến tại Việt Nam, hành vi người tiêu dùng.</li>
+</ul>
+
+<p>Những hiểu biết sâu này không có sẵn trong các mô hình nguồn nước ngoài. Vì vậy, Zeni xây dựng quy trình train trên dữ liệu thực tế của khách hàng Việt — nhưng <strong>luôn ẩn danh hoá nghiêm ngặt</strong> để không bao giờ tiết lộ thông tin cá nhân hoặc bí mật kinh doanh của bất kỳ khách hàng cụ thể nào.</p>
+
+<div class="callout-info">
+  <strong>Tóm lại:</strong> AI Việt cần dữ liệu Việt. Zeni cam kết dùng dữ liệu này theo cách an toàn nhất, có sự đồng ý rõ ràng, và đổi lại Khách hàng được giảm 20% giá gói dịch vụ.
+</div>
+
+<h2 id="pipeline">2. Pipeline ẩn danh hoá 5 bước</h2>
+
+<p>Trước khi bất kỳ dữ liệu nào của Khách hàng đã opt-in được đưa vào kho huấn luyện, dữ liệu phải đi qua trọn vẹn năm bước xử lý sau. Sơ đồ tổng quan:</p>
+
+<pre>
+┌───────────────────────────────────────────────────────────────────────┐
+│                                                                       │
+│   DỮ LIỆU GỐC TỪ WORKSPACE KHÁCH HÀNG (đã opt-in)                     │
+│   - Văn bản, log nghiệp vụ, prompt người dùng, đầu ra agent           │
+│                                                                       │
+└────────────────────────────────┬──────────────────────────────────────┘
+                                 │
+                                 ▼
+┌───────────────────────────────────────────────────────────────────────┐
+│  Bước 1 — STRIP PII                                                   │
+│  Loại bỏ tên, email, số điện thoại, CMND/CCCD, biển số, địa chỉ,      │
+│  số thẻ, mã hợp đồng, số tài khoản, MST cá nhân                       │
+└────────────────────────────────┬──────────────────────────────────────┘
+                                 │
+                                 ▼
+┌───────────────────────────────────────────────────────────────────────┐
+│  Bước 2 — K-ANONYMITY (k = 5)                                         │
+│  Mỗi bản ghi không thể phân biệt với ít nhất 4 bản ghi khác           │
+│  trên các thuộc tính chuẩn-định danh (tuổi, mã vùng, ngành)           │
+└────────────────────────────────┬──────────────────────────────────────┘
+                                 │
+                                 ▼
+┌───────────────────────────────────────────────────────────────────────┐
+│  Bước 3 — DIFFERENTIAL PRIVACY  (epsilon = 1.0)                       │
+│  Thêm nhiễu Laplace có kiểm soát toán học vào kết quả tổng hợp        │
+│  → Không ai có thể truy ngược cá nhân nào trong tập dữ liệu           │
+└────────────────────────────────┬──────────────────────────────────────┘
+                                 │
+                                 ▼
+┌───────────────────────────────────────────────────────────────────────┐
+│  Bước 4 — TOKENIZATION                                                │
+│  Thay các giá trị còn lại bằng token ngẫu nhiên không đảo ngược       │
+│  Lookup table được đốt sau khi sinh token                             │
+└────────────────────────────────┬──────────────────────────────────────┘
+                                 │
+                                 ▼
+┌───────────────────────────────────────────────────────────────────────┐
+│  Bước 5 — VALIDATION                                                  │
+│  Chạy battery test:                                                   │
+│   - Membership inference attack                                       │
+│   - Linkage attack với tập public                                     │
+│   - Reconstruction attack                                             │
+│  Chỉ batch nào pass MỚI được commit vào kho zeni_ai_training          │
+└────────────────────────────────┬──────────────────────────────────────┘
+                                 │
+                                 ▼
+┌───────────────────────────────────────────────────────────────────────┐
+│   KHO HUẤN LUYỆN BigQuery: zeni_ai_training                           │
+│   - Mã hoá CMEK riêng                                                 │
+│   - Truy cập giới hạn, mọi query đều log                              │
+│   - Region: us-central1 hoặc asia-southeast1                          │
+└───────────────────────────────────────────────────────────────────────┘
+</pre>
+
+<p>Chi tiết từng bước:</p>
+
+<div class="pipeline-step">
+  <div class="num">1</div>
+  <div class="body">
+    <h4>Strip PII (Loại bỏ thông tin định danh)</h4>
+    <p>Hệ thống tự động phát hiện và loại bỏ các trường thông tin định danh trực tiếp: họ tên, email, số điện thoại, số CMND, CCCD, hộ chiếu, biển số xe, số thẻ tín dụng, số tài khoản ngân hàng, mã số thuế cá nhân, địa chỉ chi tiết, GPS toạ độ. Sử dụng kết hợp regex pattern, NER (Named Entity Recognition) tiếng Việt và tiếng Anh, cộng với danh sách entity tuỳ chỉnh theo ngành nghề.</p>
+  </div>
+</div>
+
+<div class="pipeline-step">
+  <div class="num">2</div>
+  <div class="body">
+    <h4>K-Anonymity với k = 5</h4>
+    <p>Sau khi strip PII, các thuộc tính chuẩn-định danh (tuổi, giới tính, mã vùng, ngành nghề, mức thu nhập) còn lại có thể bị kết hợp để truy ngược. K-anonymity gộp nhóm các bản ghi sao cho mỗi bản ghi không thể phân biệt với ít nhất bốn bản ghi khác trên các thuộc tính này. Ví dụ: thay vì lưu "tuổi 27", nhóm thành "25-30"; thay vì lưu "quận 1", gộp lên "TP.HCM".</p>
+  </div>
+</div>
+
+<div class="pipeline-step">
+  <div class="num">3</div>
+  <div class="body">
+    <h4>Differential Privacy với epsilon = 1.0</h4>
+    <p>Thêm nhiễu ngẫu nhiên có kiểm soát toán học (Laplace mechanism hoặc Gaussian mechanism) vào kết quả tổng hợp. Tham số <code>epsilon = 1.0</code> đảm bảo: thêm hoặc xoá dữ liệu của một Khách hàng bất kỳ ra khỏi tập huấn luyện làm thay đổi kết quả không quá hệ số <code>e^1 ≈ 2.72</code>. Đây là chuẩn vàng được Apple, Google, Microsoft áp dụng cho thống kê người dùng.</p>
+  </div>
+</div>
+
+<div class="pipeline-step">
+  <div class="num">4</div>
+  <div class="body">
+    <h4>Tokenization (Mã hoá token không đảo ngược)</h4>
+    <p>Các giá trị danh từ riêng còn sót lại (tên công ty, sản phẩm, từ khoá độc đáo) được thay bằng token định danh ngẫu nhiên dạng <code>TOKEN_a3f9b2</code>. Lookup table dùng để sinh token được đốt ngay sau khi xử lý xong batch — không thể tra ngược từ token về giá trị gốc.</p>
+  </div>
+</div>
+
+<div class="pipeline-step">
+  <div class="num">5</div>
+  <div class="body">
+    <h4>Validation (Kiểm thử bảo vệ riêng tư)</h4>
+    <p>Mỗi batch trước khi commit vào kho huấn luyện phải pass battery test gồm: <strong>Membership inference attack</strong> (kiểm tra xem có thể đoán bản ghi A có nằm trong tập huấn luyện hay không), <strong>Linkage attack</strong> (thử kết hợp với tập dữ liệu công khai để truy ngược), <strong>Reconstruction attack</strong> (thử tái dựng lại dữ liệu gốc). Batch nào fail bất kỳ test nào sẽ bị loại, gửi lại cho đội kỹ thuật tinh chỉnh tham số.</p>
+  </div>
+</div>
+
+<h2 id="dp">3. Differential Privacy là gì?</h2>
+
+<p>Differential Privacy (DP) là chuẩn toán học để đo và đảm bảo bảo vệ riêng tư trong xử lý dữ liệu thống kê. Định nghĩa hình thức:</p>
+
+<p>Một thuật toán <code>M</code> được gọi là <code>epsilon-differentially private</code> nếu với hai tập dữ liệu <code>D1</code> và <code>D2</code> chỉ khác nhau ở một bản ghi duy nhất, và với mọi tập kết quả <code>S</code>:</p>
+
+<pre>
+   Pr[M(D1) ∈ S]  ≤  e^epsilon  ×  Pr[M(D2) ∈ S]
+</pre>
+
+<p>Nói cách khác: dù có hay không có dữ liệu của bạn trong tập huấn luyện, kết quả mô hình về cơ bản giống nhau. Người ngoài nhìn vào mô hình không thể suy ra được bạn có trong đó hay không.</p>
+
+<h3>Ý nghĩa thực tế của epsilon = 1.0</h3>
+
+<table>
+  <thead>
+    <tr><th>Giá trị epsilon</th><th>Mức bảo vệ</th><th>Ứng dụng điển hình</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>0.1 — 0.5</td><td>Rất mạnh</td><td>Điều tra dân số quốc gia (US Census 2020)</td></tr>
+    <tr><td>1.0</td><td><strong>Mạnh — Zeni áp dụng</strong></td><td>Apple Differential Privacy, Google RAPPOR</td></tr>
+    <tr><td>2.0 — 5.0</td><td>Trung bình</td><td>Phân tích sản phẩm nội bộ</td></tr>
+    <tr><td>10+</td><td>Yếu</td><td>Hầu như không có bảo vệ</td></tr>
+  </tbody>
+</table>
+
+<p>Zeni chọn <code>epsilon = 1.0</code> để cân bằng giữa tính hữu dụng của dữ liệu (đủ tín hiệu để train AI tốt) và mức bảo vệ riêng tư (đủ mạnh theo chuẩn ngành).</p>
+
+<h2 id="5-lop">4. 5 lớp chống rò rỉ</h2>
+
+<p>Ngoài pipeline ẩn danh hoá, Zeni còn áp dụng năm lớp bảo vệ độc lập để đảm bảo agent AI không bao giờ rò rỉ dữ liệu Khách hàng:</p>
+
+<div class="layer-grid">
+  <div class="layer-card">
+    <div class="layer-num">Lớp 1</div>
+    <h4>Input sanitization</h4>
+    <p>Trước khi đưa vào training, mọi prompt đầu vào được lọc lại lần nữa qua bộ phát hiện PII residual và blocklist các pattern nhạy cảm.</p>
+  </div>
+  <div class="layer-card">
+    <div class="layer-num">Lớp 2</div>
+    <h4>Training với DP</h4>
+    <p>Sử dụng DP-SGD (Differentially Private Stochastic Gradient Descent) trong quá trình huấn luyện, thêm nhiễu vào gradient để mô hình không "nhớ chính xác" bất kỳ điểm dữ liệu cụ thể nào.</p>
+  </div>
+  <div class="layer-card">
+    <div class="layer-num">Lớp 3</div>
+    <h4>System prompt hardening</h4>
+    <p>System prompt của mỗi agent có chỉ thị rõ ràng: "Không bao giờ lặp lại nguyên văn đoạn dữ liệu huấn luyện". Có cơ chế từ chối khi user dụ agent xuất ra dữ liệu nhạy cảm.</p>
+  </div>
+  <div class="layer-card">
+    <div class="layer-num">Lớp 4</div>
+    <h4>Output filter</h4>
+    <p>Mọi đầu ra của agent đi qua bộ lọc cuối: phát hiện PII (email, số điện thoại, số thẻ), phát hiện chuỗi giống nguyên văn từ training data dài hơn 50 token, và tự động che hoặc từ chối.</p>
+  </div>
+  <div class="layer-card">
+    <div class="layer-num">Lớp 5</div>
+    <h4>Continuous audit</h4>
+    <p>Mỗi ngày Zeni sample 1% lượng output của agent, kiểm thủ công và bằng tool để phát hiện rò rỉ. Đội Red Team thực hiện attack kiểm thử hằng tuần với prompt injection và jailbreak attempt.</p>
+  </div>
+</div>
+
+<h2 id="cam-ket">5. Cam kết của Zeni</h2>
+
+<div class="callout-success">
+  <strong>Năm cam kết tuyệt đối</strong> mà Zeni ghi vào hợp đồng dịch vụ và sẽ chịu trách nhiệm pháp lý nếu vi phạm:
+</div>
+
+<ol>
+  <li><strong>Agent không bao giờ trả về PII</strong>: nếu Khách hàng phát hiện agent xuất ra email, số điện thoại, số thẻ, hoặc thông tin định danh của bất kỳ ai (kể cả của chính Khách hàng đó), Zeni xác minh và bồi thường theo cam kết SLA.</li>
+  <li><strong>Cách ly cross-tenant tuyệt đối</strong>: dữ liệu của Khách hàng X không bao giờ xuất hiện trong câu trả lời của agent với Khách hàng Y, kể cả khi cả hai cùng dùng chung mô hình. Cơ chế này được kiểm thử hằng ngày qua test prompt cố ý.</li>
+  <li><strong>Không ngược tra</strong>: ngay cả với DP epsilon = 1.0, không ai (kể cả nhân sự Zeni có quyền cao nhất) có thể truy vấn mô hình để biết dữ liệu của một Khách hàng cụ thể có nằm trong tập huấn luyện hay không.</li>
+  <li><strong>Audit hằng ngày 1%</strong>: 1% output mỗi ngày được lưu trữ ẩn danh và đội bảo mật review để phát hiện rò rỉ. Báo cáo audit hằng tháng gửi cho DPO.</li>
+  <li><strong>Red Team test hằng tuần</strong>: nhóm bảo mật nội bộ và bug bounty bên ngoài liên tục thử các kỹ thuật prompt injection, jailbreak, model inversion, training data extraction để tìm và vá lỗ hổng.</li>
+</ol>
+
+<h2 id="opt-in-out">6. Opt-in / Opt-out</h2>
+
+<p>Khi đăng ký tài khoản hoặc trong cài đặt Quyền riêng tư tại <code>/app/settings/privacy</code>, Khách hàng thấy hai lựa chọn rõ ràng:</p>
+
+<div class="opt-toggle">
+  <div class="opt-card opt-in">
+    <span class="badge">Opt-in</span>
+    <h4>Đồng ý — giảm 20% giá</h4>
+    <p>Cho phép Zeni dùng dữ liệu của tôi (đã ẩn danh hoá) để huấn luyện các agent AI. Đổi lại, tôi được giảm 20% giá gói dịch vụ trong toàn bộ thời gian sử dụng.</p>
+  </div>
+  <div class="opt-card opt-out">
+    <span class="badge">Opt-out — Mặc định</span>
+    <h4>Không đồng ý — giá nguyên</h4>
+    <p>Dữ liệu của tôi sẽ KHÔNG được dùng để huấn luyện AI. Tôi vẫn nhận đầy đủ mọi tính năng, chỉ không có ưu đãi 20%.</p>
+  </div>
+</div>
+
+<h3>Đổi lựa chọn bất kỳ lúc nào</h3>
+
+<p>Khách hàng có thể chuyển opt-in sang opt-out (hoặc ngược lại) bất kỳ lúc nào. Khi chuyển từ opt-in sang opt-out:</p>
+<ul>
+  <li>Zeni ngừng đưa thêm dữ liệu mới của Khách hàng vào pipeline huấn luyện ngay lập tức (trong vòng 24 giờ).</li>
+  <li>Các bản ghi đã ẩn danh hoá của Khách hàng đang lưu trong kho <code>zeni_ai_training</code> sẽ bị khoá truy cập, không được dùng cho các đợt train tiếp theo.</li>
+  <li>Lưu ý kỹ thuật: dữ liệu đã qua DP epsilon=1.0 không thể truy ngược ra Khách hàng cụ thể, nên không thể "xoá riêng" từng bản ghi đã ẩn danh hoá. Tuy nhiên, mọi mô hình huấn luyện sau thời điểm opt-out sẽ không sử dụng dữ liệu của Khách hàng nữa.</li>
+  <li>Ưu đãi 20% chấm dứt từ chu kỳ thanh toán kế tiếp.</li>
+</ul>
+
+<p>Khi chuyển từ opt-out sang opt-in:</p>
+<ul>
+  <li>Ưu đãi 20% áp dụng từ chu kỳ thanh toán kế tiếp.</li>
+  <li>Pipeline ẩn danh hoá bắt đầu xử lý dữ liệu mới sau 24 giờ kể từ thời điểm opt-in.</li>
+  <li>Dữ liệu cũ trước thời điểm opt-in KHÔNG được đưa vào pipeline (vì khi đó Khách hàng chưa đồng ý).</li>
+</ul>
+
+<h2 id="uu-dai">7. Ưu đãi 20% khi opt-in</h2>
+
+<p>Zeni dành ưu đãi 20% cho Khách hàng opt-in vì hai lý do:</p>
+
+<ul>
+  <li><strong>Ghi nhận đóng góp</strong>: Dữ liệu của Khách hàng giúp Zeni xây dựng các agent tốt hơn, phục vụ chính cộng đồng doanh nghiệp Việt. Đây là quan hệ đôi bên cùng có lợi.</li>
+  <li><strong>Tiết kiệm chi phí huấn luyện</strong>: Có dữ liệu thực tế của khách hàng giúp Zeni giảm chi phí mua dữ liệu bên ngoài và giảm chi phí gán nhãn, một phần tiết kiệm này được chia lại cho Khách hàng.</li>
+</ul>
+
+<h3>Áp dụng ưu đãi</h3>
+<table>
+  <thead>
+    <tr><th>Gói</th><th>Giá gốc</th><th>Giá khi opt-in</th><th>Tiết kiệm</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Pro Tháng</td><td>Theo bảng giá</td><td>Giá gốc x 0.80</td><td>20%</td></tr>
+    <tr><td>Pro Năm</td><td>Theo bảng giá</td><td>Giá gốc x 0.80</td><td>20%</td></tr>
+    <tr><td>Enterprise</td><td>Theo hợp đồng</td><td>Theo thoả thuận, tối thiểu 15%</td><td>15-25%</td></tr>
+  </tbody>
+</table>
+
+<p>Ưu đãi không áp dụng cho gói Free (vốn đã miễn phí), không áp dụng cho phí overage và không cộng dồn với mã giảm giá khác trừ khi nêu rõ.</p>
+
+<h2 id="faq">8. Câu hỏi thường gặp</h2>
+
+<details class="faq">
+  <summary>Nếu tôi opt-in, dữ liệu của tôi có bị bán cho ai khác không?</summary>
+  <div class="answer">
+    <p>Không. Zeni cam kết tuyệt đối KHÔNG bán, KHÔNG cho thuê, KHÔNG trao đổi dữ liệu của Khách hàng cho bất kỳ bên thứ ba nào. Dữ liệu (đã ẩn danh hoá) chỉ được dùng nội bộ để huấn luyện các agent của Zeni.</p>
+  </div>
+</details>
+
+<details class="faq">
+  <summary>Đối thủ cạnh tranh của tôi có thể "moi" được dữ liệu doanh nghiệp tôi qua agent Zeni không?</summary>
+  <div class="answer">
+    <p>Không. Có ba lớp bảo vệ ngăn chặn việc này: (1) Pipeline 5 bước đã ẩn danh hoá toàn bộ dữ liệu trước khi train, không còn tên doanh nghiệp, sản phẩm cụ thể; (2) Differential Privacy đảm bảo mô hình không "nhớ chính xác" dữ liệu nào; (3) Output filter chặn agent xuất ra chuỗi nguyên văn dài hơn 50 token từ training data. Đội Red Team kiểm thử các kịch bản tấn công kiểu này hằng tuần.</p>
+  </div>
+</details>
+
+<details class="faq">
+  <summary>Tôi opt-out thì agent có hoạt động kém hơn cho tôi không?</summary>
+  <div class="answer">
+    <p>Không. Mọi agent hoạt động với chất lượng giống nhau cho cả Khách hàng opt-in và opt-out. Sự khác biệt duy nhất là Khách hàng opt-in được giảm 20% giá. Việc opt-out không bao giờ làm Khách hàng nhận chất lượng kém hơn — đó là cam kết bất khả xâm phạm của Zeni.</p>
+  </div>
+</details>
+
+<details class="faq">
+  <summary>Pipeline ẩn danh hoá có được bên thứ ba kiểm chứng không?</summary>
+  <div class="answer">
+    <p>Có. Zeni đang trong quá trình lấy chứng nhận SOC 2 Type II và ISO 27701, với phạm vi audit bao gồm pipeline ẩn danh hoá. Chứng nhận dự kiến hoàn thành trong năm 2027. Khi đạt, báo cáo full sẽ chia sẻ cho Khách hàng Enterprise kèm NDA. Ngoài ra, code của các bộ lọc PII và validation tests sẽ được mở mã nguồn (open source) tại <a class="inline" href="https://github.com/zenicloud">github.com/zenicloud</a> để cộng đồng độc lập kiểm tra.</p>
+  </div>
+</details>
+
+<details class="faq">
+  <summary>Nếu agent vô tình lộ thông tin của tôi, tôi được bồi thường thế nào?</summary>
+  <div class="answer">
+    <p>Khách hàng báo cáo qua email <a class="inline" href="mailto:security@zenicloud.io">security@zenicloud.io</a> kèm bằng chứng (screenshot, prompt, output). Zeni xác minh trong vòng 72 giờ. Nếu xác nhận có rò rỉ thực sự xuất phát từ lỗi của Zeni, Khách hàng được:
+    </p><ul>
+      <li>Bồi thường tài chính theo mức trần SLA tại Điều khoản dịch vụ Mục 6.3.</li>
+      <li>Miễn phí dịch vụ ba tháng tiếp theo.</li>
+      <li>Báo cáo công khai chi tiết về lỗ hổng và cách Zeni đã vá (sau khi hoàn tất khắc phục).</li>
+    </ul>
+    <p>Zeni cũng vận hành chương trình bug bounty công khai cho người ngoài Khách hàng tìm và báo cáo lỗ hổng tại <a class="inline" href="https://zenicloud.io/security">zenicloud.io/security</a>.</p>
+  </div>
+</details>
+
+<details class="faq">
+  <summary>Nếu cơ quan thẩm quyền yêu cầu Zeni cung cấp dữ liệu huấn luyện, Zeni có cung cấp không?</summary>
+  <div class="answer">
+    <p>Dữ liệu trong kho huấn luyện đã qua ẩn danh hoá năm bước, không còn liên hệ trực tiếp với cá nhân hay doanh nghiệp cụ thể. Vì vậy nếu cơ quan thẩm quyền yêu cầu dữ liệu của một Khách hàng cụ thể, Zeni về mặt kỹ thuật không thể trích xuất từ kho huấn luyện. Yêu cầu cung cấp dữ liệu cụ thể của Khách hàng được xử lý theo quy trình riêng tại Mục 6 Chính sách bảo mật (multi-sig 3-trong-5 trên Polygon).</p>
+  </div>
+</details>
+
+<details class="faq">
+  <summary>Tôi có thể yêu cầu Zeni xoá riêng dữ liệu của tôi khỏi mô hình AI đã train không?</summary>
+  <div class="answer">
+    <p>Đây là giới hạn kỹ thuật của AI hiện tại: một khi mô hình đã train xong, không thể "xoá" một điểm dữ liệu cụ thể mà không train lại từ đầu. Zeni cam kết:</p>
+    <ul>
+      <li>Khi Khách hàng opt-out, ngừng đưa dữ liệu mới vào pipeline ngay.</li>
+      <li>Các đợt train mới (Zeni train lại model định kỳ mỗi 6 tháng) sẽ không sử dụng dữ liệu của Khách hàng đã opt-out.</li>
+      <li>Nhờ DP epsilon=1.0, ngay cả mô hình hiện tại cũng không "nhớ chính xác" dữ liệu của Khách hàng — không thể truy ngược.</li>
+    </ul>
+  </div>
+</details>
+
+<details class="faq">
+  <summary>Có giới hạn loại dữ liệu nào Zeni từ chối nhận vào pipeline dù Khách hàng đã opt-in không?</summary>
+  <div class="answer">
+    <p>Có. Zeni từ chối đưa các loại dữ liệu sau vào pipeline huấn luyện kể cả khi Khách hàng đã opt-in:</p>
+    <ul>
+      <li>Dữ liệu cá nhân nhạy cảm theo Nghị định 13/2023 (tình trạng sức khoẻ, dữ liệu sinh trắc học, tôn giáo, lý lịch hình sự).</li>
+      <li>Dữ liệu trẻ em dưới 16 tuổi.</li>
+      <li>Dữ liệu liên quan đến an ninh quốc phòng.</li>
+      <li>Bí mật thương mại được Khách hàng đánh dấu cấp độ "Confidential" trong workspace.</li>
+    </ul>
+  </div>
+</details>
+
+<h2 id="lien-he">9. Liên hệ</h2>
+
+<p>Mọi câu hỏi về Chính sách sử dụng dữ liệu cho AI, vui lòng liên hệ:</p>
+
+<table>
+  <tbody>
+    <tr><td>DPO (Cán bộ Bảo vệ Dữ liệu)</td><td><a class="inline" href="mailto:dpo@zenicloud.io">dpo@zenicloud.io</a></td></tr>
+    <tr><td>Đội bảo mật AI</td><td><a class="inline" href="mailto:ai-security@zenicloud.io">ai-security@zenicloud.io</a></td></tr>
+    <tr><td>Báo cáo lỗ hổng</td><td><a class="inline" href="mailto:security@zenicloud.io">security@zenicloud.io</a></td></tr>
+    <tr><td>Pháp lý chung</td><td><a class="inline" href="mailto:legal@zenicloud.io">legal@zenicloud.io</a></td></tr>
+    <tr><td>Bug Bounty</td><td><a class="inline" href="https://zenicloud.io/security">zenicloud.io/security</a></td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <strong>Tài liệu liên quan:</strong> <a class="inline" href="terms.html">Điều khoản dịch vụ</a> · <a class="inline" href="privacy.html">Chính sách bảo mật</a> · <a class="inline" href="dpa.html">Hợp đồng xử lý dữ liệu (DPA)</a>.
+</div>
+
+<footer class="doc">
+  <div>Zeni Holdings Vietnam — <a href="https://zenicloud.io">zenicloud.io</a></div>
+  <div>Phiên bản v1.0 — Cập nhật 30/04/2026</div>
+</footer>
+
+</main>
+</body>
+</html>
