@@ -333,6 +333,29 @@
         // Map backend user → state shape demo đang dùng
         if (window.state) {
           window.state.currentUser = mappedUser;
+          // Defensive guard: empty workspaces array → don't set undefined (prevents ?ws=undefined cascade)
+          if (mappedUser.ws.length === 0) {
+            console.warn('[ZeniAPI] user has no workspace — opening create workspace modal');
+            window.state.currentWs = null;
+            try { localStorage.setItem('zeniCloud_session_v1', JSON.stringify({ userId: mappedUser.id, currentWs: null, ts: Date.now(), user: mappedUser })); } catch {}
+            // Boot UI first so navigation/sidebar work, then prompt create workspace
+            if (typeof window.bootApp === 'function') {
+              try { window.bootApp(); } catch (e) { console.warn('[ZeniAPI] bootApp failed:', e); }
+            } else {
+              const loginEl = document.getElementById('login');
+              const appEl   = document.getElementById('app');
+              if (loginEl) loginEl.classList.add('hidden');
+              if (appEl)   appEl.classList.add('active');
+            }
+            setTimeout(() => {
+              if (typeof window.openCreateWorkspace === 'function') {
+                window.openCreateWorkspace();
+              } else if (typeof window.toast === 'function') {
+                window.toast('Tài khoản chưa có workspace — vui lòng tạo workspace mới', 'warn');
+              }
+            }, 500);
+            return;
+          }
           window.state.currentWs = mappedUser.ws[0];
           if (typeof window.saveSession === 'function') window.saveSession();
         }
@@ -355,7 +378,7 @@
         // Persist session to localStorage so demo IIFE (which uses state closure) picks it up on reload
         try {
           localStorage.setItem('zeniCloud_session_v1', JSON.stringify({
-            userId: mappedUser.id, currentWs: mappedUser.ws[0], ts: Date.now(),
+            userId: mappedUser.id, currentWs: mappedUser.ws[0] || null, ts: Date.now(),
             user: mappedUser,
           }));
         } catch {}
@@ -402,9 +425,25 @@
               avatar: user.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(),
               ws: (user.workspaces && user.workspaces.length) ? user.workspaces : [],
             };
-            window.state.currentWs = window.state.currentUser.ws[0];
-            if (typeof window.saveSession === 'function') window.saveSession();
-            if (typeof window.bootApp === 'function') window.bootApp();
+            // Defensive guard: empty workspaces → null, then prompt create workspace
+            if (window.state.currentUser.ws.length === 0) {
+              console.warn('[ZeniAPI] auto-verify: user has no workspace');
+              window.state.currentWs = null;
+              if (typeof window.bootApp === 'function') {
+                try { window.bootApp(); } catch (e) { console.warn('[ZeniAPI] bootApp failed:', e); }
+              }
+              setTimeout(() => {
+                if (typeof window.openCreateWorkspace === 'function') {
+                  window.openCreateWorkspace();
+                } else if (typeof window.toast === 'function') {
+                  window.toast('Tài khoản chưa có workspace — vui lòng tạo workspace mới', 'warn');
+                }
+              }, 500);
+            } else {
+              window.state.currentWs = window.state.currentUser.ws[0];
+              if (typeof window.saveSession === 'function') window.saveSession();
+              if (typeof window.bootApp === 'function') window.bootApp();
+            }
           }
           console.log('[ZeniAPI] phiên backend hợp lệ:', user.email);
         })

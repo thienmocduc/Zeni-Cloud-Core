@@ -3185,6 +3185,7 @@ document.addEventListener('keydown', e => {
     const trialBanner = el('div', { id: 'trial-banner', style: { display: 'none', marginBottom: '20px' } });
     c.appendChild(trialBanner);
     (async () => {
+      if (!state.currentWs) { console.warn('[renderHome] no currentWs, skipping trial fetch'); return; }
       try {
         const token = localStorage.getItem('zeni.jwt.access');
         const r = await fetch(`/api/v1/trial/status?ws=${encodeURIComponent(state.currentWs)}`, {
@@ -3325,6 +3326,7 @@ document.addEventListener('keydown', e => {
     // Async fetch latest 8 events for current ws from backend
     (async () => {
       const sevMap = { info: 'pill-info', ok: 'pill-ok', warn: 'pill-warn', err: 'pill-err' };
+      if (!state.currentWs) { wrap.innerHTML = ''; wrap.appendChild(el('div', { style: { padding: '14px 0', fontSize: '12px', color: 'var(--ink-500)' }, text: 'Chưa có workspace.' })); return; }
       try {
         const events = (window.ZeniAPI && typeof window.ZeniAPI.listAudit === 'function')
           ? await window.ZeniAPI.listAudit({ ws: state.currentWs, limit: 8 })
@@ -4975,6 +4977,7 @@ document.addEventListener('keydown', e => {
     ]));
 
     (async () => {
+      if (!state.currentWs) { tbBody.innerHTML = ''; tagCount.textContent = '0 events'; tbBody.appendChild(el('tr', {}, [ el('td', { colspan: 5, style: { padding: '14px', color: 'var(--ink-500)', fontSize: '12px' }, text: 'Chưa có workspace.' }) ])); return; }
       try {
         const events = (window.ZeniAPI && typeof window.ZeniAPI.listAudit === 'function')
           ? await window.ZeniAPI.listAudit({ ws: state.currentWs, limit: 50 })
