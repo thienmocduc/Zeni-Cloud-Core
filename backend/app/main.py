@@ -63,9 +63,19 @@ async def apply_pending_migrations() -> None:
         log.warning("migrations dir not found: %s", migrations_dir)
         return
     # Apply migrations 018-030 + 040-099 (idempotent CREATE IF NOT EXISTS / INSERT ON CONFLICT)
+    # BLOCKLIST — these migrations DELETE production data and must NEVER auto-run.
+    # They are kept on disk for historical reference / one-off manual application only.
+    # Re-running them on every boot wipes customer workspaces + cascades user_workspaces.
+    DESTRUCTIVE_MIGRATIONS = {
+        "031_reset_demo_data.sql",         # DELETE FROM workspaces (demo wipe)
+        "042_cleanup_test_workspaces.sql", # DELETE FROM workspaces WHERE id NOT IN ('nexbuild')
+    }
     pending = []
     for i in list(range(18, 31)) + list(range(40, 100)):
         for p in migrations_dir.glob(f"{i:03d}_*.sql"):
+            if p.name in DESTRUCTIVE_MIGRATIONS:
+                log.info("migration SKIPPED (destructive blocklist): %s", p.name)
+                continue
             pending.append(p)
     pending = sorted(pending)
     if not pending:
