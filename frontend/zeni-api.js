@@ -117,7 +117,16 @@
     };
     if (!noAuth) {
       const tok = getAccess();
-      if (tok) opts.headers.Authorization = 'Bearer ' + tok;
+      if (!tok) {
+        // FIX: throw clear error early instead of submitting without auth header.
+        // Backend would reject with "missing bearer token" — confusing UX.
+        const err = new Error('Phiên đăng nhập hết hạn — vui lòng login lại');
+        err.status = 401;
+        err.expired = true;
+        err.redirect = '/login.html';
+        throw err;
+      }
+      opts.headers.Authorization = 'Bearer ' + tok;
     }
     if (body !== undefined) opts.body = typeof body === 'string' ? body : JSON.stringify(body);
 

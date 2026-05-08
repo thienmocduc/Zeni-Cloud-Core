@@ -4165,6 +4165,20 @@ document.addEventListener('keydown', e => {
         ])
       ])
     ]));
+    // UX hint: explain image default + cách deploy code thật (giải quyết confusion ClawWits)
+    wrap.appendChild(el('div', {
+      style: { marginTop: '14px', padding: '12px 14px', background: 'rgba(125,104,255,0.08)', border: '1px solid rgba(125,104,255,0.3)', borderRadius: '8px', fontSize: '12px', color: 'var(--ink-300)', lineHeight: '1.6' }
+    }, [
+      el('div', { style: { fontWeight: '700', color: 'var(--gold-l)', marginBottom: '6px' }, text: '💡 Lưu ý quan trọng' }),
+      el('div', {}, [ document.createTextNode('· Image mặc định: '), el('code', { style: { color: 'var(--aurora)' }, text: 'us-docker.pkg.dev/cloudrun/container/hello' }), document.createTextNode(' (placeholder Google).') ]),
+      el('div', { text: '· Để deploy CODE THẬT của bạn, có 3 cách:' }),
+      el('div', { style: { paddingLeft: '12px', color: 'var(--aurora)' } }, [
+        el('div', {}, [ document.createTextNode('  ① Upload ZIP → Zeni tự build: '), el('code', { text: 'POST /api/v1/upload/source' }) ]),
+        el('div', {}, [ document.createTextNode('  ② Build Farm (Tauri/Rust/Electron): '), el('code', { text: 'POST /api/v1/build-farm/jobs' }) ]),
+        el('div', {}, [ document.createTextNode('  ③ Image public Docker Hub: '), el('code', { text: 'docker.io/library/nginx:alpine' }) ])
+      ]),
+      el('div', { style: { marginTop: '6px', color: 'var(--ink-400)' }, text: '· Sau khi project tạo, vào tab Projects → click project → "Update image" để đổi image.' })
+    ]));
     return wrap;
   }
 
@@ -4285,6 +4299,12 @@ document.addEventListener('keydown', e => {
 
       } catch (err) {
         console.error('[deploy] failed:', err);
+        // FIX: token expired → redirect login thay vì để user bối rối với "missing bearer token"
+        if (err.expired || err.status === 401) {
+          toast('Phiên đăng nhập hết hạn — đang chuyển sang login...', 'warn');
+          setTimeout(() => { window.location.href = err.redirect || '/login.html'; }, 1500);
+          return;
+        }
         toast('✗ Deploy thất bại: ' + (err.message || 'lỗi không xác định'), 'err');
         auditPush('project.deploy.failed', finalName, 'err');
       }
