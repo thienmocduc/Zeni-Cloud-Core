@@ -114,3 +114,32 @@ async def cron_agents_warmup(
     except Exception as e:
         log.warning("warmup failed: %s", e)
         return {"warmed": False, "error": str(e)}
+
+
+@router.post("/trial-expire")
+async def cron_trial_expire(
+    _auth: None = Depends(_check_cron_token),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Hourly: disable workspaces với trial_ends_at < NOW() and trial_status='active'.
+
+    Idempotent — chỉ update rows đang 'active'. Insert audit_log per expired workspace.
+    """
+    rows = (await db.execute(text(
+        "UPDATE workspaces SET trial_status = 'expired' "
+        "WHERE trial_ends_at IS NOT NULL "
+        "AND trial_ends_at < NOW() "
+        "AND trial_status = 'active' "
+        "RETURNING id, trial_ends_at"
+    ))).all()
+
+    expired_count = len(rows)
+    if expired_count > 0:
+        log.info("[cron.trial-expire] expired %d workspaces", expired_count)
+        for ws_id, ends_at in rows:
+            await db.execute(text(
+                "INSERT INTO audit_log (workspace_id, action, target, severity, metadata) "
+                "VALUES (:ws, 'trial.expired', :ws, 'warning', CAST(:meta AS jsonb))"
+            ), {"ws": ws_id, "meta": '{"trial_ends_at":"' + str(ends_at) + '"}'})
+    await db.commit()
+    return {"status": "ok", "expired_count": expired_count}

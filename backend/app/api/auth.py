@@ -382,11 +382,36 @@ async def register(data: RegisterIn, db: AsyncSession = Depends(get_db)) -> User
     )
     db.add(user)
     await db.flush()
-    # Default: grant access to 'digital' workspace
-    db.add(UserWorkspace(user_id=user.id, workspace_id="digital", role="Developer"))
+
+    # Auto-create personal workspace (Vercel pattern)
+    import re as _re
+    ws_id_slug = _re.sub(r'[^a-z0-9_-]+', '-', user.email.split('@')[0].lower()).strip('-')[:60]
+    if not ws_id_slug or ws_id_slug in _RESERVED_WS_IDS:
+        ws_id_slug = f"user-{str(user.id)[:8]}"
+    ws_code_slug = _re.sub(r'[^A-Z0-9]', '', user.email.split('@')[0].upper())[:8] or "USER"
+
+    # Check if slug exists, append suffix if needed
+    exists = (await db.execute(text("SELECT id FROM workspaces WHERE id = :id"), {"id": ws_id_slug})).first()
+    if exists:
+        ws_id_slug = f"{ws_id_slug}-{str(user.id)[:6]}"
+
+    final_ws_id = ws_id_slug
+    try:
+        await db.execute(text(
+            "INSERT INTO workspaces (id, code, name) VALUES (:id, :code, :name) ON CONFLICT (id) DO NOTHING"
+        ), {"id": ws_id_slug, "code": ws_code_slug, "name": user.name or user.email.split('@')[0]})
+        await db.execute(text(
+            "INSERT INTO user_workspaces (user_id, workspace_id, role) VALUES (:uid, :ws, 'Owner') ON CONFLICT DO NOTHING"
+        ), {"uid": str(user.id), "ws": ws_id_slug})
+        log.info("Auto-created personal workspace %s for user %s", ws_id_slug, user.email)
+    except Exception as e:
+        log.warning("Auto-create workspace failed for %s: %s", user.email, e)
+        final_ws_id = None
+
     await audit_push(db, actor=user.email, workspace_id=None, action="auth.register", target=user.email, severity="ok")
     await db.commit()
     return UserOut(
         id=user.id, email=user.email, name=user.name, role=user.role,
-        avatar=None, mfa_enabled=False, last_login=None, workspaces=["digital"],
+        avatar=None, mfa_enabled=False, last_login=None,
+        workspaces=[final_ws_id] if final_ws_id else [],
     )
