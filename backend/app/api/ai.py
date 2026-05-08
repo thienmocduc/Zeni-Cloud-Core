@@ -15,6 +15,32 @@ from app.services.llm_gateway import list_available_models, run_inference
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 
+# L3 fail-fast: hard cap independent of provider; schema also caps max_tokens<=32768.
+_AI_MAX_TOKENS_HARD_LIMIT = 32768
+
+
+def _validate_ai_request(model: str, max_tokens: int) -> None:
+    """Pre-flight checks so users get 422 with hint instead of silent mock/500.
+
+    Mirrors L1 pattern in projects.py: validate sync before kicking off provider call.
+    """
+    known = {m["id"] for m in list_available_models()}
+    if model not in known:
+        sample = ", ".join(sorted(known)[:5])
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"Model '{model}' không support. "
+                f"Dùng GET /api/v1/ai/models để list models hợp lệ "
+                f"(ví dụ: {sample})."
+            ),
+        )
+    if max_tokens > _AI_MAX_TOKENS_HARD_LIMIT:
+        raise HTTPException(
+            status_code=422,
+            detail=f"max_tokens={max_tokens} vượt giới hạn {_AI_MAX_TOKENS_HARD_LIMIT}.",
+        )
+
 
 @router.get("/models")
 async def get_models(me: CurrentUser = Depends(get_current_user)) -> list[dict]:
@@ -87,6 +113,7 @@ async def complete(
     db: AsyncSession = Depends(get_db),
 ) -> InferenceOut:
     await require_workspace_access(ws, me)
+    _validate_ai_request(data.model, data.max_tokens)
 
     result = await run_inference(
         model=data.model,
