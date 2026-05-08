@@ -2431,6 +2431,11 @@ setTimeout(() => {
 }, 1000);
 
 window.openHelpPanel = function(){
+  // Pre-boot guard — help panel reads state, must be safe before login
+  if (!window.state || !window.state.currentUser) {
+    try { alert('Vui lòng đăng nhập trước khi mở hướng dẫn'); } catch(e){}
+    return;
+  }
   const panel = document.getElementById('help-panel');
   const overlay = document.getElementById('help-overlay');
   if (!panel) return;
@@ -3513,6 +3518,10 @@ document.addEventListener('keydown', e => {
 
   // ═══════ EDGE RUNTIME — Sandboxed microVMs for AI agent execution ═══════
   window.openEdgeRuntime = async function() {
+    if (!state.currentUser || !state.currentWs) {
+      alert('Vui lòng đăng nhập trước khi sử dụng Edge Runtime');
+      return;
+    }
     const m = byId('modal');
     if (!m) return;
     m.innerHTML = '';
@@ -3561,6 +3570,10 @@ document.addEventListener('keydown', e => {
 
   // ═══════ BUILD FARM — Native app build cloud (Tauri/Rust/Electron/Go/Flutter/.NET) ═══════
   window.openBuildFarm = async function() {
+    if (!state.currentUser || !state.currentWs) {
+      alert('Vui lòng đăng nhập trước khi sử dụng Build Farm');
+      return;
+    }
     const m = byId('modal');
     if (!m) return;
     m.innerHTML = '';
@@ -3612,7 +3625,12 @@ document.addEventListener('keydown', e => {
   };
 
   window.openTemplatesGallery = function() {
+    if (!state.currentUser || !state.currentWs) {
+      alert('Vui lòng đăng nhập trước khi sử dụng template');
+      return;
+    }
     const m = byId('modal');
+    if (!m) return;
     m.innerHTML = '';
     const wrap = el('div', { style: { padding: '28px', minWidth: '720px', maxWidth: '880px' } });
     wrap.appendChild(el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' } }, [
@@ -6088,10 +6106,36 @@ document.addEventListener('keydown', e => {
   window.refreshSidebar = refreshSidebar;
 
   /* ═══════════════════════════════════════════════
+     EVENT-DELEGATED NAV WIRING — survives DOM rebuilds
+     và bootApp không chạy → buttons VẪN có handler
+     ═══════════════════════════════════════════════ */
+  function wireNavDelegated() {
+    // Use event delegation on document — survives DOM rebuilds
+    document.addEventListener('click', function(e) {
+      const navItem = e.target.closest('.nav-item[data-view]');
+      if (!navItem) return;
+      const view = navItem.getAttribute('data-view');
+      if (!view) return;
+      if (!state.currentUser) {
+        // Pre-login click — show login prompt instead of crashing
+        console.warn('[nav] click before login, view=' + view);
+        try { (typeof toast === 'function') ? toast('Vui lòng đăng nhập trước', 'warn') : alert('Vui lòng đăng nhập trước'); } catch(e){}
+        return;
+      }
+      e.preventDefault();
+      try {
+        if (typeof setView === 'function') setView(view);
+      } catch (err) { console.error('[nav] setView failed:', err); }
+    });
+    console.log('[wireNavDelegated] global nav listener attached');
+  }
+
+  /* ═══════════════════════════════════════════════
      INIT
      ═══════════════════════════════════════════════ */
 
   loadState();
+  wireNavDelegated();   // Wire nav clicks BEFORE login — works even if bootApp doesn't run
   loadSession();
   if (state.currentUser) bootApp();
 })();
