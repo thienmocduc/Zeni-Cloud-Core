@@ -1,0 +1,39 @@
+steps:
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        echo "Installing postgresql-client + cloud-sql-proxy..."
+        apt-get update -qq && apt-get install -y -qq postgresql-client wget
+        wget -q https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.13.0/cloud-sql-proxy.linux.amd64 -O /tmp/cloud-sql-proxy
+        chmod +x /tmp/cloud-sql-proxy
+        echo "Starting Cloud SQL Auth Proxy..."
+        /tmp/cloud-sql-proxy --port 5433 zeni-cloud-core:us-central1:zeni-cloud-db &
+        PROXY_PID=$$!
+        sleep 8
+        echo "Fetching DB password from Secret Manager..."
+        DB_URL=$(gcloud secrets versions access latest --secret=zeni-database-url --project=zeni-cloud-core)
+        echo "DB_URL preview: $${DB_URL:0:40}..."
+        DB_USER=$(echo "$$DB_URL" | sed -E 's|.*://([^:]+):.*|\1|')
+        DB_NAME="zeni_cloud"
+        DB_PWD=$(echo "$$DB_URL" | sed -E 's|.*://[^:]+:([^@]+)@.*|\1|')
+        echo "DB_USER=$$DB_USER DB_NAME=$$DB_NAME"
+        echo "Downloading SQL fix..."
+        gsutil cp gs://zeni-cloud-core_cloudbuild/sql-imports/1003_backfill_audit.sql /tmp/fix.sql
+        echo "Applying SQL fix via psql..."
+        PGPASSWORD="$$DB_PWD" psql -h 127.0.0.1 -p 5433 -U "$$DB_USER" -d "$$DB_NAME" -v ON_ERROR_STOP=1 -f /tmp/fix.sql
+        echo ""
+        echo "═══════════════════════════════════════════"
+        echo "FINAL VERIFICATION (separate query)"
+        echo "═══════════════════════════════════════════"
+        PGPASSWORD="$$DB_PWD" psql -h 127.0.0.1 -p 5433 -U "$$DB_USER" -d "$$DB_NAME" -c "SELECT workspace_id, COUNT(*) FROM audit_log GROUP BY workspace_id ORDER BY COUNT(*) DESC LIMIT 10;"
+        echo ""
+        echo "Remaining NULLs (audit_log):"
+        PGPASSWORD="$$DB_PWD" psql -h 127.0.0.1 -p 5433 -U "$$DB_USER" -d "$$DB_NAME" -c "SELECT COUNT(*) AS remaining_null FROM audit_log WHERE workspace_id IS NULL;"
+        kill $$PROXY_PID 2>/dev/null || true
+        echo "✓ Fix 1003 applied successfully"
+options:
+  logging: CLOUD_LOGGING_ONLY
+timeout: '300s'
