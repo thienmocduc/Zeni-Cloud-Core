@@ -72,6 +72,62 @@ def _validate_image(image: str) -> None:
         )
 
 
+async def _validate_image_exists(image: str) -> None:
+    """Pre-flight: verify image actually exists in registry. Raises 422 with clear hint
+    if not found. Skips Docker Hub (let Cloud Run handle it).
+
+    Why: customer submits gcr.io/.../my-app:v1 that they never built/pushed → Cloud Run
+    rejects async → user sees 'deploying' forever → thinks it's a mock. Pre-flight
+    catches this synchronously with a clear remediation hint.
+    """
+    if not (image.startswith("gcr.io/") or "-docker.pkg.dev/" in image):
+        return  # Docker Hub / public — skip check
+
+    import httpx
+    try:
+        from google.auth import default as _gauth_default
+        from google.auth.transport.requests import Request as _GAR
+    except Exception:
+        return  # google-auth unavailable → soft-skip
+
+    img_path, _, tag = image.rpartition(":")
+    if not img_path:
+        img_path, tag = image, "latest"
+    parts = img_path.split("/", 1)
+    if len(parts) < 2:
+        return
+    registry, repo = parts[0], parts[1]
+    manifest_url = f"https://{registry}/v2/{repo}/manifests/{tag}"
+
+    try:
+        creds, _proj = _gauth_default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+        creds.refresh(_GAR())
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            r = await client.head(
+                manifest_url,
+                headers={
+                    "Authorization": f"Bearer {creds.token}",
+                    "Accept": "application/vnd.docker.distribution.manifest.v2+json,application/vnd.oci.image.manifest.v1+json",
+                },
+            )
+            if r.status_code == 404:
+                raise HTTPException(
+                    status_code=422,
+                    detail=(
+                        f"Image '{image}' không tồn tại trong registry. "
+                        "Bạn cần build + push image trước. Cách:\n"
+                        "  • Upload source code: POST /api/v1/upload/source (Zeni tự build)\n"
+                        "  • Hoặc dùng Build Farm: POST /api/v1/build-farm/jobs\n"
+                        "  • Hoặc dùng image public Docker Hub: docker.io/library/nginx:alpine"
+                    ),
+                )
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Validation infra error — don't block deploy, let Cloud Run try
+        log.warning("[_validate_image_exists] soft-fail for %s: %s", image, e)
+
+
 # ─── Background deploy task ─────────────────────────────────────
 async def _bg_deploy(
     project_id: UUID, ws: str, name: str, image: str, size: str, region: str,
@@ -163,6 +219,9 @@ async def deploy_project(
         raise HTTPException(status_code=403, detail="Viewer không thể deploy")
 
     _validate_image(data.image)
+    # Pre-flight: verify image actually exists in registry — gives 422 fast feedback
+    # instead of async 'deploying' status that silently fails when image not pushed yet.
+    await _validate_image_exists(data.image)
 
     ws_count = (await db.execute(select(Project).where(Project.workspace_id == ws))).all()
     if len(ws_count) >= MAX_PROJECTS_PER_WS:
