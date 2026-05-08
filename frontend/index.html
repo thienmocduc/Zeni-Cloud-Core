@@ -2661,6 +2661,14 @@ document.addEventListener('keydown', e => {
         }
       }
     } catch(e) {}
+    // Defensive: nếu currentUser null nhưng có JWT cache → invalid session, clear all
+    if (!state.currentUser && (localStorage.getItem('zeni.jwt.access') || localStorage.getItem('zeni.jwt.refresh'))) {
+      console.warn('[loadSession] orphan JWT — clearing');
+      localStorage.removeItem('zeni.jwt.access');
+      localStorage.removeItem('zeni.jwt.refresh');
+      localStorage.removeItem('zeniCloud_session_v1');
+      localStorage.removeItem('zeniCloud_v2_clean');
+    }
   }
   function saveSession() {
     if (state.currentUser) {
@@ -2811,6 +2819,7 @@ document.addEventListener('keydown', e => {
      ═══════════════════════════════════════════════ */
 
   function bootApp() {
+    if (!state.currentUser) { console.warn('[bootApp] no currentUser, redirecting to login'); window.location.href = '/login.html'; return; }
     byId('login').classList.add('hidden');
     byId('app').classList.add('active');
 
@@ -2824,28 +2833,27 @@ document.addEventListener('keydown', e => {
   }
 
   function refreshSidebar() {
-    const u = state.currentUser || { name: '—', email: '', avatar: '·', ws: [] };
-    // Defensive — workspace có thể chưa load (async fetch from /workspaces).
-    // KHÔNG được throw vì sẽ fail nav click wiring.
-    let ws = WORKSPACES[state.currentWs];
-    if (!ws) {
-      ws = { name: state.currentWs || '—', role: 'Member', color: 'var(--ink-400)' };
+    try {
+      const ws = WORKSPACES[state.currentWs] || { color: '#888', name: '—', role: '—' };
+      const u = state.currentUser || { name: '—', email: '—', avatar: null };
+      try { byId('ws-dot').style.background = ws.color || '#888'; } catch(e) {}
+      try { byId('ws-name').textContent = ws.name || '—'; } catch(e) {}
+      try { byId('ws-role').textContent = ws.role || '—'; } catch(e) {}
+      try { byId('user-avatar').textContent = u.avatar || (u.name||'·')[0]; } catch(e) {}
+      try { byId('user-name').textContent = u.name || '—'; } catch(e) {}
+      try { byId('user-email').textContent = u.email || '—'; } catch(e) {}
+      try { byId('nav-proj-count').textContent = getProjects().length; } catch(e) {}
+
+      // nav click wiring — LUÔN PHẢI ĐƯỢC ATTACH dù sidebar info có lỗi
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.onclick = () => setView(item.dataset.view);
+      });
+
+      // workspace menu
+      try { renderWsMenu(); } catch(e) { console.warn('[refreshSidebar] renderWsMenu fail:', e); }
+    } catch (e) {
+      console.error('[refreshSidebar] failed:', e); /* keep DOM as-is to allow recovery */
     }
-    try { byId('ws-dot').style.background = ws.color || 'var(--ink-400)'; } catch(e) {}
-    try { byId('ws-name').textContent = ws.name || '—'; } catch(e) {}
-    try { byId('ws-role').textContent = ws.role || ''; } catch(e) {}
-    try { byId('user-avatar').textContent = u.avatar || (u.name||'·')[0]; } catch(e) {}
-    try { byId('user-name').textContent = u.name || ''; } catch(e) {}
-    try { byId('user-email').textContent = u.email || ''; } catch(e) {}
-    try { byId('nav-proj-count').textContent = getProjects().length; } catch(e) {}
-
-    // nav click wiring — LUÔN PHẢI ĐƯỢC ATTACH dù sidebar info có lỗi
-    document.querySelectorAll('.nav-item').forEach(item => {
-      item.onclick = () => setView(item.dataset.view);
-    });
-
-    // workspace menu
-    try { renderWsMenu(); } catch(e) { console.warn('[refreshSidebar] renderWsMenu fail:', e); }
   }
 
   function renderWsMenu() {
@@ -2960,25 +2968,39 @@ document.addEventListener('keydown', e => {
      ═══════════════════════════════════════════════ */
 
   function setView(view) {
-    state.currentView = view;
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === view));
-    const content = byId('content');
-    content.innerHTML = '';
-    content.appendChild(renderView(view));
+    try {
+      state.currentView = view;
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === view));
+      const content = byId('content');
+      content.innerHTML = '';
+      content.appendChild(renderView(view));
 
-    const crumbMap = {
-      home: 'Dashboard', projects: 'Projects',
-      L1: 'Lớp 1 · Compute & Hosting',
-      L2: 'Lớp 2 · Data Lake & Vector',
-      L3: 'Lớp 3 · AI Engine',
-      L4: 'Lớp 4 · Automation',
-      L5: 'Lớp 5 · Identity & Security',
-      L6: 'Lớp 6 · Web3 Bridge',
-      billing: 'Billing & Usage',
-      audit: 'Audit Log',
-      members: 'Members'
-    };
-    byId('crumb-cur').textContent = crumbMap[view] || view;
+      const crumbMap = {
+        home: 'Dashboard', projects: 'Projects',
+        L1: 'Lớp 1 · Compute & Hosting',
+        L2: 'Lớp 2 · Data Lake & Vector',
+        L3: 'Lớp 3 · AI Engine',
+        L4: 'Lớp 4 · Automation',
+        L5: 'Lớp 5 · Identity & Security',
+        L6: 'Lớp 6 · Web3 Bridge',
+        billing: 'Billing & Usage',
+        audit: 'Audit Log',
+        members: 'Members'
+      };
+      byId('crumb-cur').textContent = crumbMap[view] || view;
+    } catch (e) {
+      console.error('[setView] failed:', e);
+      try {
+        const content = byId('content');
+        if (content) {
+          content.innerHTML = '';
+          const fallback = document.createElement('div');
+          fallback.className = 'view active';
+          if (typeof renderHome === 'function') { renderHome(fallback); }
+          content.appendChild(fallback);
+        }
+      } catch (e2) { console.error('[setView] fallback also failed:', e2); }
+    }
   }
 
   function renderView(view) {
@@ -3427,6 +3449,7 @@ document.addEventListener('keydown', e => {
   let cpData = {};
 
   window.openCreateProject = function() {
+    if (!state.currentWs || !state.currentUser) { alert('Vui lòng đăng nhập lại'); window.location.href = '/login.html'; return; }
     cpStep = 1; cpData = {};
     renderCreateProject();
   };
