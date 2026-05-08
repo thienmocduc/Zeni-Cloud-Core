@@ -2884,7 +2884,7 @@ document.addEventListener('keydown', e => {
     menu.appendChild(el('div', { class: 'ws-menu-divider' }));
     menu.appendChild(el('div', {
       class: 'ws-menu-item',
-      onclick: () => { byId('ws-menu').classList.remove('show'); openCreateWorkspaceModal(); }
+      onclick: () => { byId('ws-menu').classList.remove('show'); window.openCreateWorkspace(); }
     }, [
       el('span', { style: { color: 'var(--ink-400)', width: '10px', textAlign: 'center'}, text: '+'}),
       el('div', { text: 'Tạo workspace mới' })
@@ -2960,6 +2960,99 @@ document.addEventListener('keydown', e => {
       showMsg('err', `Không kết nối được: ${e.message}`);
       btn.disabled = false; btn.textContent = 'Tạo workspace';
     }
+  };
+
+  // === Create new workspace (Vercel-pattern modal) ===
+  // Surgical wiring: button trên Projects header + sidebar dropdown
+  // gọi function này → backend POST /api/v1/workspaces → refresh sidebar
+  window.openCreateWorkspace = async function() {
+    if (!state.currentUser) {
+      alert('Vui lòng đăng nhập trước');
+      return;
+    }
+    const m = byId('modal');
+    if (!m) return;
+    m.innerHTML = '';
+    const wrap = el('div', { style: { padding: '28px', minWidth: '480px', maxWidth: '560px' } });
+    wrap.appendChild(el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' } }, [
+      el('h3', { style: { fontSize: '20px', color: 'var(--ink-50)', margin: 0 }, text: '🏢 Tạo workspace mới' }),
+      el('button', { onclick: closeModal, style: { background: 'transparent', border: 'none', color: 'var(--ink-300)', fontSize: '24px', cursor: 'pointer' }, text: '×' })
+    ]));
+    wrap.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-400)', marginBottom: '18px' }, text: 'Workspace tách projects/billing/members/audit riêng cho 1 công ty hoặc team.' }));
+
+    const form = el('form');
+    form.appendChild(el('label', { style: { display: 'block', fontSize: '12px', color: 'var(--ink-300)', marginBottom: '4px' }, text: 'Tên hiển thị *' }));
+    const nameInput = el('input', { type: 'text', placeholder: 'VD: Công ty ABC', required: true, style: { width: '100%', padding: '10px 12px', background: 'var(--bg-card,#14142a)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--ink-50)', marginBottom: '14px' } });
+    form.appendChild(nameInput);
+
+    form.appendChild(el('label', { style: { display: 'block', fontSize: '12px', color: 'var(--ink-300)', marginBottom: '4px' }, text: 'ID URL slug *' }));
+    const idInput = el('input', { type: 'text', placeholder: 'cong-ty-abc (lowercase, no spaces)', pattern: '[a-z0-9_-]+', required: true, style: { width: '100%', padding: '10px 12px', background: 'var(--bg-card,#14142a)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--ink-50)', marginBottom: '14px', fontFamily: 'monospace' } });
+    form.appendChild(idInput);
+
+    form.appendChild(el('label', { style: { display: 'block', fontSize: '12px', color: 'var(--ink-300)', marginBottom: '4px' }, text: 'Code (≤8 ký tự, viết hoa) *' }));
+    const codeInput = el('input', { type: 'text', placeholder: 'ABC', maxLength: 8, required: true, style: { width: '100%', padding: '10px 12px', background: 'var(--bg-card,#14142a)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--ink-50)', marginBottom: '18px', fontFamily: 'monospace', textTransform: 'uppercase' } });
+    form.appendChild(codeInput);
+
+    // Auto-fill id + code from name
+    nameInput.addEventListener('input', function() {
+      if (!idInput.dataset.touched) idInput.value = this.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      if (!codeInput.dataset.touched) codeInput.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+    });
+    idInput.addEventListener('input', function() { this.dataset.touched = '1'; });
+    codeInput.addEventListener('input', function() { this.dataset.touched = '1'; });
+
+    const submitBtn = el('button', { type: 'submit', style: { width: '100%', padding: '12px', background: 'linear-gradient(135deg, var(--indigo,#7d68ff), var(--crown,#a855f7))', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }, text: 'Tạo workspace' });
+    form.appendChild(submitBtn);
+    const errorBox = el('div', { style: { color: 'var(--danger,#ef4444)', fontSize: '13px', marginTop: '10px', display: 'none' } });
+    form.appendChild(errorBox);
+
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      submitBtn.textContent = '⏳ Đang tạo...';
+      errorBox.style.display = 'none';
+      try {
+        const token = localStorage.getItem('zeni.jwt.access') || localStorage.getItem('zeni.token') || '';
+        const resp = await fetch((window.API_BASE || '/api/v1') + '/workspaces', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ id: idInput.value.trim(), code: codeInput.value.trim().toUpperCase(), name: nameInput.value.trim(), tagline: '', color: '#7d68ff' })
+        });
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          throw new Error(err.detail || 'HTTP ' + resp.status);
+        }
+        const ws = await resp.json();
+        if (typeof toast === 'function') toast('✓ Workspace "' + ws.name + '" đã tạo', 'ok');
+        closeModal();
+        // Refresh workspaces from API (no full reload if API helper available)
+        try {
+          if (window.ZeniAPI && typeof window.ZeniAPI.listWorkspaces === 'function') {
+            const list = await window.ZeniAPI.listWorkspaces();
+            list.forEach(w => { if (window.WORKSPACES) window.WORKSPACES[w.id] = { name: w.name, code: w.code, color: w.color || '#7d68ff', role: 'Owner' }; });
+            if (state.currentUser) state.currentUser.ws = list.map(w => w.id);
+            state.currentWs = ws.id;
+            if (typeof refreshSidebar === 'function') refreshSidebar();
+            if (typeof renderHome === 'function') renderHome();
+          } else {
+            window.location.reload();
+          }
+        } catch (e) {
+          console.warn('refresh failed, reloading:', e);
+          window.location.reload();
+        }
+      } catch (err) {
+        errorBox.textContent = 'Lỗi: ' + err.message;
+        errorBox.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Tạo workspace';
+      }
+    });
+
+    wrap.appendChild(form);
+    m.appendChild(wrap);
+    byId('modal-wrap').classList.add('active');
+    setTimeout(() => nameInput.focus(), 100);
   };
 
   window.toggleWsMenu = function(e) {
@@ -3280,6 +3373,11 @@ document.addEventListener('keydown', e => {
       ]),
       el('div', { class: 'page-head-right' }, [
         el('button', { class: 'btn btn-md btn-ghost', onclick: () => fetchProjectsFromBackend(), text: '↻ Refresh' }),
+        el('button', {
+          onclick: () => window.openCreateWorkspace(),
+          style: { background: 'transparent', color: 'var(--ink-300)', border: '1px solid var(--border)', padding: '8px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px', marginRight: '8px' },
+          text: '🏢 + Workspace mới (optional)'
+        }),
         el('button', { class: 'btn btn-md btn-accent', onclick: openCreateProject, text: '+ Tạo project mới' })
       ])
     ]));
