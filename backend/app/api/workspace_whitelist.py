@@ -45,19 +45,30 @@ class WhitelistAdd(BaseModel):
     @classmethod
     def _v_prefix(cls, v: str) -> str:
         v = v.strip().lower()
-        # Phải có dấu '/' hoặc kết thúc bằng '/' để tránh prefix collision (vd 'ghcr.io' match 'ghcr.io.evil')
+        # Phải có dấu '/' hoặc kết thúc bằng '/' để tránh prefix collision
         if "/" not in v:
-            raise ValueError("prefix phải chứa '/' (vd: 'ghcr.io/myorg/')")
+            raise ValueError("prefix phải chứa '/' (vd: 'docker.io/myname/' hoặc 'us-central1-docker.pkg.dev/myproject/myrepo/')")
         if not v.endswith("/"):
             v += "/"
-        # Disallow wildcard registries (security — KHÔNG cho phép * cho cả registry)
+        # Disallow wildcard
         if v.startswith("*") or v.startswith("/"):
             raise ValueError("prefix không được bắt đầu bằng '*' hoặc '/'")
-        # Reject domain-only prefixes (đã có global whitelist cho docker.io/library)
-        bad_domain_only = ("ghcr.io/", "docker.io/", "registry.gitlab.com/")
+        # Reject registries Cloud Run KHÔNG pull được — tránh khách deploy fail
+        # Cloud Run chỉ accept: *.gcr.io, *.docker.pkg.dev, docker.io
+        unsupported_registries = {
+            "ghcr.io/": "GitHub Container Registry (Cloud Run không pull trực tiếp được). Dùng docker.io/yourname/ hoặc us-central1-docker.pkg.dev/zeni-cloud-core/... thay thế.",
+            "quay.io/": "Quay.io không được Cloud Run support. Dùng Docker Hub hoặc Zeni Artifact Registry.",
+            "registry.gitlab.com/": "GitLab Registry không được Cloud Run support. Dùng Docker Hub hoặc Zeni Artifact Registry.",
+            "registry.fly.io/": "Fly Registry không được Cloud Run support.",
+        }
+        for bad, hint in unsupported_registries.items():
+            if v.startswith(bad):
+                raise ValueError(f"Registry '{bad}' không support: {hint}")
+        # Reject domain-only prefixes (quá rộng, security risk)
+        bad_domain_only = ("docker.io/",)
         if v in bad_domain_only:
             raise ValueError(
-                f"prefix '{v}' quá rộng (cả registry). Cần specific path: '{v}myorg/' hoặc '{v}myuser/'."
+                f"prefix '{v}' quá rộng (cả registry). Cần specific path: 'docker.io/yourname/' để allow images của bạn."
             )
         return v
 
