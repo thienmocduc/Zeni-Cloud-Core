@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
-from app.api import admin_access, admin_access_callback, admin_platform, agents, agents_library, ai, ai_core, api_tokens, audit, auth, automation, backup_dr, benchmarks, billing, billing_v2, books, build_farm, cache, compliance, cost_dashboard, crons, customer_oauth, customer_oauth_flow, data, edge_cdn, edge_runtime, email_api, email_verify, gcp, github_integration, identity, internal_cron, legal_entities, login_2fa, members, messaging, mfa, mobile_certs, multi_region, oauth, observability, ocr, package_registry, payouts, phone_otp, pricing, privacy, projects, push_notifications, queue, quick_deploy, realtime, reseller, router as zeni_router_api, slack, sms, source_upload, storage as zeni_storage, translate, trial, vector, vector_premium, voice_ai, waitlist, wallet, web3, workspaces, zeni_mail, zeni_pay, zeni_token, zeni_voice
+from app.api import admin_access, admin_access_callback, admin_platform, agents, agents_library, ai, ai_core, api_tokens, audit, auth, automation, backup_dr, benchmarks, billing, billing_v2, books, build_farm, cache, compliance, cost_dashboard, crons, customer_oauth, customer_oauth_flow, data, edge_cdn, edge_runtime, email_api, email_verify, gcp, github_integration, identity, internal_cron, legal_entities, login_2fa, members, messaging, mfa, mobile_certs, multi_region, oauth, observability, ocr, package_registry, payouts, phone_otp, pricing, privacy, projects, push_notifications, queue, quick_deploy, realtime, reseller, router as zeni_router_api, slack, sms, source_upload, storage as zeni_storage, translate, trial, vector, vector_premium, voice_ai, waitlist, wallet, web3, workspace_whitelist, workspaces, zeni_mail, zeni_pay, zeni_token, zeni_voice
 # Note: zeni_studio, zeni_crm, zeni_workspace = SaaS apps (not cloud infra),
 # code retained in apps/ for future independent deploy as Cloud Run services.
 from app.middleware.metrics_middleware import MetricsMiddleware
@@ -248,6 +248,7 @@ async def health() -> dict:
 API_PREFIX = "/api/v1"
 app.include_router(auth.router,        prefix=API_PREFIX)
 app.include_router(workspaces.router,  prefix=API_PREFIX)
+app.include_router(workspace_whitelist.router, prefix=API_PREFIX)  # per-workspace image registry whitelist
 app.include_router(projects.router,    prefix=API_PREFIX)
 app.include_router(data.router,        prefix=API_PREFIX)
 app.include_router(ai.router,          prefix=API_PREFIX)

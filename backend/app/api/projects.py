@@ -68,8 +68,53 @@ def _validate_image(image: str) -> None:
     if not any(normalized.startswith(p) for p in ALLOWED_IMAGE_PREFIXES):
         raise HTTPException(
             status_code=400,
-            detail="Image phải từ Artifact Registry zeni-cloud-core, Docker Hub library, hoặc Google samples.",
+            detail=(
+                "Image không nằm trong whitelist global. Allowed: Artifact Registry zeni-cloud-core, "
+                "Docker Hub library, Google samples. "
+                "Để dùng registry khác (vd: ghcr.io/myorg/, registry.gitlab.com/myorg/) → "
+                "vào Workspace Settings → Image Registries → Add prefix."
+            ),
         )
+
+
+async def _validate_image_with_workspace(db, workspace_id: str, image: str) -> None:
+    """Validate image: global whitelist OR per-workspace opt-in whitelist.
+
+    Pattern Vercel/Netlify: workspace owner self-service add registry prefix
+    (vd: ghcr.io/vietcontech/) qua Workspace Settings → Image Registries.
+    Tránh phải add global cho mọi khách (security + scale).
+    """
+    if not _VALID_IMAGE_RE.match(image):
+        raise HTTPException(status_code=400, detail="Image URL không hợp lệ")
+    normalized = image if "/" in image.split(":")[0] else f"docker.io/library/{image}"
+
+    # Pass 1: Global whitelist
+    if any(normalized.startswith(p) for p in ALLOWED_IMAGE_PREFIXES):
+        return
+
+    # Pass 2: Per-workspace whitelist
+    try:
+        from sqlalchemy import text as _text
+        rows = (await db.execute(_text(
+            "SELECT prefix FROM workspace_image_whitelist "
+            "WHERE workspace_id = :ws AND enabled = TRUE"
+        ), {"ws": workspace_id})).mappings().all()
+        ws_prefixes = [r["prefix"] for r in rows]
+        if any(normalized.startswith(p) or image.startswith(p) for p in ws_prefixes):
+            return
+    except Exception as e:
+        log.warning("[validate_image] workspace whitelist check failed: %s", e)
+
+    # Reject with helpful hint
+    raise HTTPException(
+        status_code=400,
+        detail=(
+            f"Image '{image}' không trong whitelist. Cách thêm:\n"
+            "  • Owner workspace vào Settings → Image Registries → Add prefix\n"
+            "  • Vd: prefix = 'ghcr.io/vietcontech/' để allow ghcr.io/vietcontech/*\n"
+            "  • Hoặc dùng image global allowed: docker.io/library/nginx:alpine"
+        ),
+    )
 
 
 async def _validate_image_exists(image: str) -> None:
@@ -218,7 +263,8 @@ async def deploy_project(
     if me.role == "Viewer":
         raise HTTPException(status_code=403, detail="Viewer không thể deploy")
 
-    _validate_image(data.image)
+    # Validate image: global whitelist OR per-workspace opt-in (Vercel pattern)
+    await _validate_image_with_workspace(db, ws, data.image)
     # Pre-flight: verify image actually exists in registry — gives 422 fast feedback
     # instead of async 'deploying' status that silently fails when image not pushed yet.
     await _validate_image_exists(data.image)
