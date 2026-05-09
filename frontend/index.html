@@ -3636,60 +3636,50 @@ document.addEventListener('keydown', e => {
     renderCreateProject();
   };
 
-  // ═══════ DEPLOY TEMPLATES — 1-click ═══════
+  // ═══════ QUICK DEMO TEMPLATES — DEPLOY DEMO WORKFLOW (KHÔNG phải code thật) ═══════
+  // Mục đích: cho phép khách verify Cloud Run hoạt động OK trong 30s.
+  // Để deploy CODE THẬT → wizard "+ Project mới" → Upload ZIP / Build Farm / Docker Hub URL.
   const DEPLOY_TEMPLATES = [
     {
-      id: 'static-html', icon: '📄', title: 'Static HTML/CSS', desc: 'Landing page, portfolio',
+      id: 'static-html', icon: '📄', title: 'Nginx Static (DEMO)',
+      desc: 'Nginx serve trang welcome mặc định. Verify Cloud Run hoạt động.',
       type: 'web', runtime: 'container', size: 'xs', port: 80,
       image: 'docker.io/library/nginx:alpine',
-      sample: 'Deploy ngay nginx serve sample HTML — anh thay file bằng repo của anh sau.'
+      isDemo: true,
+      realImage: false,
+      sample: 'Image NGINX OFFICIAL — sau khi deploy thấy Welcome to nginx page. Để serve HTML của bạn → upload code qua "+ Project mới" wizard rồi update image.'
     },
     {
-      id: 'nextjs', icon: '▲', title: 'Next.js', desc: 'React SSR/SSG framework',
+      id: 'hello-google', icon: '👋', title: 'Google Hello (DEMO)',
+      desc: 'Google Cloud Run hello-app. Test workflow auto-scale.',
+      type: 'web', runtime: 'container', size: 'xs', port: 8080,
+      image: 'gcr.io/google-samples/hello-app:1.0',
+      isDemo: true,
+      realImage: false,
+      sample: 'Image OFFICIAL Google sample — verify auto-scale + load balancer hoạt động. KHÔNG phải code production của bạn.'
+    },
+    // === PWA TEMPLATES — đây là image REAL, framework injection thật ===
+    {
+      id: 'nextjs-pwa', icon: '📱', title: 'Next.js PWA',
+      desc: 'Next.js + auto-inject manifest + service worker. Install-able trên mobile/desktop.',
       type: 'web', runtime: 'container', size: 's', port: 3000,
-      image: 'gcr.io/google-samples/hello-app:1.0',
-      sample: 'Demo placeholder — sau replace bằng image Next.js của anh'
-    },
-    {
-      id: 'fastapi', icon: '⚡', title: 'FastAPI', desc: 'Python async API',
-      type: 'api', runtime: 'container', size: 's', port: 8080,
-      image: 'gcr.io/google-samples/hello-app:1.0',
-      sample: 'Sample echo server — replace bằng FastAPI image của anh'
-    },
-    {
-      id: 'express', icon: '🟢', title: 'Express.js', desc: 'Node.js API server',
-      type: 'api', runtime: 'container', size: 's', port: 3000,
-      image: 'gcr.io/google-samples/hello-app:1.0',
-      sample: 'Sample Hello World — replace bằng Express image của anh'
-    },
-    {
-      id: 'react-vite', icon: '⚛️', title: 'React (Vite)', desc: 'SPA build với Vite',
-      type: 'web', runtime: 'container', size: 'xs', port: 80,
-      image: 'docker.io/library/nginx:alpine',
-      sample: 'Nginx serve build — sau push image React build của anh'
-    },
-    {
-      id: 'vue', icon: '💚', title: 'Vue.js', desc: 'Progressive framework',
-      type: 'web', runtime: 'container', size: 'xs', port: 80,
-      image: 'docker.io/library/nginx:alpine',
-      sample: 'Nginx serve build — sau push image Vue build của anh'
-    },
-    // === PWA TEMPLATES (Install-able Web App — thay thế Tauri/.exe) ===
-    {
-      id: 'nextjs-pwa', icon: '📱', title: 'Next.js PWA', desc: 'Install-able PWA · auto-manifest + service worker',
-      type: 'web', runtime: 'container', size: 's', port: 3000,
-      image: 'gcr.io/google-samples/hello-app:1.0',
+      image: 'gcr.io/google-samples/hello-app:1.0',  // base demo, sẽ thay khi user upload source
       framework: 'nextjs-pwa',
       pwa: true,
-      sample: 'Next.js + auto-PWA — khách click "Install" trên browser = app icon trên desktop/mobile (không cần Tauri/Electron)'
+      isDemo: false,
+      realImage: false,
+      sample: 'Click → tạo project Next.js PWA. Sau đó "+ Upload Source" qua wizard → Zeni tự inject PWA + build deploy.'
     },
     {
-      id: 'vite-pwa', icon: '⚛️', title: 'Vite + React PWA', desc: 'Install-able PWA SPA · workbox cache offline',
+      id: 'vite-pwa', icon: '⚛️', title: 'Vite + React PWA',
+      desc: 'Vite + workbox PWA. Offline cache + install button.',
       type: 'web', runtime: 'container', size: 'xs', port: 80,
       image: 'docker.io/library/nginx:alpine',
       framework: 'vite-pwa',
       pwa: true,
-      sample: 'Vite + React PWA — offline-ready, install qua browser (Chrome/Edge/Safari)'
+      isDemo: false,
+      realImage: false,
+      sample: 'Click → tạo project Vite PWA. Sau đó upload source code Vite → Zeni inject vite-plugin-pwa + build.'
     }
   ];
 
@@ -3811,19 +3801,29 @@ document.addEventListener('keydown', e => {
     m.innerHTML = '';
     const wrap = el('div', { style: { padding: '28px', minWidth: '720px', maxWidth: '880px' } });
     wrap.appendChild(el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' } }, [
-      el('h3', { style: { fontSize: '22px', color: 'var(--ink-50)', margin: 0 }, text: '🎯 Deploy app — KHÔNG cần GitHub' }),
+      el('h3', { style: { fontSize: '22px', color: 'var(--ink-50)', margin: 0 }, text: '🚀 Deploy app — 3 cách' }),
       el('button', { onclick: closeModal, style: { background: 'transparent', border: 'none', color: 'var(--ink-300)', fontSize: '24px', cursor: 'pointer' }, text: '×' })
     ]));
+    // Disclaimer rõ ràng — chairman feedback
+    wrap.appendChild(el('div', {
+      style: { padding: '10px 14px', background: 'rgba(34,211,238,0.08)', border: '1px solid rgba(34,211,238,0.25)', borderRadius: '8px', fontSize: '12px', color: 'var(--ink-300)', marginBottom: '14px', lineHeight: '1.6' }
+    }, [
+      el('strong', { style: { color: 'var(--aurora,#22d3ee)' }, text: '💡 Hiểu sao chọn cách nào: ' }),
+      document.createTextNode('Tab '), el('strong', { text: 'Quick Demo' }), document.createTextNode(' = test workflow Cloud Run trong 30s với image mẫu. '),
+      el('strong', { text: 'Upload ZIP' }), document.createTextNode(' = upload code thật của bạn → Zeni tự build. '),
+      el('strong', { text: 'Docker URL' }), document.createTextNode(' = bạn đã build image rồi, chỉ deploy. '),
+      el('a', { href: '/docs/zeni-deploy.html', target: '_blank', style: { color: 'var(--gold,#fde68a)' }, text: '→ Xem hướng dẫn chi tiết' })
+    ]));
 
-    // Tabs: Templates / Upload ZIP / Docker Image
+    // Tabs: Quick Demo / Upload ZIP / Docker Image
     const tabsBar = el('div', { style: { display: 'flex', gap: '4px', borderBottom: '1px solid var(--border)', marginBottom: '20px' } });
     const tabContent = el('div', {});
     const TABS = [
-      { id: 'templates', icon: '🎯', label: 'Templates 1-click', render: renderTemplatesTab },
-      { id: 'zip', icon: '📦', label: 'Upload ZIP', render: renderZipUploadTab },
+      { id: 'templates', icon: '🎯', label: 'Quick Demo (test 30s)', render: renderTemplatesTab },
+      { id: 'zip', icon: '📦', label: 'Upload ZIP source (code thật)', render: renderZipUploadTab },
       { id: 'docker', icon: '🐳', label: 'Docker Image URL', render: renderDockerImageTab }
     ];
-    let activeTab = 'templates';
+    let activeTab = 'zip';  // default tab = Upload ZIP (code thật) thay vì Quick Demo
     function refreshTabs() {
       tabsBar.innerHTML = '';
       TABS.forEach(t => {
@@ -3843,7 +3843,13 @@ document.addEventListener('keydown', e => {
     }
 
     function renderTemplatesTab(c) {
-      c.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-400)', marginBottom: '14px' }, text: 'Click 1 phát → app live trong 30s. Test ngay không cần code.' }));
+      // Honest disclaimer — chairman feedback "vẫn hiện dữ liệu demo"
+      c.appendChild(el('div', {
+        style: { padding: '12px 14px', background: 'rgba(251,146,60,0.1)', border: '1px solid rgba(251,146,60,0.3)', borderRadius: '8px', fontSize: '13px', color: 'var(--ink-200)', marginBottom: '14px', lineHeight: '1.6' }
+      }, [
+        el('strong', { style: { color: 'var(--warn,#fb923c)' }, text: '⚠️ Đây chỉ là DEMO WORKFLOW' }),
+        el('div', { style: { marginTop: '4px', color: 'var(--ink-300)', fontSize: '12px' }, text: 'Click → deploy 1 image MẪU (nginx welcome / Google hello-app) chỉ để verify Cloud Run hoạt động. Image KHÔNG phải code production của bạn. Sau deploy: vào Projects → click project → "🐳 Update Image" để thay bằng image của bạn, hoặc dùng tab "Upload ZIP" / "Docker URL" thay vì tab này.' })
+      ]));
       const grid = el('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '14px' } });
       DEPLOY_TEMPLATES.forEach(t => {
         const card = el('div', {
@@ -3856,6 +3862,7 @@ document.addEventListener('keydown', e => {
           el('div', { style: { fontWeight: '700', color: 'var(--ink-50)', fontSize: '15px', marginBottom: '4px' }, text: t.title }),
           el('div', { style: { fontSize: '12px', color: 'var(--ink-300)', marginBottom: '10px' }, text: t.desc }),
           el('div', { style: { display: 'flex', gap: '6px', flexWrap: 'wrap', fontSize: '10px' } }, [
+            t.isDemo ? el('span', { style: { padding: '2px 7px', background: 'rgba(251,146,60,0.18)', color: '#fb923c', borderRadius: '4px', fontWeight: '700' }, text: '⚠️ DEMO' }) : null,
             el('span', { style: { padding: '2px 7px', background: 'rgba(125,104,255,0.12)', color: 'var(--indigo)', borderRadius: '4px' }, text: t.type }),
             el('span', { style: { padding: '2px 7px', background: 'rgba(168,85,247,0.12)', color: 'var(--crown)', borderRadius: '4px' }, text: t.size }),
             el('span', { style: { padding: '2px 7px', background: 'rgba(34,211,238,0.12)', color: 'var(--aurora)', borderRadius: '4px' }, text: 'port ' + t.port }),

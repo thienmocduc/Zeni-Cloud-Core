@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeniDeploy giải thích — chọn cách deploy nào? | Zeni Cloud Docs</title>
+<meta name="description" content="ZeniDeploy có 4 cách deploy app: Quick Demo, Wizard 4-step, Upload ZIP, Docker URL. Bài này giải thích từng cách + khi nào dùng cái nào.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root { --bg-void:#0a0a14; --bg-card:#14142a; --border:rgba(168,139,250,0.15); --ink-100:#e5e7eb; --ink-200:#c4b5fd; --ink-300:#9e8be5; --ink-400:#7c6bb0; --gold:#fde68a; --indigo:#7d68ff; --crown:#a855f7; --aurora:#22d3ee; --code-bg:#0d1117; --ok:#22c55e; --warn:#fb923c; --err:#ef4444; }
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg-void);color:var(--ink-100);font-size:15px;line-height:1.7;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 1000px 700px at 80% 5%,rgba(168,85,247,0.08),transparent 55%),radial-gradient(ellipse 900px 600px at 5% 90%,rgba(99,102,241,0.06),transparent 55%);z-index:-1;pointer-events:none}
+a{color:var(--indigo);text-decoration:none;transition:color .2s}
+a:hover{color:var(--gold)}
+header.topbar{position:sticky;top:0;z-index:100;background:rgba(10,10,20,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.topbar-inner{max-width:1400px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
+.logo-mark{width:32px;height:32px;background:linear-gradient(135deg,var(--indigo),var(--crown));border-radius:8px;display:flex;align-items:center;justify-content:center;color:white}
+.breadcrumb{color:var(--ink-300);font-size:14px}
+.breadcrumb-sep{opacity:.4;margin:0 6px}
+nav.header-nav{display:flex;gap:20px;font-size:14px;align-items:center}
+nav.header-nav a{color:var(--ink-200)}
+nav.header-nav a.cta{background:var(--indigo);color:white;padding:8px 16px;border-radius:8px;font-weight:600}
+.layout{max-width:1100px;margin:0 auto;padding:32px 24px}
+.hero{margin-bottom:32px}
+.hero h1{font-size:36px;font-weight:800;margin-bottom:12px;background:linear-gradient(135deg,var(--gold),var(--crown));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .subtitle{font-size:17px;color:var(--ink-300);margin-bottom:8px}
+.hero .meta{font-size:13px;color:var(--ink-400)}
+section{margin-bottom:48px}
+h2{font-size:24px;font-weight:700;margin-bottom:16px;color:var(--ink-100);padding-bottom:8px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;font-weight:600;margin:24px 0 10px;color:var(--gold)}
+p{margin-bottom:12px}
+ul,ol{margin-left:22px;margin-bottom:12px}
+li{margin-bottom:6px}
+code{font-family:'JetBrains Mono',ui-monospace,monospace;background:var(--code-bg);color:var(--gold);padding:2px 6px;border-radius:4px;font-size:13px}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:16px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;line-height:1.6}
+pre code{background:transparent;padding:0;color:var(--ink-100)}
+.callout{padding:14px 18px;border-radius:10px;margin:16px 0;font-size:14px;line-height:1.6}
+.callout.info{background:rgba(34,211,238,0.08);border-left:3px solid var(--aurora)}
+.callout.warn{background:rgba(251,146,60,0.08);border-left:3px solid var(--warn)}
+.callout.ok{background:rgba(34,197,94,0.08);border-left:3px solid var(--ok)}
+.callout.err{background:rgba(239,68,68,0.08);border-left:3px solid var(--err)}
+.method-card{padding:20px 24px;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;margin-bottom:18px;border-left:4px solid var(--method-color,var(--indigo))}
+.method-card.demo{--method-color:var(--warn)}
+.method-card.wizard{--method-color:var(--indigo)}
+.method-card.zip{--method-color:var(--ok)}
+.method-card.docker{--method-color:var(--aurora)}
+.method-card.update{--method-color:var(--crown)}
+.method-head{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+.method-icon{font-size:32px}
+.method-title{flex:1}
+.method-title h3{font-size:20px;margin:0;color:var(--ink-100)}
+.method-tag{padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em}
+.tag-demo{background:rgba(251,146,60,0.18);color:var(--warn)}
+.tag-prod{background:rgba(34,197,94,0.18);color:var(--ok)}
+.tag-runtime{background:rgba(168,85,247,0.18);color:var(--crown)}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px}
+th,td{padding:10px 12px;text-align:left;border:1px solid var(--border)}
+th{background:rgba(125,104,255,0.1);color:var(--gold);font-weight:600}
+.cta-box{padding:20px 24px;background:linear-gradient(135deg,rgba(125,104,255,0.1),rgba(168,85,247,0.1));border:1px solid rgba(168,85,247,0.3);border-radius:12px;margin:24px 0}
+.cta-box h3{margin-top:0}
+.flow-diagram{padding:16px;background:var(--code-bg);border:1px solid var(--border);border-radius:10px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:var(--ink-200);overflow-x:auto;margin:12px 0;line-height:1.5;white-space:pre}
+@media (max-width:768px){.layout{padding:20px 16px}.hero h1{font-size:28px}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="/" class="logo"><span class="logo-mark">Z</span> Zeni Cloud</a>
+    <div class="breadcrumb"><a href="/docs/">Docs</a><span class="breadcrumb-sep">/</span>ZeniDeploy giải thích</div>
+    <nav class="header-nav">
+      <a href="/docs/">Docs Home</a>
+      <a href="/docs/deploy-workflow.html">Deploy Workflow A-Z</a>
+      <a href="/" class="cta">Mở Dashboard</a>
+    </nav>
+  </div>
+</header>
+
+<main class="layout">
+
+<div class="hero">
+  <h1>🚀 ZeniDeploy giải thích</h1>
+  <p class="subtitle">4 cách deploy app trên Zeni Cloud — chọn cách nào, khi nào? Đọc 3 phút.</p>
+  <p class="meta">Updated 2026-05-09 · Zeni Cloud v124</p>
+</div>
+
+<div class="callout info">
+<strong>📌 Tóm 1 dòng:</strong> Bạn có CODE thật → Upload ZIP. Bạn có Docker IMAGE rồi → Docker URL. Bạn chỉ test → Quick Demo. Bạn cần custom config → Wizard 4-step. Đã deploy rồi muốn đổi → Update Image.
+</div>
+
+<section>
+<h2>Câu hỏi đầu tiên: bạn ĐANG có gì?</h2>
+<table>
+  <tr><th>Bạn có gì?</th><th>Cách deploy</th><th>Bao lâu?</th></tr>
+  <tr><td>📁 Source code (folder Next.js / FastAPI / Static HTML)</td><td>① Upload ZIP source</td><td>~1-2 phút (Zeni tự build)</td></tr>
+  <tr><td>🐳 Docker image đã build (Docker Hub / Artifact Registry)</td><td>② Docker Image URL</td><td>~30 giây (chỉ pull + run)</td></tr>
+  <tr><td>🦀 Tauri/Rust/Electron source (cần native build)</td><td>③ Build Farm</td><td>~3-10 phút (cross-compile)</td></tr>
+  <tr><td>🤔 Chưa có gì, chỉ muốn TEST workflow</td><td>④ Quick Demo</td><td>~30 giây (image mẫu)</td></tr>
+  <tr><td>✏️ Đã deploy rồi, muốn đổi image</td><td>⑤ Update Image (project detail)</td><td>~30-60s rollout</td></tr>
+</table>
+</section>
+
+<section>
+<h2>5 cách chi tiết</h2>
+
+<!-- Method 1: Upload ZIP -->
+<div class="method-card zip">
+<div class="method-head">
+  <div class="method-icon">📦</div>
+  <div class="method-title">
+    <h3>① Upload ZIP source — Zeni tự build (RECOMMENDED)</h3>
+  </div>
+  <span class="method-tag tag-prod">Production OK</span>
+</div>
+<p><strong>Khi nào dùng:</strong> Bạn có source code (Next.js / Vite / FastAPI / Express / Static HTML) — KHÔNG có Docker image. Zeni auto-detect framework, sinh Dockerfile, build, push, deploy.</p>
+<div class="flow-diagram">[Code folder] → zip → upload qua UI → Zeni:
+  · Detect framework (next.config.js → Next.js, requirements.txt → FastAPI, ...)
+  · Generate Dockerfile chuẩn
+  · Build image trên Cloud Build
+  · Push lên Artifact Registry
+  · Deploy Cloud Run
+  · Trả URL https://zeni-{ws}-{name}.run.app
+</div>
+<p><strong>UI:</strong> "+ Project mới" wizard hoặc "Templates" gallery → tab <strong>"Upload ZIP source"</strong> → drag & drop file zip.</p>
+<p><strong>API:</strong> <code>POST /api/v1/upload/source?ws=X&framework=auto</code> với multipart file.</p>
+<p><strong>CLI:</strong> <code>npm install -g @zenicloud/cli</code> rồi <code>zeni deploy</code> trong folder code.</p>
+</div>
+
+<!-- Method 2: Docker Image URL -->
+<div class="method-card docker">
+<div class="method-head">
+  <div class="method-icon">🐳</div>
+  <div class="method-title">
+    <h3>② Docker Image URL — bạn đã build sẵn</h3>
+  </div>
+  <span class="method-tag tag-prod">Production OK</span>
+</div>
+<p><strong>Khi nào dùng:</strong> Bạn đã build Docker image ở local hoặc CI/CD, push lên Docker Hub / Google Artifact Registry / private registry. Zeni chỉ pull và run.</p>
+<div class="flow-diagram">[Local] docker build -t myname/app:v1 .
+[Local] docker push myname/app:v1
+[Zeni UI] paste image URL: docker.io/myname/app:v1
+[Zeni] pull image → deploy Cloud Run → URL live (~30s)
+</div>
+<p><strong>UI:</strong> "+ Project mới" → Step 4 → modal hỏi image → nhập URL.</p>
+<p><strong>API:</strong> <code>POST /api/v1/projects?ws=X</code> với <code>image: "docker.io/yourname/app:v1"</code></p>
+<p><strong>Image hỗ trợ:</strong> Docker Hub public + private (cần secret), Google Artifact Registry, Google Container Registry (gcr.io). Em validate image tồn tại trước khi deploy → fail-fast 422 nếu không tìm thấy.</p>
+</div>
+
+<!-- Method 3: Build Farm -->
+<div class="method-card wizard">
+<div class="method-head">
+  <div class="method-icon">🏭</div>
+  <div class="method-title">
+    <h3>③ Build Farm — Tauri / Rust / Electron / Go / Flutter / .NET</h3>
+  </div>
+  <span class="method-tag tag-runtime">Native</span>
+</div>
+<p><strong>Khi nào dùng:</strong> Bạn build app native (.exe / .dmg / .AppImage / .apk / .ipa) — cần cross-compile với rustc / Xcode / Android NDK / .NET SDK. Build Farm chạy trên Cloud Build với 6 toolchain images, KHÔNG cần cài tool local.</p>
+<p><strong>6 toolchains hỗ trợ:</strong></p>
+<ul>
+  <li><code>tauri-latest</code> — Tauri 2.x (Rust + Webview)</li>
+  <li><code>rust-stable</code> — Rust 1.80+ với cross-rs</li>
+  <li><code>electron-builder</code> — Electron app</li>
+  <li><code>go-modules</code> — Go 1.23+</li>
+  <li><code>flutter-stable</code> — Flutter mobile + desktop</li>
+  <li><code>dotnet-8</code> — .NET 8 self-contained</li>
+</ul>
+<p><strong>API:</strong> <code>POST /api/v1/build-farm/jobs</code> với toolchain + source_ref (GitHub URL / GCS ZIP).</p>
+<p>Sau build: artifact file (.exe / .dmg) được upload lên GCS, trả signed URL 30 ngày để khách download.</p>
+</div>
+
+<!-- Method 4: Quick Demo -->
+<div class="method-card demo">
+<div class="method-head">
+  <div class="method-icon">🎯</div>
+  <div class="method-title">
+    <h3>④ Quick Demo — TEST workflow trong 30 giây</h3>
+  </div>
+  <span class="method-tag tag-demo">Demo only</span>
+</div>
+<div class="callout warn"><strong>⚠️ KHÔNG phải production deploy.</strong> Click → Zeni deploy 1 image MẪU (nginx welcome page hoặc Google hello-app) chỉ để verify Cloud Run hoạt động. Image KHÔNG phải code của bạn.</div>
+<p><strong>Khi nào dùng:</strong></p>
+<ul>
+  <li>Lần đầu thử Zeni Cloud — muốn xem Cloud Run hoạt động ra sao</li>
+  <li>Verify workspace + billing setup OK</li>
+  <li>Test custom domain mapping với image bất kỳ trước khi deploy code thật</li>
+  <li>Demo cho boss/khách trong 30 giây ("nhìn nè, deploy chỉ click 1 nút")</li>
+</ul>
+<p><strong>Sau Quick Demo:</strong> Vào tab <strong>Projects</strong> → click project demo → button <strong>"🐳 Update Image"</strong> để đổi sang image thật của bạn.</p>
+<p><strong>UI:</strong> Click "Templates" topbar → tab "Quick Demo (test 30s)" → click 1 trong 4 cards (đều có badge ⚠️ DEMO).</p>
+</div>
+
+<!-- Method 5: Update Image -->
+<div class="method-card update">
+<div class="method-head">
+  <div class="method-icon">🐳</div>
+  <div class="method-title">
+    <h3>⑤ Update Image — đổi image runtime cho project đã tạo</h3>
+  </div>
+  <span class="method-tag tag-prod">Production OK</span>
+</div>
+<p><strong>Khi nào dùng:</strong> Đã deploy project rồi (qua Quick Demo / wizard / API), giờ muốn đổi image (build mới, version mới, hoặc thay placeholder bằng code thật).</p>
+<p><strong>UI:</strong> Tab <strong>Projects</strong> → click vào project → modal detail mở → button <strong>"🐳 Update Image"</strong> → input image URL mới → Submit.</p>
+<p><strong>Logic:</strong> Frontend gửi <code>POST /api/v1/projects</code> với CÙNG name + image mới. Backend detect existing project → gọi <code>update_service</code> Cloud Run (rolling update, không downtime). Khoảng 30-60s sau, Cloud Run rollout xong.</p>
+</div>
+
+</section>
+
+<section>
+<h2>So sánh nhanh — bảng ra quyết định</h2>
+<table>
+  <tr><th>Tiêu chí</th><th>Upload ZIP</th><th>Docker URL</th><th>Build Farm</th><th>Quick Demo</th></tr>
+  <tr><td>Có code source?</td><td>✅ Có</td><td>—</td><td>✅ Có</td><td>—</td></tr>
+  <tr><td>Có Docker image?</td><td>—</td><td>✅ Có</td><td>—</td><td>—</td></tr>
+  <tr><td>Cần native build (.exe/.dmg)?</td><td>❌</td><td>❌</td><td>✅</td><td>❌</td></tr>
+  <tr><td>Time to deploy</td><td>1-2 phút</td><td>30 giây</td><td>3-10 phút</td><td>30 giây</td></tr>
+  <tr><td>Production-ready?</td><td>✅ Yes</td><td>✅ Yes</td><td>✅ Yes (binary)</td><td>❌ Demo only</td></tr>
+  <tr><td>Skill cần có?</td><td>Biết zip code</td><td>Biết Docker</td><td>Biết Rust/Tauri</td><td>Click chuột</td></tr>
+</table>
+</section>
+
+<section>
+<h2>FAQ thường gặp</h2>
+
+<h3>Tôi click Quick Demo "Next.js PWA" mà sao thấy nginx welcome?</h3>
+<p>Đúng! Vì image template hiện tại = <code>docker.io/library/nginx:alpine</code> (placeholder). Sau khi deploy demo, vào Projects → "🐳 Update Image" → upload code Next.js PWA của bạn. Hoặc dùng tab "Upload ZIP" thay vì Quick Demo.</p>
+
+<h3>Khi nào Zeni clone GitHub repo template như Vercel?</h3>
+<p>Đang trong roadmap (TOP1: Auto-build từ GitHub source — 1 ngày dev). Khi xong, click template = Zeni clone GitHub repo template → Build Farm build → deploy code thật.</p>
+
+<h3>Image nào hỗ trợ?</h3>
+<p>Docker Hub public, Google Container Registry (gcr.io), Google Artifact Registry. Private Docker Hub cần wire credentials qua <code>/identity/secrets</code>.</p>
+
+<h3>Cloud Run port mặc định?</h3>
+<p>App trong container phải listen <code>$PORT</code> env var (default 8080). Nếu app listen port khác (vd 3000 cho Next.js), khai báo <code>port</code> field khi tạo project.</p>
+
+</section>
+
+<section>
+<div class="cta-box">
+<h3>📚 Đọc thêm</h3>
+<ul style="margin-bottom:0">
+  <li><a href="/docs/deploy-workflow.html">Deploy Workflow A-Z</a> — hướng dẫn 5 bước chi tiết</li>
+  <li><a href="/docs/full-features.html">Full Features</a> — list 6 lớp + 11 services</li>
+  <li><a href="/docs/quickstart.html">Quickstart 5 phút</a> — Hello World</li>
+  <li><a href="/docs/custom-domain.html">Custom Domain</a> — bind domain riêng</li>
+  <li><a href="/docs/pwa-templates.html">PWA Templates</a> — install-able web app</li>
+</ul>
+</div>
+</section>
+
+</main>
+</body>
+</html>
