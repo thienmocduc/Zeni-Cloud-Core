@@ -80,6 +80,10 @@ class ConnectionUpdateIn(BaseModel):
     env_vars: dict[str, str] | None = None
 
 
+class LinkProjectIn(BaseModel):
+    project_id: str = Field(min_length=8, max_length=64, description="Zeni project UUID to link")
+
+
 # ─── Helpers ────────────────────────────────────────────
 def _parse_repo_url(repo_url: str) -> tuple[str, str]:
     """Extract owner/repo from https://github.com/owner/repo URL."""
@@ -282,6 +286,77 @@ async def delete_connection(
     await db.commit()
 
 
+# ─── Link to Zeni project ───────────────────────────────
+@router.post("/connections/{conn_id}/link-project")
+async def link_project(
+    conn_id: int,
+    body: LinkProjectIn,
+    ws: str,
+    me: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Link this GitHub connection to an existing Zeni project. After linking,
+    GitHub push → webhook → auto build & deploy onto that project (Vercel pattern)."""
+    await require_workspace_access(ws, me)
+
+    # Validate project exists in same workspace
+    proj = (await db.execute(
+        text("SELECT id, name FROM projects WHERE id = :pid AND workspace_id = :ws"),
+        {"pid": body.project_id, "ws": ws}
+    )).first()
+    if proj is None:
+        raise HTTPException(status_code=404, detail="Project not found in this workspace")
+
+    res = await db.execute(
+        text("UPDATE github_connections SET project_id = :pid, updated_at = NOW() "
+             "WHERE id = :id AND workspace_id = :ws RETURNING id, repo_owner, repo_name"),
+        {"pid": body.project_id, "id": conn_id, "ws": ws}
+    )
+    row = res.first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Connection not found")
+
+    await db.execute(
+        text("INSERT INTO audit_log (workspace_id, actor, action, target, severity, metadata) "
+             "VALUES (:w, :a, 'github.link_project', :t, 'ok', :m)"),
+        {"w": ws, "a": me.email, "t": f"{row[1]}/{row[2]}",
+         "m": __import__("json").dumps({"project_id": body.project_id, "project_name": proj[1]})}
+    )
+    await db.commit()
+    return {"id": conn_id, "project_id": body.project_id, "project_name": proj[1], "linked": True}
+
+
+# ─── List deploys for a connection ──────────────────────
+@router.get("/connections/{conn_id}/deploys")
+async def list_connection_deploys(
+    conn_id: int,
+    ws: str,
+    limit: int = 20,
+    me: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    """List recent deploys triggered for this GitHub connection."""
+    await require_workspace_access(ws, me)
+    limit = max(1, min(limit, 100))
+    rows = (await db.execute(
+        text("""SELECT id, trigger_type, commit_sha, commit_message, commit_author, branch,
+                       status, started_at, completed_at, duration_sec, deploy_url, error_message
+                FROM github_deploys WHERE connection_id = :c AND workspace_id = :ws
+                ORDER BY started_at DESC LIMIT :lim"""),
+        {"c": conn_id, "ws": ws, "lim": limit}
+    )).all()
+    return [
+        {
+            "id": r[0], "trigger": r[1], "commit": r[2][:8] if r[2] else None,
+            "message": r[3], "author": r[4], "branch": r[5], "status": r[6],
+            "started_at": r[7].isoformat() if r[7] else None,
+            "completed_at": r[8].isoformat() if r[8] else None,
+            "duration_sec": r[9], "deploy_url": r[10], "error": r[11],
+        }
+        for r in rows
+    ]
+
+
 # ─── Webhook receiver ────────────────────────────────────
 @router.post("/webhook")
 async def github_webhook(
@@ -324,9 +399,10 @@ async def github_webhook(
     commit_msg = head.get("message", "")
     commit_author = (head.get("author") or {}).get("name", "")
 
-    # Look up connection
+    # Look up connection (include project_id + framework so chain can use them)
     row = (await db.execute(
-        text("""SELECT id, workspace_id, default_branch, webhook_secret, auto_deploy, status
+        text("""SELECT id, workspace_id, default_branch, webhook_secret, auto_deploy, status,
+                       project_id, framework, port
                 FROM github_connections
                 WHERE repo_owner = :o AND repo_name = :r AND status = 'connected'"""),
         {"o": owner, "r": repo}
@@ -335,6 +411,7 @@ async def github_webhook(
         return {"ok": True, "ignored": f"no connection for {repo_full}"}
 
     conn_id, ws_id, default_branch, secret, auto_deploy, status = row[0], row[1], row[2], row[3], row[4], row[5]
+    project_id, framework, conn_port = row[6], row[7] or "auto", row[8] or 8080
 
     # Verify HMAC
     if not _verify_webhook_signature(secret, payload, x_hub_signature_256):
@@ -359,27 +436,212 @@ async def github_webhook(
     )).first()
     await db.commit()
 
-    # PHASE 2: Trigger background build & deploy worker
-    from app.services.github_build import run_github_build_and_deploy
-    from app.db.base import SessionLocal
-    async def _bg_gh_build():
-        async with SessionLocal() as new_db:
-            await run_github_build_and_deploy(
-                db=new_db, deploy_id=deploy_row[0], connection_id=conn_id,
-                workspace_id=ws_id, repo_owner=owner, repo_name=repo,
-                branch=branch, framework=row[6] if len(row) > 6 else "auto",
-                port=8080, commit_sha=commit_sha,
-            )
-    bg.add_task(_bg_gh_build)
+    # Trigger background build & deploy worker (chain: clone → Cloud Build → Cloud Run)
+    bg.add_task(_bg_build_and_deploy_from_github,
+                deploy_row[0], conn_id, ws_id, owner, repo, branch, framework,
+                conn_port, commit_sha, project_id)
 
     return {
         "ok": True,
         "deploy_id": deploy_row[0],
         "commit": commit_sha[:8],
         "message": commit_msg[:80],
+        "linked_project": str(project_id) if project_id else None,
         "queued": True,
         "note": "Build worker will clone, build, and deploy. Poll deploys endpoint to track.",
     }
+
+
+# ─── Per-connection webhook (alternate path with conn_id) ──
+@router.post("/webhook/{conn_id}")
+async def github_webhook_for_connection(
+    conn_id: int,
+    request: Request,
+    bg: BackgroundTasks,
+    x_github_event: str | None = Header(default=None, alias="X-GitHub-Event"),
+    x_hub_signature_256: str | None = Header(default=None, alias="X-Hub-Signature-256"),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Receive push event for a specific connection. Verifies HMAC, then chains
+    Cloud Build → Cloud Run deploy onto the linked Zeni project."""
+    payload = await request.body()
+    import json as _json
+    try:
+        data = _json.loads(payload.decode("utf-8"))
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+
+    if x_github_event != "push":
+        return {"ok": True, "ignored": f"event_type={x_github_event}"}
+
+    row = (await db.execute(
+        text("""SELECT id, workspace_id, repo_owner, repo_name, default_branch,
+                       webhook_secret, auto_deploy, project_id, framework, port
+                FROM github_connections WHERE id = :id"""),
+        {"id": conn_id}
+    )).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Connection not found")
+
+    (cid, ws_id, owner, repo, default_branch, secret,
+     auto_deploy, project_id, framework, conn_port) = row
+
+    if not _verify_webhook_signature(secret, payload, x_hub_signature_256):
+        raise HTTPException(status_code=401, detail="Invalid HMAC signature")
+
+    branch = (data.get("ref") or "").replace("refs/heads/", "")
+    if branch != default_branch:
+        return {"ok": True, "skipped": f"branch={branch} != default={default_branch}"}
+    if not auto_deploy:
+        return {"ok": True, "skipped": "auto_deploy=False"}
+
+    head = data.get("head_commit") or {}
+    commit_sha = head.get("id") or data.get("after", "")
+    commit_msg = (head.get("message") or "")[:500]
+    commit_author = (head.get("author") or {}).get("name", "")
+
+    deploy = (await db.execute(
+        text("""INSERT INTO github_deploys (connection_id, workspace_id, trigger_type,
+                       commit_sha, commit_message, commit_author, branch, status)
+                VALUES (:c, :ws, 'webhook', :sha, :msg, :auth, :br, 'queued')
+                RETURNING id"""),
+        {"c": cid, "ws": ws_id, "sha": commit_sha, "msg": commit_msg,
+         "auth": commit_author, "br": branch}
+    )).first()
+    await db.commit()
+
+    bg.add_task(_bg_build_and_deploy_from_github,
+                deploy[0], cid, ws_id, owner, repo, branch, framework or "auto",
+                conn_port or 8080, commit_sha, project_id)
+
+    return {
+        "ok": True,
+        "deploy_id": deploy[0],
+        "commit": commit_sha[:8],
+        "linked_project": str(project_id) if project_id else None,
+        "queued": True,
+    }
+
+
+# ─── Background build+deploy chain (reuses existing services) ──
+async def _bg_build_and_deploy_from_github(
+    deploy_id: int, conn_id: int, workspace_id: str,
+    repo_owner: str, repo_name: str, branch: str, framework: str,
+    port: int, commit_sha: str, project_id: Any | None,
+) -> None:
+    """Background task chain: GitHub clone → Cloud Build → Cloud Run deploy.
+
+    If `project_id` is set (connection linked to a Zeni project), the deploy
+    targets that project's Cloud Run service. Otherwise, falls back to the
+    auto-named gh-{repo} service via run_github_build_and_deploy.
+    """
+    from app.db.base import SessionLocal
+    from app.services.github_build import (
+        submit_github_build, poll_build, run_github_build_and_deploy,
+    )
+    from app.services.cloud_run import deploy_service
+
+    # No linked project → fall back to existing default behavior (creates gh-<repo>)
+    if not project_id:
+        async with SessionLocal() as new_db:
+            await run_github_build_and_deploy(
+                db=new_db, deploy_id=deploy_id, connection_id=conn_id,
+                workspace_id=workspace_id, repo_owner=repo_owner, repo_name=repo_name,
+                branch=branch, framework=framework, port=port, commit_sha=commit_sha,
+            )
+        return
+
+    # Linked project chain: build → poll → deploy_service onto Zeni project
+    async with SessionLocal() as new_db:
+        try:
+            # Look up project name + access_token for private repos
+            proj = (await new_db.execute(
+                text("SELECT name FROM projects WHERE id = :pid"),
+                {"pid": str(project_id)}
+            )).first()
+            if not proj:
+                await new_db.execute(
+                    text("UPDATE github_deploys SET status='failed', "
+                         "error_message='Linked project no longer exists', "
+                         "completed_at=NOW() WHERE id=:id"),
+                    {"id": deploy_id}
+                )
+                await new_db.commit()
+                return
+            project_name = proj[0]
+
+            access_token = (await new_db.execute(
+                text("SELECT access_token FROM github_connections WHERE id = :id"),
+                {"id": conn_id}
+            )).scalar_one_or_none()
+
+            from app.services.github_build import ARTIFACT_REGISTRY
+            image_tag = f"{ARTIFACT_REGISTRY}/zeni-{workspace_id}-{project_name}:{commit_sha[:8] or 'head'}"
+
+            await new_db.execute(
+                text("UPDATE github_deploys SET status='building' WHERE id=:id"),
+                {"id": deploy_id}
+            )
+            await new_db.commit()
+
+            op = await submit_github_build(
+                repo_owner, repo_name, branch, image_tag, framework, access_token
+            )
+            meta = op.get("metadata", {}) or {}
+            build_meta = meta.get("build", {}) if isinstance(meta, dict) else {}
+            build_id = build_meta.get("id") or op.get("name", "").split("/")[-1]
+            await new_db.execute(
+                text("UPDATE github_deploys SET build_id=:bid WHERE id=:id"),
+                {"bid": build_id, "id": deploy_id}
+            )
+            await new_db.commit()
+
+            result = await poll_build(build_id, max_wait_sec=900)
+            if result.get("status") != "SUCCESS":
+                err = result.get("statusDetail") or f"Build {result.get('status')}"
+                await new_db.execute(
+                    text("UPDATE github_deploys SET status='failed', error_message=:e, "
+                         "completed_at=NOW() WHERE id=:id"),
+                    {"e": str(err)[:500], "id": deploy_id}
+                )
+                await new_db.commit()
+                return
+
+            # Deploy onto the linked Zeni project's Cloud Run service
+            deploy_result = await deploy_service(
+                workspace=workspace_id, project_name=project_name, image=image_tag,
+                env_vars={"REPO": f"{repo_owner}/{repo_name}", "BRANCH": branch,
+                          "COMMIT": commit_sha[:8]},
+                port=port, allow_unauthenticated=True,
+            )
+            deploy_url = getattr(deploy_result, "url", None) or ""
+
+            await new_db.execute(
+                text("""UPDATE github_deploys SET status='success', completed_at=NOW(),
+                        image_url=:img, deploy_url=:url WHERE id=:id"""),
+                {"img": image_tag, "url": deploy_url, "id": deploy_id}
+            )
+            await new_db.execute(
+                text("""UPDATE github_connections SET last_deploy_at=NOW(),
+                        last_deploy_sha=:sha, last_deploy_status='success'
+                        WHERE id=:cid"""),
+                {"sha": commit_sha, "cid": conn_id}
+            )
+            await new_db.execute(
+                text("UPDATE projects SET last_deploy=NOW() WHERE id=:pid"),
+                {"pid": str(project_id)}
+            )
+            await new_db.commit()
+        except Exception as e:
+            try:
+                await new_db.execute(
+                    text("UPDATE github_deploys SET status='failed', error_message=:e, "
+                         "completed_at=NOW() WHERE id=:id"),
+                    {"e": f"{type(e).__name__}: {str(e)[:300]}", "id": deploy_id}
+                )
+                await new_db.commit()
+            except Exception:
+                pass
 
 
 # ─── Deploy history ──────────────────────────────────────
