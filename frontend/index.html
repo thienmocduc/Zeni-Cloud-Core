@@ -3640,46 +3640,71 @@ document.addEventListener('keydown', e => {
   // Mục đích: cho phép khách verify Cloud Run hoạt động OK trong 30s.
   // Để deploy CODE THẬT → wizard "+ Project mới" → Upload ZIP / Build Farm / Docker Hub URL.
   const DEPLOY_TEMPLATES = [
+    // === REAL pre-built framework images — click = deploy framework thật ngay ===
     {
-      id: 'static-html', icon: '📄', title: 'Nginx Static (DEMO)',
-      desc: 'Nginx serve trang welcome mặc định. Verify Cloud Run hoạt động.',
+      id: 'nextjs-hello', icon: '▲', title: 'Next.js 14',
+      desc: 'Next.js 14 standalone build. Hello page với gradient + features list. Server-side rendering ready.',
+      type: 'web', runtime: 'container', size: 's', port: 3000,
+      image: 'gcr.io/zeni-cloud-core/templates/nextjs-hello:latest',
+      framework: 'nextjs',
+      realImage: true,
+      sample: 'Image Next.js 14 THẬT — deploy xong thấy "Welcome to Next.js on Zeni Cloud" với 5 features. Sau đó "Update Image" để thay code của bạn.'
+    },
+    {
+      id: 'fastapi-hello', icon: '🐍', title: 'FastAPI (Python)',
+      desc: 'FastAPI + uvicorn ASGI. Auto Swagger UI tại /docs. Async by default.',
+      type: 'api', runtime: 'container', size: 'xs', port: 8080,
+      image: 'gcr.io/zeni-cloud-core/templates/fastapi-hello:latest',
+      framework: 'fastapi',
+      realImage: true,
+      sample: 'Image FastAPI THẬT — sau khi deploy mở /docs sẽ thấy Swagger UI auto-generated. Edit main.py rồi redeploy.'
+    },
+    {
+      id: 'vite-react-hello', icon: '⚛️', title: 'Vite + React',
+      desc: 'Vite 5 + React 18 + TypeScript. Multi-stage Docker build → tiny nginx serve dist.',
       type: 'web', runtime: 'container', size: 'xs', port: 80,
-      image: 'docker.io/library/nginx:alpine',
-      isDemo: true,
-      realImage: false,
-      sample: 'Image NGINX OFFICIAL — sau khi deploy thấy Welcome to nginx page. Để serve HTML của bạn → upload code qua "+ Project mới" wizard rồi update image.'
+      image: 'gcr.io/zeni-cloud-core/templates/vite-react-hello:latest',
+      framework: 'vite-react',
+      realImage: true,
+      sample: 'Image Vite + React THẬT — SPA với counter button. Replace src/App.tsx + redeploy để ship app của bạn.'
     },
     {
-      id: 'hello-google', icon: '👋', title: 'Google Hello (DEMO)',
-      desc: 'Google Cloud Run hello-app. Test workflow auto-scale.',
-      type: 'web', runtime: 'container', size: 'xs', port: 8080,
-      image: 'gcr.io/google-samples/hello-app:1.0',
-      isDemo: true,
-      realImage: false,
-      sample: 'Image OFFICIAL Google sample — verify auto-scale + load balancer hoạt động. KHÔNG phải code production của bạn.'
+      id: 'express-hello', icon: '🚂', title: 'Express (Node.js)',
+      desc: 'Express + Node 20 LTS alpine (~50MB). REST API + health endpoint.',
+      type: 'api', runtime: 'container', size: 'xs', port: 3000,
+      image: 'gcr.io/zeni-cloud-core/templates/express-hello:latest',
+      framework: 'express',
+      realImage: true,
+      sample: 'Image Express THẬT — GET / trả HTML hello, GET /api trả JSON, GET /health trả status. Edit server.js để thêm routes.'
     },
-    // === PWA TEMPLATES — đây là image REAL, framework injection thật ===
+    {
+      id: 'static-html', icon: '🌐', title: 'Static HTML (Nginx)',
+      desc: 'Nginx alpine + index.html đẹp với gradient. Custom domain + auto HTTPS.',
+      type: 'web', runtime: 'container', size: 'xs', port: 80,
+      image: 'gcr.io/zeni-cloud-core/templates/static-hello:latest',
+      framework: 'static',
+      realImage: true,
+      sample: 'Image Nginx Static THẬT — deploy thấy "Welcome to Zeni Cloud Static Hosting" gradient page. Replace index.html + redeploy.'
+    },
     {
       id: 'nextjs-pwa', icon: '📱', title: 'Next.js PWA',
-      desc: 'Next.js + auto-inject manifest + service worker. Install-able trên mobile/desktop.',
+      desc: 'Next.js 14 + manifest + service worker. Install-able trên mobile/desktop. Offline cache.',
       type: 'web', runtime: 'container', size: 's', port: 3000,
-      image: 'gcr.io/google-samples/hello-app:1.0',  // base demo, sẽ thay khi user upload source
+      image: 'gcr.io/zeni-cloud-core/templates/nextjs-pwa-hello:latest',
       framework: 'nextjs-pwa',
       pwa: true,
-      isDemo: false,
-      realImage: false,
-      sample: 'Click → tạo project Next.js PWA. Sau đó "+ Upload Source" qua wizard → Zeni tự inject PWA + build deploy.'
+      realImage: true,
+      sample: 'Image Next.js PWA THẬT — có Install button + service worker + manifest.webmanifest. Cài app lên home screen.'
     },
     {
-      id: 'vite-pwa', icon: '⚛️', title: 'Vite + React PWA',
-      desc: 'Vite + workbox PWA. Offline cache + install button.',
+      id: 'vite-pwa', icon: '📲', title: 'Vite + React PWA',
+      desc: 'Vite + React build → nginx static. Add manifest + sw.js để biến thành PWA.',
       type: 'web', runtime: 'container', size: 'xs', port: 80,
-      image: 'docker.io/library/nginx:alpine',
+      image: 'gcr.io/zeni-cloud-core/templates/vite-react-hello:latest',
       framework: 'vite-pwa',
       pwa: true,
-      isDemo: false,
-      realImage: false,
-      sample: 'Click → tạo project Vite PWA. Sau đó upload source code Vite → Zeni inject vite-plugin-pwa + build.'
+      realImage: true,
+      sample: 'Image Vite + React THẬT — base SPA. Replace + thêm manifest.webmanifest + sw.js để inject PWA capabilities.'
     }
   ];
 
