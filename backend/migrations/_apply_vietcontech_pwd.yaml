@@ -1,0 +1,20 @@
+steps:
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        apt-get update -qq && apt-get install -y -qq postgresql-client wget
+        wget -q https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.13.0/cloud-sql-proxy.linux.amd64 -O /tmp/cloud-sql-proxy
+        chmod +x /tmp/cloud-sql-proxy
+        /tmp/cloud-sql-proxy --port 5433 zeni-cloud-core:us-central1:zeni-cloud-db &
+        sleep 8
+        DB_URL=$(gcloud secrets versions access latest --secret=zeni-database-url --project=zeni-cloud-core)
+        DB_USER=$(echo "$$DB_URL" | sed -E 's|.*://([^:]+):.*|\1|')
+        DB_PWD=$(echo "$$DB_URL" | sed -E 's|.*://[^:]+:([^@]+)@.*|\1|')
+        gsutil cp gs://zeni-cloud-core_cloudbuild/sql-imports/1004_reset_vietcontech.sql /tmp/fix.sql
+        PGPASSWORD="$$DB_PWD" psql -h 127.0.0.1 -p 5433 -U "$$DB_USER" -d zeni_cloud -v ON_ERROR_STOP=1 -f /tmp/fix.sql
+options:
+  logging: CLOUD_LOGGING_ONLY
+timeout: '300s'
