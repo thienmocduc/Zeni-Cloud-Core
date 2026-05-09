@@ -1,0 +1,3 @@
+FROM electronuserland/builder:wine
+WORKDIR /workspace
+CMD ["bash"]

@@ -1,0 +1,10 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-f', 'Dockerfile.rust', '-t', 'gcr.io/zeni-cloud-core/build-farm/rust:stable', '.']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/zeni-cloud-core/build-farm/rust:stable']
+images:
+  - gcr.io/zeni-cloud-core/build-farm/rust:stable
+options:
+  machineType: E2_HIGHCPU_8
+timeout: 1800s
