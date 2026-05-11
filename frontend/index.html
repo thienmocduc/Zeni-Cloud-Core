@@ -6165,14 +6165,14 @@ document.addEventListener('keydown', e => {
         const token = localStorage.getItem('zeni.jwt.access');
         if (!token) { o.write('✗ Chưa đăng nhập', 'err'); return; }
 
-        // Map UI model alias → real model name (Zeni Router)
+        // Map UI model alias → real Zeni Router model_id (verified GET /ai/models)
         const modelMap = {
-          'claude-opus-4-7': 'opus-4-7',
-          'claude-sonnet-4-6': 'sonnet-4-6',
+          'claude-opus-4-7': 'claude-opus-4-7',
+          'claude-sonnet-4-6': 'claude-sonnet-4-6',
           'gpt-4o': 'gpt-4o',
           'gemini-2-pro': 'gemini-3-1-pro',
-          'llama-3-70b': 'haiku-4-5',
-          'gemma-3-27b': 'gemma-4-26b',
+          'llama-3-70b': 'claude-haiku-4-5',
+          'gemma-3-27b': 'claude-haiku-4-5',
         };
         const model = modelMap[i.model] || i.model;
 
