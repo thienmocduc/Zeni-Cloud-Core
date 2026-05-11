@@ -2071,6 +2071,12 @@ select {
         <div class="nav-item" data-view="settings" style="--layer-color: var(--gold);">
           <span class="nav-icon">⚙</span> <span>Settings</span>
         </div>
+        <a class="nav-item" href="/support" style="--layer-color: var(--gold); text-decoration:none; color:inherit;">
+          <span class="nav-icon">💬</span> <span>Support Center</span>
+        </a>
+        <a class="nav-item" href="/cto" id="nav-cto-console" style="--layer-color: var(--gold); text-decoration:none; color:inherit;">
+          <span class="nav-icon">⚒️</span> <span>CTO Console</span>
+        </a>
       </div>
     </nav>
 
@@ -2848,6 +2854,11 @@ document.addEventListener('keydown', e => {
       try { byId('user-name').textContent = u.name || '—'; } catch(e) {}
       try { byId('user-email').textContent = u.email || '—'; } catch(e) {}
       try { byId('nav-proj-count').textContent = getProjects().length; } catch(e) {}
+      // Show CTO Console link for Owner role only
+      try {
+        const ctoLink = byId('nav-cto-console');
+        if (ctoLink && u.role === 'Owner') ctoLink.style.display = '';
+      } catch(e) {}
 
       // nav click wiring — LUÔN PHẢI ĐƯỢC ATTACH dù sidebar info có lỗi
       document.querySelectorAll('.nav-item').forEach(item => {
@@ -3249,14 +3260,18 @@ document.addEventListener('keydown', e => {
           ])
         ]),
         (() => {
-          const wrap = el('div', { class: 'entity-grid' });
+          const wrap = el('div', { class: 'entity-grid', id: 'entity-grid-live' });
           u.ws.forEach(wsKey => {
             const w = WORKSPACES[wsKey];
+            // v161 FIX: fallback từ local state, sẽ overwrite bằng live stats từ
+            // /workspaces/stats sau khi fetch. Trước đây ALL 14 workspace =0 vì
+            // state.projects chỉ chứa data của currentWs.
             const pCount = state.projects.filter(p => p.ws === wsKey).length;
             const aCount = state.agents.filter(a => a.ws === wsKey).length;
             const cCount = state.connectors.filter(c => c.ws === wsKey).length;
             const card = el('div', {
               class: 'ent',
+              'data-ws-stat': wsKey,
               style: { '--ent-color': w.color },
               onclick: () => { state.currentWs = wsKey; saveSession(); refreshSidebar(); setView('home'); toast('Đã chuyển workspace: ' + w.name, 'info'); }
             }, [
@@ -3268,13 +3283,37 @@ document.addEventListener('keydown', e => {
                 ])
               ]),
               el('div', { class: 'ent-stats' }, [
-                el('div', {}, [ el('div', { class: 'ent-stat-lbl', text: 'Projects' }), el('div', { class: 'ent-stat-val', text: String(pCount) }) ]),
-                el('div', {}, [ el('div', { class: 'ent-stat-lbl', text: 'Agents' }), el('div', { class: 'ent-stat-val', text: String(aCount) }) ]),
-                el('div', {}, [ el('div', { class: 'ent-stat-lbl', text: 'Connect' }), el('div', { class: 'ent-stat-val', text: String(cCount) }) ])
+                el('div', {}, [ el('div', { class: 'ent-stat-lbl', text: 'Projects' }), el('div', { class: 'ent-stat-val', 'data-stat': 'projects', text: String(pCount) }) ]),
+                el('div', {}, [ el('div', { class: 'ent-stat-lbl', text: 'Agents' }), el('div', { class: 'ent-stat-val', 'data-stat': 'agents', text: String(aCount) }) ]),
+                el('div', {}, [ el('div', { class: 'ent-stat-lbl', text: 'Connect' }), el('div', { class: 'ent-stat-val', 'data-stat': 'connectors', text: String(cCount) }) ])
               ])
             ]);
             wrap.appendChild(card);
           });
+          // v161 — fetch live stats từ backend NGAY sau khi render → ALL workspace
+          // có data thật, không chỉ currentWs.
+          (async () => {
+            try {
+              const token = localStorage.getItem('zeni.jwt.access');
+              if (!token) return;
+              const r = await fetch('/api/v1/workspaces/stats', {
+                headers: { 'Authorization': 'Bearer ' + token }
+              });
+              if (!r.ok) return;
+              const stats = await r.json();
+              // Update each card với live data
+              Object.entries(stats).forEach(([wsKey, s]) => {
+                const card = wrap.querySelector('[data-ws-stat="' + wsKey + '"]');
+                if (!card) return;
+                const pEl = card.querySelector('[data-stat="projects"]');
+                const aEl = card.querySelector('[data-stat="agents"]');
+                const cEl = card.querySelector('[data-stat="connectors"]');
+                if (pEl) pEl.textContent = String(s.projects || 0);
+                if (aEl) aEl.textContent = String(s.agents || 0);
+                if (cEl) cEl.textContent = String(s.connectors || 0);
+              });
+            } catch (e) { console.warn('[workspace-stats]', e); }
+          })();
           return wrap;
         })()
       ]);
@@ -5837,58 +5876,180 @@ document.addEventListener('keydown', e => {
       ],
       runLabel: '▶ zeni deploy',
       runAction: async (i, o, wait) => {
+        // ───────────────────────────────────────────────────────
+        // B-1 (Phase 2 v170+) — REAL backend deploy + SSE log stream.
+        // Hard-coded simulation replaced với gọi /api/v1/projects POST thật +
+        // /api/v1/projects/{id}/logs/stream SSE realtime từ Cloud Logging.
+        // Layout UI giữ y nguyên (chairman lock).
+        // ───────────────────────────────────────────────────────
         if (!i.name || i.name.length < 3) { o.write('✗ Service name cần ≥ 3 ký tự', 'err'); return; }
-        o.tagged('CLI', 'zeni deploy --name=' + i.name + ' --type=' + i.type + ' --runtime=' + i.runtime + ' --size=' + i.size, 'cmd');
-        o.stepActive(0); await wait(240);
-        o.tagged('auth', 'Verifying Zeni ID session for ' + state.currentUser.email, 'ok'); await wait(180);
-        o.tagged('rbac', 'Scope: workspace=' + state.currentWs + ' role=' + state.currentUser.role, 'ok'); await wait(120);
-        o.stepDone(0); o.stepActive(1);
+        // DNS-safe: lowercase, no underscore
+        const safeName = i.name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+        if (safeName !== i.name) { o.write('✗ Service name phải lowercase + chữ/số/gạch (no underscore/space)', 'err'); return; }
 
-        o.tagged('git', 'Resolving source repository...', 'out'); await wait(220);
-        o.tagged('git', 'Cloning ' + state.currentWs + '/' + i.name + '@main (24 commits)', 'out'); await wait(300);
-        o.stepDone(1); o.stepActive(2);
+        // Map runtime+type → official template image (gcr.io/zeni-cloud-core/templates/*)
+        const tplMap = {
+          'node20-web':     'nextjs-hello',
+          'node20-api':     'express-hello',
+          'node20-worker':  'express-hello',
+          'node20-agent':   'express-hello',
+          'python312-web':  'fastapi-hello',
+          'python312-api':  'fastapi-hello',
+          'python312-worker':'fastapi-hello',
+          'python312-agent':'fastapi-hello',
+          'bun-web':        'vite-react-hello',
+          'bun-api':        'express-hello',
+        };
+        const tplKey = i.runtime + '-' + i.type;
+        const template = tplMap[tplKey] || 'express-hello';
+        const image = 'gcr.io/zeni-cloud-core/templates/' + template + ':latest';
 
-        o.tagged('build', 'Detected ' + i.runtime + ' project'); await wait(140);
-        if (i.runtime === 'node20') { o.tagged('npm', 'Installing 487 packages...', 'out'); await wait(420); o.tagged('npm', '+ 487 packages in 3.8s', 'ok'); }
-        else if (i.runtime === 'python312') { o.tagged('pip', 'Installing 34 deps from requirements.txt', 'out'); await wait(420); o.tagged('pip', 'Successfully installed', 'ok'); }
-        else if (i.runtime === 'bun') { o.tagged('bun', 'bun install (412 packages)', 'out'); await wait(180); o.tagged('bun', '+ 412 packages in 0.42s', 'ok'); }
-        else { o.tagged('go', 'go mod download', 'out'); await wait(280); o.tagged('go', 'modules ready', 'ok'); }
-        o.stepDone(2); o.stepActive(3);
+        const token = localStorage.getItem('zeni.jwt.access');
+        if (!token) { o.write('✗ Chưa đăng nhập. Login lại để deploy thật.', 'err'); return; }
 
-        o.tagged('build', 'Compiling bundle...', 'out'); await wait(480);
-        const imgSize = (Math.random() * 40 + 80).toFixed(1);
-        o.tagged('build', 'Bundle ready · ' + imgSize + 'MB · layer count=6', 'ok'); await wait(150);
-        o.tagged('docker', 'Packing OCI image → artifact-registry/zeni/' + i.name + ':v1', 'out'); await wait(360);
-        o.stepDone(3); o.stepActive(4);
+        o.tagged('CLI', 'zeni deploy --name=' + i.name + ' --template=' + template, 'cmd');
+        o.stepActive(0);
+        o.tagged('auth', 'Authenticated as ' + (state.currentUser.email || '?'), 'ok');
+        o.tagged('rbac', 'Workspace=' + state.currentWs + ' role=' + state.currentUser.role, 'ok');
 
-        o.tagged('deploy', 'Pushing to Cloud Run · ' + i.region, 'out'); await wait(420);
-        o.tagged('deploy', 'Provisioning ' + i.size + ' instance · min=0 max=50', 'out'); await wait(280);
-        const url = 'https://' + i.name + '-' + state.currentWs + '.zenicloud.run';
-        o.tagged('deploy', '✓ Service deployed · ' + url, 'ok'); await wait(200);
-        o.stepDone(4); o.stepActive(5);
+        let project = null;
+        let sseAbort = new AbortController();
+        try {
+          // ─── 1. POST /projects (real) ─────────────────────
+          o.tagged('api', 'POST /api/v1/projects?ws=' + state.currentWs, 'out');
+          const r = await fetch('/api/v1/projects?ws=' + encodeURIComponent(state.currentWs), {
+            method: 'POST',
+            headers: {
+              'Authorization': 'Bearer ' + token,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: i.name,
+              type: i.type,
+              runtime: i.runtime,
+              size: i.size,
+              region: i.region,
+              image: image,
+              port: 8080,
+              allow_unauthenticated: true,
+            }),
+          });
+          if (r.status === 422 || r.status === 400) {
+            const err = await r.json().catch(() => ({}));
+            o.tagged('err', 'Validation: ' + (err.detail?.user_msg || JSON.stringify(err.detail) || r.statusText), 'err');
+            return;
+          }
+          if (r.status === 402) { o.tagged('err', 'Wallet/quota hết — top up để deploy demo', 'err'); return; }
+          if (!r.ok) { o.tagged('err', 'API ' + r.status + ': ' + (await r.text()).substring(0, 200), 'err'); return; }
+          project = await r.json();
+          o.tagged('api', '✓ Project created · id=' + project.id, 'ok');
+          o.tagged('api', 'Cloud Run service: ' + project.cloud_run_service, 'out');
+          o.stepDone(0); o.stepActive(1);
+          o.tagged('git', 'Skipping git (template image — no clone needed)', 'out');
+          o.stepDone(1); o.stepActive(2);
+          o.tagged('build', 'Skipping build (pre-built template ' + template + ')', 'out');
+          o.stepDone(2); o.stepActive(3);
 
-        o.tagged('health', 'GET ' + url + '/_health', 'out'); await wait(320);
-        o.tagged('health', '200 OK · latency 47ms · cold-start 820ms', 'ok'); await wait(120);
-        o.stepDone(5);
+          // ─── 2. SSE log stream từ Cloud Logging ──────────
+          o.tagged('deploy', 'Opening SSE log stream...', 'out');
+          const sseResp = await fetch(
+            '/api/v1/projects/' + project.id + '/logs/stream?ws=' + encodeURIComponent(state.currentWs) + '&max_duration_s=120',
+            {
+              headers: {'Authorization': 'Bearer ' + token, 'Accept': 'text/event-stream'},
+              signal: sseAbort.signal,
+            },
+          );
+          if (!sseResp.ok) {
+            o.tagged('err', 'SSE stream failed: ' + sseResp.status, 'err');
+          } else {
+            const reader = sseResp.body.getReader();
+            const dec = new TextDecoder();
+            let buf = '';
+            let currentStep = 3;
+            let healthSeen = false;
+            const pollEnd = Date.now() + 90000; // 90s max for streaming
+            while (Date.now() < pollEnd && !healthSeen) {
+              const {done, value} = await reader.read();
+              if (done) break;
+              buf += dec.decode(value, {stream: true});
+              const events = buf.split('\n\n');
+              buf = events.pop() || '';
+              for (const e of events) {
+                if (!e.trim() || e.startsWith(':')) continue;  // heartbeat
+                let evType = 'log', data = '';
+                for (const line of e.split('\n')) {
+                  if (line.startsWith('event: ')) evType = line.slice(7).trim();
+                  else if (line.startsWith('data: ')) data += line.slice(6);
+                }
+                if (evType === 'ready') {
+                  o.tagged('sse', 'Log stream ready — tailing Cloud Logging...', 'ok');
+                  continue;
+                }
+                if (evType === 'log') {
+                  try {
+                    const obj = JSON.parse(data);
+                    const msg = (obj.message || '').substring(0, 300);
+                    const sev = (obj.severity || 'INFO').toLowerCase();
+                    o.tagged(sev === 'error' ? 'err' : 'log', msg, sev === 'error' ? 'err' : 'out');
+                    // Map to step indicator
+                    const m = msg.toLowerCase();
+                    if (currentStep < 4 && (m.includes('start') || m.includes('listening') || m.includes('running'))) {
+                      o.stepDone(currentStep); o.stepActive(4); currentStep = 4;
+                      o.tagged('deploy', 'Container started · ' + project.cloud_run_service, 'ok');
+                    }
+                    if (m.includes('health') || m.includes('200')) {
+                      if (currentStep < 5) { o.stepDone(currentStep); o.stepActive(5); currentStep = 5; }
+                    }
+                  } catch (e) { /* unparsable — skip */ }
+                }
+                if (evType === 'complete') {
+                  o.tagged('sse', 'Stream ended', 'meta');
+                  healthSeen = true;
+                  break;
+                }
+              }
+            }
+            try { sseAbort.abort(); } catch {}
+            try { reader.cancel(); } catch {}
+          }
 
-        const cost = 0.0004 * (i.size === 'xs' ? 1 : i.size === 's' ? 2 : i.size === 'm' ? 4 : 8);
-        runSideEffects('compute.deploy', i.name, cost, 'ok');
+          // ─── 3. Poll final project status ───────────────
+          o.tagged('api', 'GET /api/v1/projects/' + project.id, 'out');
+          const proj2 = await fetch('/api/v1/projects/' + project.id + '?ws=' + encodeURIComponent(state.currentWs), {
+            headers: {'Authorization': 'Bearer ' + token},
+          }).then(r => r.json()).catch(() => null);
+          if (proj2 && proj2.status === 'running') {
+            o.stepDone(currentStep || 4); o.stepActive(5);
+            o.tagged('health', '✓ Service running · ' + (proj2.cloud_run_url || project.cloud_run_service), 'ok');
+            o.stepDone(5);
+          } else {
+            o.tagged('warn', 'Project status: ' + (proj2?.status || 'unknown') + ' — deploy có thể chưa xong', 'meta');
+          }
 
-        o.write('', 'meta');
-        o.write('✓ Workflow completed in 3.2s · audit log updated · billing meter +$' + cost.toFixed(5), 'meta');
+          const finalUrl = (proj2 && proj2.cloud_run_url) || ('https://' + project.cloud_run_service + '-as.a.run.app');
+          o.write('', 'meta');
+          o.write('✓ REAL deploy: project ' + project.id + ' · ' + finalUrl, 'meta');
 
-        o.result([
-          ['Service URL', url, 'ok'],
-          ['Runtime', i.runtime, ''],
-          ['Size', i.size + ' (shared pool)', ''],
-          ['Region', i.region, ''],
-          ['Cold-start p50', '820ms', ''],
-          ['Warm latency p50', '47ms', ''],
-          ['Image size', imgSize + 'MB', ''],
-          ['Cost per 1M req', '$' + (cost * 1000).toFixed(2), ''],
-          ['Audit event', 'compute.deploy · ' + i.name, ''],
-          ['Zeni CLI', 'zeni logs ' + i.name + ' --tail', '']
-        ]);
+          o.result([
+            ['Service URL', finalUrl, 'ok'],
+            ['Project ID', project.id, ''],
+            ['Cloud Run service', project.cloud_run_service, ''],
+            ['Template', template, ''],
+            ['Runtime', i.runtime, ''],
+            ['Type', i.type, ''],
+            ['Size', i.size, ''],
+            ['Region', i.region, ''],
+            ['Status', proj2?.status || 'deploying', ''],
+            ['View logs (CLI)', 'zeni logs ' + i.name + ' --tail', ''],
+            ['Delete (CLI)', 'zeni delete ' + project.id, ''],
+          ]);
+
+        } catch (e) {
+          o.tagged('err', 'Deploy exception: ' + (e.message || e), 'err');
+          if (project) {
+            o.tagged('hint', 'Project đã được tạo (id=' + project.id + ') — xem trạng thái tại /app/projects', 'meta');
+          }
+        }
       }
     });
   };
