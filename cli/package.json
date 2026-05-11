@@ -1,6 +1,6 @@
 {
   "name": "@zenicloud/cli",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Zeni Cloud CLI — deploy apps to zenicloud.io from terminal. Like Vercel CLI, no GitHub required.",
   "license": "MIT",
   "type": "module",

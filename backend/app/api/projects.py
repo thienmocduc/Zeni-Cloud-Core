@@ -13,10 +13,11 @@ This avoids 30s LB cap and gives the client a clean polling UX.
 from __future__ import annotations
 
 import logging
+import os
 from datetime import datetime, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -171,6 +172,32 @@ async def _validate_image_exists(image: str) -> None:
     except Exception as e:
         # Validation infra error — don't block deploy, let Cloud Run try
         log.warning("[_validate_image_exists] soft-fail for %s: %s", image, e)
+
+
+# ─── Helper: resolve project by UUID OR name ────────────────────
+# Pattern: customers thường pass project NAME (vd "upload-dzxtyc-z") thay vì
+# UUID — endpoint phải accept cả 2 để UX tốt. Trước đây path param `UUID`
+# strict reject 422 → khách bị block không add domain được.
+async def _resolve_project(db, ws: str, project_id_or_name: str):
+    """Return Project ORM by UUID or name. Raises 404 if not found."""
+    from sqlalchemy import or_
+    # Try UUID first (more specific)
+    try:
+        uid = UUID(project_id_or_name)
+        p = (await db.execute(
+            select(Project).where(Project.id == uid, Project.workspace_id == ws)
+        )).scalar_one_or_none()
+        if p is not None:
+            return p
+    except (ValueError, AttributeError):
+        pass
+    # Fallback to name lookup
+    p = (await db.execute(
+        select(Project).where(Project.name == project_id_or_name, Project.workspace_id == ws)
+    )).scalar_one_or_none()
+    if p is None:
+        raise HTTPException(status_code=404, detail=f"project '{project_id_or_name}' not found in workspace '{ws}'")
+    return p
 
 
 # ─── Background deploy task ─────────────────────────────────────
@@ -341,14 +368,12 @@ async def deploy_project(
 @router.get("/{project_id}", response_model=ProjectOut)
 async def get_project(
     ws: str,
-    project_id: UUID,
+    project_id: str,                       # accept UUID or name (resolved by helper)
     me: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ProjectOut:
     await require_workspace_access(ws, me)
-    p = (await db.execute(select(Project).where(Project.id == project_id, Project.workspace_id == ws))).scalar_one_or_none()
-    if p is None:
-        raise HTTPException(status_code=404, detail="project not found")
+    p = await _resolve_project(db, ws, project_id)
 
     # Fast-return if still deploying / failed (DB is source of truth)
     if p.status in ("deploying", "failed"):
@@ -388,7 +413,7 @@ class DomainMappingIn(BaseModel):
 @router.post("/{project_id}/domain")
 async def add_domain_mapping(
     ws: str,
-    project_id: UUID,
+    project_id: str,                        # accept UUID or name
     data: DomainMappingIn,
     me: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -398,9 +423,7 @@ async def add_domain_mapping(
     if me.role in ("Viewer", "Developer"):
         raise HTTPException(status_code=403, detail="Cần Admin để map domain")
 
-    p = (await db.execute(select(Project).where(Project.id == project_id, Project.workspace_id == ws))).scalar_one_or_none()
-    if p is None:
-        raise HTTPException(status_code=404, detail="project not found")
+    p = await _resolve_project(db, ws, project_id)
     if not p.cloud_run_service:
         raise HTTPException(status_code=400, detail="Project chưa deployed lên Cloud Run")
 
@@ -434,7 +457,7 @@ async def add_domain_mapping(
     await audit_push(
         db, actor=me.email, workspace_id=ws, action="compute.domain_map",
         target=f"{p.name} → {data.domain}", severity="info",
-        metadata={"project_id": str(project_id), "domain": data.domain},
+        metadata={"project_id": str(p.id), "project_name": p.name, "domain": data.domain},
     )
     await db.commit()
     return result
@@ -443,28 +466,55 @@ async def add_domain_mapping(
 @router.get("/{project_id}/domains")
 async def list_project_domains(
     ws: str,
-    project_id: UUID,
+    project_id: str,                        # accept UUID or name
     me: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     await require_workspace_access(ws, me)
-    p = (await db.execute(select(Project).where(Project.id == project_id, Project.workspace_id == ws))).scalar_one_or_none()
-    if p is None:
-        raise HTTPException(status_code=404, detail="project not found")
+    p = await _resolve_project(db, ws, project_id)
     if not p.cloud_run_service:
         return {"domains": []}
     from app.services import domain_mapping as dm
     return {
-        "project_id": str(project_id),
+        "project_id": str(p.id),
+        "project_name": p.name,
         "service_name": p.cloud_run_service,
         "domains": dm.list_mapped_domains(p.cloud_run_service, p.region or "us-central1"),
     }
 
 
+# v169 — Poll endpoint for cert provisioning status
+# Customer hits this every ~30s after add DNS, checks state until "LIVE".
+@router.get("/{project_id}/domain/{domain}/status")
+async def get_domain_status(
+    ws: str,
+    project_id: str,
+    domain: str,
+    me: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Get DNS + SSL cert status for a mapped domain.
+
+    States:
+      - PENDING_DNS: DNS chưa point về Zeni LB IP
+      - PROVISIONING_SSL: DNS đã point đúng, Google đang cấp SSL
+      - LIVE: Cert ACTIVE + DNS đúng → domain serve HTTPS 200
+    """
+    await require_workspace_access(ws, me)
+    p = await _resolve_project(db, ws, project_id)
+    from app.services import domain_mapping as dm
+    if not dm.is_valid_domain(domain):
+        raise HTTPException(status_code=400, detail="Domain không hợp lệ")
+    status = dm.get_domain_status(domain)
+    status["project_id"] = str(p.id)
+    status["project_name"] = p.name
+    return status
+
+
 @router.delete("/{project_id}/domain/{domain}")
 async def remove_domain_mapping(
     ws: str,
-    project_id: UUID,
+    project_id: str,                        # accept UUID or name
     domain: str,
     me: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -472,6 +522,11 @@ async def remove_domain_mapping(
     await require_workspace_access(ws, me)
     if me.role in ("Viewer", "Developer"):
         raise HTTPException(status_code=403, detail="Cần Admin")
+    # Resolve project (best-effort — for audit + ownership check; if not found, log warning)
+    try:
+        p = await _resolve_project(db, ws, project_id)
+    except HTTPException:
+        p = None  # legacy: domain may exist beyond our project record
     from app.services import domain_mapping as dm
     try:
         dm.delete_domain_mapping(domain)
@@ -485,10 +540,291 @@ async def remove_domain_mapping(
     return {"ok": True, "domain": domain, "removed": True}
 
 
+# ═══════════════════════════════════════════════════════════════
+# v151 — CRITICAL endpoints cho WitsAGI deploy full stack
+# ═══════════════════════════════════════════════════════════════
+
+class EnvVarsIn(BaseModel):
+    env: dict[str, str] = Field(..., description='{"KEY": "value", ...} — set env vars cho Cloud Run')
+
+
+@router.post("/{project_id}/env")
+async def set_project_env(
+    ws: str,
+    project_id: str,                            # accept UUID or name
+    body: EnvVarsIn,
+    me: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Set/update environment variables cho Cloud Run service.
+
+    Khách dùng để config production env vars (DATABASE_URL, API_KEY, ...)
+    KHÔNG cần re-upload ZIP với .env.
+
+    v151 — chairman CRITICAL item #4.
+    """
+    await require_workspace_access(ws, me)
+    if me.role in ("Viewer",):
+        raise HTTPException(status_code=403, detail="Cần Developer+ để set env")
+    p = await _resolve_project(db, ws, project_id)
+    if not p.cloud_run_service:
+        raise HTTPException(status_code=400, detail="Project chưa deploy lên Cloud Run")
+
+    # Validate env keys (no spaces, alphanumeric + underscore)
+    for k in body.env.keys():
+        if not k.replace("_", "").isalnum() or " " in k:
+            raise HTTPException(status_code=400, detail=f"Env key '{k}' không hợp lệ — chỉ alphanumeric + underscore")
+    # Limit total env size
+    total_size = sum(len(k) + len(v) for k, v in body.env.items())
+    if total_size > 32 * 1024:
+        raise HTTPException(status_code=413, detail=f"Env vars total size {total_size} bytes > 32KB limit")
+
+    try:
+        # Use google-cloud-run SDK (gcloud CLI not available trong Cloud Run container)
+        from google.cloud import run_v2
+        region = p.region or "asia-southeast1"
+        gcp_project = os.environ.get('GCP_PROJECT_ID', 'zeni-cloud-core')
+        client = run_v2.ServicesClient()
+        full_name = f"projects/{gcp_project}/locations/{region}/services/{p.cloud_run_service}"
+
+        # 1. GET current service
+        service = client.get_service(name=full_name)
+
+        # 2. Merge new env vars with existing (UpdateMask only env)
+        existing_env = {e.name: e.value for e in service.template.containers[0].env if e.value}
+        existing_env.update(body.env)
+
+        # Rebuild env list
+        service.template.containers[0].env[:] = [
+            run_v2.EnvVar(name=k, value=v) for k, v in existing_env.items()
+        ]
+
+        # 3. Update service
+        operation = client.update_service(request={"service": service})
+        # Don't wait for full operation — fire and forget (returns quickly)
+    except Exception as e:
+        log.exception("[set_env] SDK failed: %s", e)
+        raise HTTPException(status_code=500, detail=f"Cloud Run env update failed: {str(e)[:200]}")
+
+    await audit_push(
+        db, actor=me.email, workspace_id=ws, action="compute.set_env",
+        target=p.name, severity="info",
+        metadata={"project_id": str(p.id), "env_keys": list(body.env.keys())},
+    )
+    await db.commit()
+    return {
+        "project_id": str(p.id),
+        "project_name": p.name,
+        "service_name": p.cloud_run_service,
+        "env_keys_set": list(body.env.keys()),
+        "count": len(body.env),
+        "note": "Cloud Run sẽ create revision mới với env vars + serve traffic mới (~30s).",
+    }
+
+
+@router.get("/{project_id}/env")
+async def get_project_env(
+    ws: str,
+    project_id: str,
+    me: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """List env var KEYS của project (KHÔNG return value — security)."""
+    await require_workspace_access(ws, me)
+    p = await _resolve_project(db, ws, project_id)
+    if not p.cloud_run_service:
+        return {"env_keys": []}
+    try:
+        from google.cloud import run_v2
+        region = p.region or "asia-southeast1"
+        gcp_project = os.environ.get('GCP_PROJECT_ID', 'zeni-cloud-core')
+        client = run_v2.ServicesClient()
+        full_name = f"projects/{gcp_project}/locations/{region}/services/{p.cloud_run_service}"
+        service = client.get_service(name=full_name)
+        env_keys = [e.name for e in service.template.containers[0].env]
+        return {"project_id": str(p.id), "env_keys": env_keys, "count": len(env_keys)}
+    except Exception as e:
+        return {"project_id": str(p.id), "env_keys": [], "error": str(e)[:200]}
+
+
+@router.get("/{project_id}/logs")
+async def get_project_logs(
+    ws: str,
+    project_id: str,
+    last: int = Query(200, ge=10, le=2000, description="Số dòng log cuối (max 2000)"),
+    me: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Get Cloud Run runtime logs cho project.
+
+    Use case: debug khi production /api/auth fail, xem error stack.
+    v151 — chairman HIGH item #6.
+    """
+    await require_workspace_access(ws, me)
+    p = await _resolve_project(db, ws, project_id)
+    if not p.cloud_run_service:
+        return {"project_id": str(p.id), "logs": "", "note": "Project chưa deploy"}
+    try:
+        # Use Cloud Logging REST API (no extra dep needed)
+        import httpx
+        from google.auth import default as google_auth_default
+        from google.auth.transport.requests import Request as GoogleAuthRequest
+        creds, _ = google_auth_default(scopes=["https://www.googleapis.com/auth/logging.read"])
+        if not creds.valid:
+            creds.refresh(GoogleAuthRequest())
+        region = p.region or "asia-southeast1"
+        gcp_project = os.environ.get('GCP_PROJECT_ID', 'zeni-cloud-core')
+        filter_str = (
+            f'resource.type="cloud_run_revision" AND '
+            f'resource.labels.service_name="{p.cloud_run_service}" AND '
+            f'resource.labels.location="{region}"'
+        )
+        async with httpx.AsyncClient(timeout=30.0) as http_client:
+            r = await http_client.post(
+                "https://logging.googleapis.com/v2/entries:list",
+                headers={"Authorization": f"Bearer {creds.token}", "Content-Type": "application/json"},
+                json={
+                    "resourceNames": [f"projects/{gcp_project}"],
+                    "filter": filter_str,
+                    "orderBy": "timestamp desc",
+                    "pageSize": last,
+                },
+            )
+            if r.status_code != 200:
+                return {"project_id": str(p.id), "logs": "", "error": f"Logging API {r.status_code}: {r.text[:200]}"}
+            data = r.json()
+            entries = data.get("entries", [])
+            lines = []
+            for e in entries:
+                ts = e.get("timestamp", "")[:19]
+                sev = e.get("severity", "INFO")
+                text_payload = e.get("textPayload") or str(e.get("jsonPayload", ""))[:500]
+                lines.append(f"{ts} {sev:8} {text_payload}")
+            logs_text = "\n".join(reversed(lines))  # chronological
+            return {
+                "project_id": str(p.id),
+                "service_name": p.cloud_run_service,
+                "region": region,
+                "lines_returned": len(lines),
+                "logs": logs_text[:200_000],
+            }
+    except Exception as e:
+        return {"project_id": str(p.id), "logs": "", "error": str(e)[:300]}
+
+
+# Phase 2 P2.2 — List revisions + Rollback (additive)
+@router.get("/{project_id}/revisions")
+async def list_project_revisions(
+    ws: str,
+    project_id: str,
+    me: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """List Cloud Run revisions của project (most recent first).
+
+    Used by Deployments UI tab — Vercel pattern. Mỗi revision có traffic_percent,
+    image, created_at để khách chọn rollback.
+    """
+    await require_workspace_access(ws, me)
+    p = await _resolve_project(db, ws, project_id)
+    if not p.cloud_run_service:
+        return {"project_id": str(p.id), "revisions": []}
+    from app.services.rollback import list_revisions
+    revisions = list_revisions(p.cloud_run_service, p.region or "asia-southeast1")
+    return {
+        "project_id": str(p.id),
+        "service_name": p.cloud_run_service,
+        "region": p.region or "asia-southeast1",
+        "revisions": revisions,
+        "count": len(revisions),
+    }
+
+
+@router.post("/{project_id}/rollback")
+async def rollback_project(
+    ws: str,
+    project_id: str,
+    target_revision: str = Query(..., description="Revision name to rollback to"),
+    me: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Rollback 1-click — flip 100% traffic về target_revision (Vercel pattern).
+
+    Yêu cầu Admin role trở lên (Viewer/Developer không được rollback prod).
+    """
+    await require_workspace_access(ws, me)
+    if me.role in ("Viewer", "Developer"):
+        raise HTTPException(status_code=403, detail="Cần Admin để rollback")
+    p = await _resolve_project(db, ws, project_id)
+    if not p.cloud_run_service:
+        raise HTTPException(404, "Project chưa deploy lên Cloud Run")
+
+    from app.services.rollback import rollback_to_revision
+    result = rollback_to_revision(
+        service_name=p.cloud_run_service,
+        region=p.region or "asia-southeast1",
+        target_revision=target_revision,
+        tag=f"rollback-by-{me.email.split('@')[0]}"[:50],
+    )
+
+    await audit_push(
+        db, actor=me.email, workspace_id=ws, action="compute.rollback",
+        target=f"{p.name} → {target_revision}", severity="warning",
+        metadata={"project_id": str(p.id), "result": result},
+    )
+    await db.commit()
+    return result
+
+
+# Phase 1 P1.3 — Realtime SSE log streaming (additive, không đụng /logs cũ)
+# v170 chairman approved 2026-05-11
+@router.get("/{project_id}/logs/stream")
+async def stream_project_logs(
+    ws: str,
+    project_id: str,
+    severity: str = Query("DEFAULT", description="Filter: DEFAULT, INFO, WARNING, ERROR"),
+    max_duration_s: int = Query(600, ge=30, le=3600, description="Max stream duration"),
+    me: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Realtime SSE log stream cho Cloud Run service.
+
+    Browser/curl mở connection → nhận log entries dạng SSE.
+    Mỗi log: `event: log\ndata: {json}\n\n`
+    Heartbeat: `:ping\n\n` mỗi 15s.
+    Client tự reconnect khi connection drop hoặc max_duration_s.
+
+    Use case: deploy progress UI, debug realtime, monitor live.
+    """
+    from fastapi.responses import StreamingResponse
+    from app.services.log_streaming import stream_cloud_run_logs
+
+    await require_workspace_access(ws, me)
+    p = await _resolve_project(db, ws, project_id)
+    if not p.cloud_run_service:
+        raise HTTPException(404, "Project chưa deploy lên Cloud Run")
+
+    headers = {
+        "Cache-Control": "no-cache, no-transform",
+        "X-Accel-Buffering": "no",  # disable nginx buffering for SSE
+        "Connection": "keep-alive",
+    }
+    return StreamingResponse(
+        stream_cloud_run_logs(
+            cloud_run_service=p.cloud_run_service,
+            region=p.region or "asia-southeast1",
+            severity_filter=severity,
+            max_duration_s=max_duration_s,
+        ),
+        media_type="text/event-stream",
+        headers=headers,
+    )
+
+
 @router.delete("/{project_id}", status_code=204, response_class=Response)
 async def delete_project(
     ws: str,
-    project_id: UUID,
+    project_id: str,                        # accept UUID or name
     bg: BackgroundTasks,
     me: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -496,9 +832,7 @@ async def delete_project(
     await require_workspace_access(ws, me)
     if me.role in ("Viewer", "Developer"):
         raise HTTPException(status_code=403, detail="Cần Admin trở lên")
-    p = (await db.execute(select(Project).where(Project.id == project_id, Project.workspace_id == ws))).scalar_one_or_none()
-    if p is None:
-        raise HTTPException(status_code=404, detail="project not found")
+    p = await _resolve_project(db, ws, project_id)
 
     # Capture data needed for background delete before db row removal
     workspace_id = p.workspace_id
