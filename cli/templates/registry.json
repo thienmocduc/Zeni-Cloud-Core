@@ -1,0 +1,116 @@
+{
+  "$schema": "https://zenicloud.io/schemas/template-registry.json",
+  "version": "1.0.0",
+  "updated": "2026-05-11",
+  "description": "Zeni Cloud official starter templates — pre-wired ZENI_TOKEN + L2/L3 endpoints",
+  "templates": [
+    {
+      "id": "nextjs-saas",
+      "name": "Next.js SaaS Starter",
+      "framework": "nextjs",
+      "description": "Next.js 14 App Router + Zeni Auth + Zeni DB + Stripe billing. Production-ready cho Vietnamese SaaS.",
+      "language": "typescript",
+      "git": "https://github.com/zenicloud/template-nextjs-saas",
+      "branch": "main",
+      "preset": {
+        "framework": "nextjs",
+        "build_command": "npm run build",
+        "install_command": "npm ci",
+        "output_dir": ".next",
+        "port": 3000,
+        "runtime": "node20"
+      },
+      "env_required": ["ZENI_TOKEN", "ZENI_WS", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"],
+      "use_cases": ["SaaS", "Marketing site", "Membership", "Subscription billing"]
+    },
+    {
+      "id": "fastapi-rag",
+      "name": "FastAPI + RAG (Retrieval-Augmented Generation)",
+      "framework": "fastapi",
+      "description": "FastAPI backend với pgvector + Zeni L3 LLM (Claude/Gemini). Upload docs → embed → semantic search → AI Q&A.",
+      "language": "python",
+      "git": "https://github.com/zenicloud/template-fastapi-rag",
+      "branch": "main",
+      "preset": {
+        "framework": "fastapi",
+        "install_command": "pip install -r requirements.txt",
+        "port": 8000,
+        "runtime": "python3.12"
+      },
+      "env_required": ["ZENI_TOKEN", "ZENI_WS", "ZENI_VECTOR_COLLECTION"],
+      "use_cases": ["RAG", "Knowledge base", "AI Q&A bot", "Document search"]
+    },
+    {
+      "id": "vite-react-ai-chat",
+      "name": "Vite + React AI Chat UI",
+      "framework": "vite",
+      "description": "Vite + React + Zeni Chat SDK. Conversational UI cho AI agents (giống Claude / ChatGPT).",
+      "language": "typescript",
+      "git": "https://github.com/zenicloud/template-vite-ai-chat",
+      "branch": "main",
+      "preset": {
+        "framework": "vite",
+        "build_command": "npm run build",
+        "install_command": "npm ci",
+        "output_dir": "dist",
+        "port": 4173,
+        "runtime": "node20"
+      },
+      "env_required": ["ZENI_TOKEN", "ZENI_WS"],
+      "use_cases": ["AI chat UI", "Customer support bot", "Internal AI tools"]
+    },
+    {
+      "id": "hono-api",
+      "name": "Hono API Backend",
+      "framework": "hono",
+      "description": "Hono framework on Node.js — ultra-fast API server. Pre-wired Zeni Auth middleware + Zeni Data L2.",
+      "language": "typescript",
+      "git": "https://github.com/zenicloud/template-hono-api",
+      "branch": "main",
+      "preset": {
+        "framework": "hono",
+        "build_command": "npm run build",
+        "install_command": "npm ci",
+        "port": 3000,
+        "runtime": "node20"
+      },
+      "env_required": ["ZENI_TOKEN", "ZENI_WS"],
+      "use_cases": ["REST API", "Microservice", "Webhook handler"]
+    },
+    {
+      "id": "nextjs-interior-design",
+      "name": "Interior Design AI (NexBuild template)",
+      "framework": "nextjs",
+      "description": "Next.js + Zeni L3 Imagen 3 + Zeni Vector. Upload ảnh phòng + prompt → 4 phương án thiết kế nội thất. Template cho NexBuild/BTHome/Viet Contech.",
+      "language": "typescript",
+      "git": "https://github.com/zenicloud/template-interior-design",
+      "branch": "main",
+      "preset": {
+        "framework": "nextjs",
+        "build_command": "npm run build",
+        "install_command": "npm ci",
+        "output_dir": ".next",
+        "port": 3000,
+        "runtime": "node20"
+      },
+      "env_required": ["ZENI_TOKEN", "ZENI_WS", "ZENI_VECTOR_COLLECTION"],
+      "use_cases": ["Interior design AI", "Architect AI assistant", "Construction AI"]
+    },
+    {
+      "id": "static-portfolio",
+      "name": "Static HTML Portfolio",
+      "framework": "static",
+      "description": "Pure HTML/CSS/JS — không build, serve trực tiếp qua nginx. Cho landing page, portfolio, blog Jekyll/Hugo output.",
+      "language": "html",
+      "git": "https://github.com/zenicloud/template-static-portfolio",
+      "branch": "main",
+      "preset": {
+        "framework": "static",
+        "port": 80,
+        "runtime": "nginx"
+      },
+      "env_required": [],
+      "use_cases": ["Landing page", "Portfolio", "Blog", "Documentation site"]
+    }
+  ]
+}

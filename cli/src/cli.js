@@ -15,6 +15,8 @@ import { alias } from './commands/alias.js';
 import { env } from './commands/env.js';
 import { domain } from './commands/domain.js';
 import { revisions, rollback } from './commands/rollback.js';
+// v0.3 Phase 3 — project templates
+import { create } from './commands/create.js';
 
 const COMMANDS = {
   login,
@@ -32,6 +34,8 @@ const COMMANDS = {
   domain,        // custom domain mapping (v169 auto HTTPS LB)
   revisions,     // list Cloud Run revisions
   rollback,      // 1-click rollback (P2.2)
+  create,        // scaffold from official template (P3.2)
+  new: create,   // alias
   help,
   '-h': help,
   '--help': help,
