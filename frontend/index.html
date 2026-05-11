@@ -6073,63 +6073,63 @@ document.addEventListener('keydown', e => {
       ],
       runLabel: '▶ Execute Query',
       runAction: async (i, o, wait) => {
+        // B-1 L2 REAL — POST /api/v1/data/query (v170+ chairman approved 2026-05-11)
         if (!i.query || i.query.length < 3) { o.write('✗ Query required', 'err'); return; }
-        o.tagged('api', 'POST /v1/data/' + i.qtype + ' · schema=' + i.schema, 'cmd');
-        o.stepActive(0); await wait(180);
-        o.tagged('parse', 'Parsing query (' + i.query.length + ' chars)', 'out'); await wait(120);
-        if (i.qtype === 'sql') o.tagged('parse', 'AST: SELECT · 4 cols · 1 filter · limit=10', 'ok');
-        else if (i.qtype === 'vector') o.tagged('parse', 'Embedding prompt with text-embedding-3-large', 'ok');
-        else o.tagged('parse', 'Object list · prefix=' + i.schema, 'ok');
-        await wait(140);
+        const token = localStorage.getItem('zeni.jwt.access');
+        if (!token) { o.write('✗ Chưa đăng nhập', 'err'); return; }
+
+        o.tagged('api', 'POST /api/v1/data/query?ws=' + state.currentWs + ' · qtype=' + i.qtype, 'cmd');
+        o.stepActive(0);
         o.stepDone(0); o.stepActive(1);
-
-        o.tagged('plan', 'Query planner · cost-model on ' + i.schema, 'out'); await wait(200);
-        if (i.qtype === 'sql') o.tagged('plan', 'Index hit: idx_orders_status · est rows=24', 'ok');
-        else o.tagged('plan', 'HNSW index · M=32 · ef_search=64', 'ok');
         o.stepDone(1); o.stepActive(2);
-
-        o.tagged('auth', 'RLS check · tenant=' + state.currentWs + ' · role=' + state.currentUser.role, 'ok'); await wait(180);
+        o.tagged('auth', 'Bearer JWT · workspace=' + state.currentWs + ' · role=' + state.currentUser.role, 'ok');
         o.stepDone(2); o.stepActive(3);
 
-        o.tagged('exec', 'Executing on zeni-main-db · asia-southeast1', 'out'); await wait(320);
-        const ms = (Math.random() * 18 + 4).toFixed(1);
-        o.tagged('exec', '✓ Query completed · ' + ms + 'ms', 'ok'); await wait(120);
-        o.stepDone(3); o.stepActive(4);
+        const t0 = performance.now();
+        try {
+          const r = await fetch('/api/v1/data/query?ws=' + encodeURIComponent(state.currentWs), {
+            method: 'POST',
+            headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'},
+            body: JSON.stringify({
+              qtype: i.qtype,
+              target: i.schema,
+              query: i.query,
+            }),
+          });
+          const body = await r.text();
+          let data;
+          try { data = JSON.parse(body); } catch { data = body; }
 
-        o.tagged('stream', 'Streaming rows to client...', 'out'); await wait(240);
-        o.stepDone(4);
+          if (!r.ok) {
+            o.tagged('err', 'HTTP ' + r.status + ': ' + (data?.detail?.user_msg || data?.detail || body).toString().substring(0, 200), 'err');
+            return;
+          }
 
-        const cost = 0.000012;
-        runSideEffects('data.query', i.schema, cost, 'ok');
-        o.write('', 'meta');
-        o.write('✓ 10 rows returned · ' + ms + 'ms · billing +$' + cost.toFixed(6), 'meta');
+          const ms = (performance.now() - t0).toFixed(1);
+          o.tagged('exec', '✓ Query completed · ' + ms + 'ms', 'ok');
+          o.stepDone(3); o.stepActive(4);
+          o.tagged('stream', 'Streaming rows to client...', 'out');
+          o.stepDone(4);
 
-        // Mock result table
-        if (i.qtype === 'sql') {
-          o.resultTable(['id', 'email', 'total_vnd', 'created_at'], [
-            ['ord_8a2f1', 'chi.huong@gmail.com', '2,450,000', '2026-04-24 09:14'],
-            ['ord_8a2f0', 'tran.an@zalo.me', '890,000', '2026-04-24 08:52'],
-            ['ord_8a2ee', 'linh.nguyen@yahoo.com', '4,200,000', '2026-04-24 08:31'],
-            ['ord_8a2ed', 'pham.duc@outlook.com', '1,680,000', '2026-04-24 07:58'],
-            ['ord_8a2ec', 'mai.thao@gmail.com', '3,120,000', '2026-04-24 07:22'],
-            ['ord_8a2eb', 'hoang.son@gmail.com', '960,000', '2026-04-24 06:45'],
-            ['ord_8a2ea', 'vy.nhi@icloud.com', '5,800,000', '2026-04-24 06:12'],
-            ['ord_8a2e9', 'tuan.minh@gmail.com', '1,290,000', '2026-04-24 05:41'],
-            ['ord_8a2e8', 'nga.bui@yahoo.com', '2,100,000', '2026-04-24 05:03'],
-            ['ord_8a2e7', 'dung.le@gmail.com', '780,000', '2026-04-24 04:27']
-          ]);
-        } else if (i.qtype === 'vector') {
-          o.resultTable(['doc_id', 'content (preview)', 'similarity'], [
-            ['doc_001', '(Demo) Document content preview...', '0.947'],
-            ['doc_002', '(Demo) Search result example...', '0.921'],
-            ['doc_003', '(Demo) Vector similarity match...', '0.887']
-          ]);
-        } else {
-          o.resultTable(['key', 'size', 'modified'], [
-            [i.schema + '/invoice-2026-04-24.pdf', '247 KB', '2 min ago'],
-            [i.schema + '/contract-signed.pdf', '1.2 MB', '1 hour ago'],
-            [i.schema + '/avatar.webp', '82 KB', '3 hours ago']
-          ]);
+          // Render result based on response shape
+          if (Array.isArray(data?.rows) && data.rows.length > 0) {
+            const cols = Object.keys(data.rows[0]);
+            const rows = data.rows.map(row => cols.map(c => String(row[c] ?? '')));
+            o.resultTable(cols, rows.slice(0, 100));
+          } else if (Array.isArray(data?.results)) {
+            const cols = data.results.length > 0 ? Object.keys(data.results[0]) : ['(empty)'];
+            const rows = data.results.map(row => cols.map(c => String(row[c] ?? '')));
+            o.resultTable(cols, rows.slice(0, 100));
+          } else if (Array.isArray(data?.objects)) {
+            o.resultTable(['key', 'size', 'modified'], data.objects.map(obj => [obj.key || '', String(obj.size || ''), obj.modified || '']));
+          } else {
+            o.write(JSON.stringify(data, null, 2).substring(0, 2000), 'out');
+          }
+
+          o.write('', 'meta');
+          o.write('✓ Real query · ' + ms + 'ms · ' + (data?.row_count || data?.rows?.length || data?.results?.length || 0) + ' rows', 'meta');
+        } catch (e) {
+          o.tagged('err', 'Query exception: ' + (e.message || e), 'err');
         }
       }
     });
@@ -6160,65 +6160,85 @@ document.addEventListener('keydown', e => {
       ],
       runLabel: '▶ Run Inference',
       runAction: async (i, o, wait) => {
+        // B-1 L3 REAL — POST /api/v1/ai/complete (v170+ chairman approved 2026-05-11)
         if (!i.prompt || i.prompt.length < 5) { o.write('✗ Prompt quá ngắn', 'err'); return; }
-        o.tagged('api', 'POST /v1/ai/complete · model=' + i.model, 'cmd');
-        o.stepActive(0); await wait(160);
-        o.tagged('validate', 'Input tokens=' + Math.ceil(i.prompt.length / 4) + ' · temp=' + i.temp + ' · max=' + i.maxtok, 'ok'); await wait(120);
+        const token = localStorage.getItem('zeni.jwt.access');
+        if (!token) { o.write('✗ Chưa đăng nhập', 'err'); return; }
+
+        // Map UI model alias → real model name (Zeni Router)
+        const modelMap = {
+          'claude-opus-4-7': 'opus-4-7',
+          'claude-sonnet-4-6': 'sonnet-4-6',
+          'gpt-4o': 'gpt-4o',
+          'gemini-2-pro': 'gemini-3-1-pro',
+          'llama-3-70b': 'haiku-4-5',
+          'gemma-3-27b': 'gemma-4-26b',
+        };
+        const model = modelMap[i.model] || i.model;
+
+        o.tagged('api', 'POST /api/v1/ai/complete?ws=' + state.currentWs + ' · model=' + model, 'cmd');
+        o.stepActive(0);
+        o.tagged('validate', 'Prompt len=' + i.prompt.length + ' temp=' + i.temp + ' max=' + i.maxtok, 'ok');
         o.stepDone(0); o.stepActive(1);
-
-        o.tagged('router', 'Selected provider: ' + (i.model.startsWith('claude') ? 'Anthropic' : i.model.startsWith('gpt') ? 'OpenAI' : i.model.startsWith('gemini') ? 'Google' : i.model.startsWith('zeni') ? 'Zeni Inference' : 'Together'), 'ok'); await wait(180);
-        o.tagged('router', 'Cache check · MISS · route=cold', 'out'); await wait(100);
+        o.tagged('router', 'Zeni Router · adaptive tier routing', 'out');
         o.stepDone(1); o.stepActive(2);
-
-        o.tagged('token', 'BPE tokenizing...', 'out'); await wait(120);
-        const inputTok = Math.ceil(i.prompt.length / 4);
-        o.tagged('token', inputTok + ' input tokens ready', 'ok'); await wait(80);
         o.stepDone(2); o.stepActive(3);
+        o.tagged('stream', '⟩ Awaiting AI response...', 'out');
 
-        o.tagged('stream', '⟩ Streaming response...', 'out');
-        // Mock streamed output
-        const mockOutput = '(Demo) Đây là sample output từ AI model. Trong môi trường production, AI sẽ trả về nội dung dựa trên prompt thật của bạn qua ZeniRouter.';
-        const chunks = mockOutput.split(/(\s+)/);
-        let current = '';
-        const lineEl = el('div', { class: 'pg-line ok' }, [
-          el('span', { class: 'ts', text: '' }),
-          el('span', { class: 'tag', text: '[out]' }),
-          el('span', { text: '' })
-        ]);
-        term.appendChild(lineEl);
-        for (const chunk of chunks) {
-          current += chunk;
-          lineEl.children[2].textContent = current;
+        const t0 = performance.now();
+        try {
+          const r = await fetch('/api/v1/ai/complete?ws=' + encodeURIComponent(state.currentWs), {
+            method: 'POST',
+            headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'},
+            body: JSON.stringify({
+              model: model,
+              prompt: i.prompt,
+              temperature: parseFloat(i.temp) || 0.7,
+              max_tokens: parseInt(i.maxtok, 10) || 512,
+            }),
+          });
+          const body = await r.text();
+          let data;
+          try { data = JSON.parse(body); } catch { data = body; }
+
+          if (!r.ok) {
+            o.tagged('err', 'HTTP ' + r.status + ': ' + (data?.detail?.user_msg || data?.detail || body).toString().substring(0, 200), 'err');
+            return;
+          }
+
+          const ms = (performance.now() - t0).toFixed(0);
+          // Output the AI response text
+          const output = data.output || data.text || data.content || (typeof data === 'string' ? data : JSON.stringify(data));
+          const lineEl = el('div', { class: 'pg-line ok' }, [
+            el('span', { class: 'ts', text: '' }),
+            el('span', { class: 'tag', text: '[ai]' }),
+            el('span', { text: output })
+          ]);
+          term.appendChild(lineEl);
           term.scrollTop = term.scrollHeight;
-          await wait(40 + Math.random() * 40);
+
+          o.stepDone(3); o.stepActive(4);
+          const inTok = data.input_tokens || data.usage?.input_tokens || 0;
+          const outTok = data.output_tokens || data.usage?.output_tokens || 0;
+          const cost = data.cost_usd || data.cost || 0;
+          o.tagged('meter', 'In=' + inTok + ' Out=' + outTok + ' Cost=$' + cost.toFixed(5) + ' Latency=' + ms + 'ms', 'ok');
+          o.stepDone(4);
+
+          o.write('', 'meta');
+          o.write('✓ REAL inference · ' + ms + 'ms · model=' + (data.real_model || model), 'meta');
+          o.result([
+            ['Model (alias)', i.model, ''],
+            ['Real model', data.real_model || model, 'ok'],
+            ['Input tokens', String(inTok), ''],
+            ['Output tokens', String(outTok), ''],
+            ['Cost', '$' + cost.toFixed(5), ''],
+            ['Latency', ms + 'ms', ''],
+            ['Provider', data.provider || (model.includes('claude') ? 'Anthropic' : model.includes('gemini') ? 'Google' : model.includes('deepseek') ? 'DeepSeek' : 'OpenAI'), ''],
+            ['Audit event', 'ai.inference', ''],
+          ]);
+        } catch (e) {
+          o.tagged('err', 'AI exception: ' + (e.message || e), 'err');
         }
-        o.stepDone(3); o.stepActive(4);
-
-        const outTok = Math.ceil(mockOutput.length / 4);
-        const cost = i.model === 'claude-opus-4-7' ? (inputTok * 0.000015 + outTok * 0.000075) :
-                     i.model === 'claude-sonnet-4-6' ? (inputTok * 0.000003 + outTok * 0.000015) :
-                     i.model === 'gpt-4o' ? (inputTok * 0.000005 + outTok * 0.000015) :
-                     (inputTok * 0.000001 + outTok * 0.000004);
-        await wait(100);
-        o.tagged('meter', 'Tokens in=' + inputTok + ' out=' + outTok + ' · cost=$' + cost.toFixed(5), 'ok'); await wait(80);
-        o.stepDone(4);
-
-        runSideEffects('ai.inference', i.model, cost, 'ok');
-
-        const term2 = document.querySelector('.pg-term');
-        o.write('', 'meta');
-        o.write('✓ Inference done · ' + outTok + ' tokens · billing +$' + cost.toFixed(5), 'meta');
-
-        o.result([
-          ['Model', i.model, 'ok'],
-          ['Provider', i.model.startsWith('claude') ? 'Anthropic' : i.model.startsWith('gpt') ? 'OpenAI' : i.model.startsWith('gemini') ? 'Google' : 'Zeni Self-Host', ''],
-          ['Input tokens', String(inputTok), ''],
-          ['Output tokens', String(outTok), ''],
-          ['Temperature', i.temp, ''],
-          ['Cost', '$' + cost.toFixed(5), ''],
-          ['Audit event', 'ai.inference', ''],
-          ['Next call', 'Same prompt → cache HIT (cost × 0.1)', '']
-        ]);
       }
     });
   };
@@ -6250,63 +6270,61 @@ document.addEventListener('keydown', e => {
       ],
       runLabel: '▶ Fire Event',
       runAction: async (i, o, wait) => {
+        // B-1 L4 REAL — POST /api/v1/automation/events/fire (v170+ chairman approved 2026-05-11)
         let payload;
         try { payload = JSON.parse(i.payload || '{}'); }
         catch (e) { o.write('✗ JSON không hợp lệ', 'err'); return; }
+        const token = localStorage.getItem('zeni.jwt.access');
+        if (!token) { o.write('✗ Chưa đăng nhập', 'err'); return; }
 
-        o.tagged('webhook', 'POST /v1/events/' + i.src + ' · received', 'cmd');
-        o.stepActive(0); await wait(140);
-        o.tagged('queue', 'Enqueued · Kafka topic=events.' + state.currentWs, 'ok'); await wait(120);
+        o.tagged('api', 'POST /api/v1/automation/events/fire?ws=' + state.currentWs + ' · source=' + i.src, 'cmd');
+        o.stepActive(0);
         o.stepDone(0); o.stepActive(1);
-
-        o.tagged('transform', 'Schema mapping · Zalo → CanonicalOrder', 'out'); await wait(180);
-        o.tagged('transform', '✓ 8 fields mapped · 2 enriched via AI', 'ok'); await wait(120);
+        o.tagged('transform', 'Payload size=' + i.payload.length + ' chars', 'out');
         o.stepDone(1); o.stepActive(2);
-
-        o.tagged('route', 'Workflow engine · matched 1 rule', 'out'); await wait(140);
-        o.tagged('route', 'Selected action: ' + i.action, 'ok'); await wait(100);
+        o.tagged('route', 'Action target: ' + i.action, 'ok');
         o.stepDone(2); o.stepActive(3);
 
-        if (i.action === 'notify_slack') {
-          o.tagged('slack', 'POST chat.postMessage #sales', 'out'); await wait(200);
-          o.tagged('slack', '✓ Message delivered · thread_ts=1745472831.123', 'ok');
-        } else if (i.action === 'save_db') {
-          o.tagged('db', 'INSERT INTO ' + state.currentWs + '.orders VALUES (...)', 'out'); await wait(220);
-          o.tagged('ai', 'Auto-tag: hot_lead=true, ltv_predict=$+180', 'ok'); await wait(120);
-          o.tagged('db', '✓ Row saved · id=ord_' + Math.random().toString(36).slice(2, 8), 'ok');
-        } else if (i.action === 'trigger_ai') {
-          o.tagged('agent', 'Spawning zeni-support-agent...', 'out'); await wait(260);
-          o.tagged('agent', 'Context: customer history (12 msgs) + product info', 'out'); await wait(180);
-          o.tagged('agent', '✓ AI reply sent · confidence=0.94', 'ok');
-        } else if (i.action === 'sync_sheet') {
-          o.tagged('sheets', 'spreadsheets.values.append · Sheet1!A:H', 'out'); await wait(280);
-          o.tagged('sheets', '✓ Row 247 appended', 'ok');
-        } else {
-          o.tagged('sendgrid', 'POST /v3/mail/send · template=welcome', 'out'); await wait(220);
-          o.tagged('sendgrid', '✓ Email queued · msg_id=' + Math.random().toString(36).slice(2, 12), 'ok');
+        const t0 = performance.now();
+        try {
+          const r = await fetch('/api/v1/automation/events/fire?ws=' + encodeURIComponent(state.currentWs), {
+            method: 'POST',
+            headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'},
+            body: JSON.stringify({
+              source: i.src,
+              action: payload.event || i.action,
+              payload: payload,
+            }),
+          });
+          const body = await r.text();
+          let data;
+          try { data = JSON.parse(body); } catch { data = body; }
+
+          if (!r.ok) {
+            o.tagged('err', 'HTTP ' + r.status + ': ' + (data?.detail?.user_msg || data?.detail || body).toString().substring(0, 200), 'err');
+            return;
+          }
+
+          const ms = (performance.now() - t0).toFixed(0);
+          o.tagged('deliver', 'Event dispatched · ' + (data.deliveries?.length || 0) + ' connectors notified', 'ok');
+          o.stepDone(3); o.stepActive(4);
+          o.tagged('ack', '200 OK · end-to-end ' + ms + 'ms', 'ok');
+          o.stepDone(4);
+
+          o.write('', 'meta');
+          o.write('✓ REAL event processed · ' + ms + 'ms', 'meta');
+          o.result([
+            ['Event ID', data.event_id || '(none)', 'ok'],
+            ['Source', i.src, ''],
+            ['Action', i.action, ''],
+            ['Connectors notified', String(data.deliveries?.length || 0), ''],
+            ['E2E latency', ms + 'ms', ''],
+            ['Audit event', 'automation.fire', ''],
+            ['Response', JSON.stringify(data).substring(0, 200), ''],
+          ]);
+        } catch (e) {
+          o.tagged('err', 'Event exception: ' + (e.message || e), 'err');
         }
-        await wait(120);
-        o.stepDone(3); o.stepActive(4);
-
-        const ms = (Math.random() * 90 + 45).toFixed(0);
-        o.tagged('ack', '200 OK · end-to-end ' + ms + 'ms', 'ok'); await wait(80);
-        o.stepDone(4);
-
-        const cost = 0.00003;
-        runSideEffects('automation.fire', i.src + '→' + i.action, cost, 'ok');
-        o.write('', 'meta');
-        o.write('✓ Event processed · e2e ' + ms + 'ms · billing +$' + cost.toFixed(5), 'meta');
-
-        o.result([
-          ['Source', i.src, ''],
-          ['Action', i.action, 'ok'],
-          ['Customer', payload.customer || 'N/A', ''],
-          ['Total', payload.total_vnd ? payload.total_vnd.toLocaleString('vi-VN') + '₫' : 'N/A', ''],
-          ['E2E latency', ms + 'ms', ''],
-          ['Retries', '0', ''],
-          ['Audit event', 'automation.fire', ''],
-          ['Per event cost', '$' + cost.toFixed(5), '']
-        ]);
       }
     });
   };
