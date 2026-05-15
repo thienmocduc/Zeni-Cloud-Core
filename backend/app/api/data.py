@@ -60,6 +60,45 @@ def _validate_query(q: str) -> None:
             raise HTTPException(status_code=400, detail=f"Query chứa pattern bị chặn: {pattern.pattern}")
 
 
+def _validate_query_request(ws: str, qtype: str, query: str | None) -> str:
+    """Pre-flight validation — fail-fast 422 with clear hint instead of cryptic 400 later.
+
+    Returns trimmed query string ready for execution.
+    """
+    if ws not in _VALID_WS:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Workspace '{ws}' không hợp lệ. Dùng: {', '.join(sorted(_VALID_WS))}.",
+        )
+    if qtype not in {"sql", "vector", "object"}:
+        raise HTTPException(
+            status_code=422,
+            detail=f"qtype '{qtype}' không hỗ trợ. Dùng: sql, vector, object.",
+        )
+    if query is None or not query.strip():
+        raise HTTPException(
+            status_code=422,
+            detail="Query rỗng — vui lòng nhập SQL/vector keyword/object prefix cụ thể.",
+        )
+    trimmed = query.strip()
+    if len(trimmed) > 4000:
+        raise HTTPException(status_code=422, detail="Query quá dài (>4000 ký tự).")
+    if qtype == "sql":
+        # Light syntax sanity: must start with a known keyword
+        first_token = trimmed.split(None, 1)[0].lower()
+        allowed_starts = {
+            "select", "with", "explain", "show", "insert", "update",
+            "delete", "create", "alter", "drop", "truncate", "begin",
+            "commit", "rollback",
+        }
+        if first_token not in allowed_starts:
+            raise HTTPException(
+                status_code=422,
+                detail=f"SQL phải bắt đầu bằng từ khóa hợp lệ (SELECT, WITH, INSERT, ...). Got: '{first_token}'.",
+            )
+    return trimmed
+
+
 @router.get("/databases", response_model=list[DatabaseOut])
 async def list_databases(
     ws: str,
@@ -108,8 +147,10 @@ async def run_query(
 ) -> dict:
     """Execute query against workspace schema. SQL = real, vector/object = mock."""
     await require_workspace_access(ws, me)
-    if ws not in _VALID_WS:
-        raise HTTPException(status_code=404, detail="workspace không hợp lệ")
+
+    # Fail-fast pre-flight: validate ws, qtype, query format BEFORE any DB write/exec
+    trimmed_query = _validate_query_request(ws, data.qtype, data.query)
+    data.query = trimmed_query
 
     start = time.perf_counter()
     _validate_query(data.query)

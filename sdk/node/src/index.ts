@@ -55,9 +55,12 @@ interface AgentRunResult {
 }
 
 export class ZeniCloud {
-  private token: string;
-  private workspace: string;
-  private baseUrl: string;
+  /** @internal — used by API subclasses for streamLogs etc */
+  public token: string;
+  /** @internal — mutable via setWorkspace() */
+  public workspace: string;
+  /** @internal */
+  public baseUrl: string;
   private timeoutMs: number;
 
   // Resources
@@ -72,6 +75,8 @@ export class ZeniCloud {
   public billing: BillingAPI;
   public tokens: TokensAPI;
   public email: EmailAPI;
+  /** Phase 1 P1.1 — GitHub App 1-click import (v170+) */
+  public githubApp: GitHubAppAPI;
 
   constructor(config: ZeniConfig) {
     if (!config.token) throw new Error('Zeni token required');
@@ -91,6 +96,7 @@ export class ZeniCloud {
     this.billing = new BillingAPI(this);
     this.tokens = new TokensAPI(this);
     this.email = new EmailAPI(this);
+    this.githubApp = new GitHubAppAPI(this);
   }
 
   /** @internal */
@@ -179,6 +185,108 @@ class ProjectsAPI {
   }
   removeDomain(projectId: string, domain: string) {
     return this.z._request('DELETE', `/projects/${projectId}/domain/${domain}`, undefined, { ws: true });
+  }
+
+  // Phase 1 P1.3 — Realtime log stream (v170)
+  /** Poll domain DNS + SSL cert status. Returns state: PENDING_DNS | PROVISIONING_SSL | LIVE */
+  domainStatus(projectId: string, domain: string) {
+    return this.z._request('GET', `/projects/${projectId}/domain/${domain}/status`, undefined, { ws: true });
+  }
+
+  // Phase 2 P2.2 — Revisions + Rollback (v170)
+  /** List Cloud Run revisions của project (most recent first, with traffic_percent). */
+  revisions(projectId: string) {
+    return this.z._request<any>('GET', `/projects/${projectId}/revisions`, undefined, { ws: true });
+  }
+
+  /** Rollback 1-click — flip traffic to target_revision. Yêu cầu Admin role. */
+  rollback(projectId: string, targetRevision: string) {
+    return this.z._request('POST', `/projects/${projectId}/rollback`, undefined, {
+      ws: true,
+      query: { target_revision: targetRevision },
+    });
+  }
+
+  // Phase 1 P1.3 — Env vars management (existing endpoint, just convenience wrappers)
+  setEnv(projectId: string, envVars: Record<string, string>) {
+    return this.z._request('POST', `/projects/${projectId}/env`, { env_vars: envVars }, { ws: true });
+  }
+  listEnv(projectId: string) {
+    return this.z._request('GET', `/projects/${projectId}/env`, undefined, { ws: true });
+  }
+
+  // Phase 1 P1.3 — Logs (existing /logs + new SSE /logs/stream)
+  logs(projectId: string, lastLines = 200) {
+    return this.z._request('GET', `/projects/${projectId}/logs`, undefined, {
+      ws: true,
+      query: { last: lastLines },
+    });
+  }
+
+  /**
+   * Phase 1 P1.3 — Open SSE stream of realtime logs. Returns ReadableStream.
+   * Caller consumes via for-await-of in Node 20+.
+   *
+   * @example
+   *   for await (const event of zeni.projects.streamLogs(projectId)) {
+   *     console.log(event.message);
+   *   }
+   */
+  async *streamLogs(projectId: string, opts: { severity?: string; maxDurationS?: number } = {}) {
+    const params = new URLSearchParams({ ws: this.z.workspace });
+    if (opts.severity) params.set('severity', opts.severity);
+    if (opts.maxDurationS) params.set('max_duration_s', String(opts.maxDurationS));
+    const url = `${this.z.baseUrl}/projects/${projectId}/logs/stream?${params.toString()}`;
+    const r = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${this.z.token}`,
+        'Accept': 'text/event-stream',
+      },
+    });
+    if (!r.ok || !r.body) throw new ZeniError(r.status, await r.text());
+    const reader = r.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const events = buf.split('\n\n');
+      buf = events.pop() || '';
+      for (const e of events) {
+        if (!e.trim() || e.startsWith(':')) continue;  // skip heartbeat
+        const lines = e.split('\n');
+        let event = 'message';
+        let data = '';
+        for (const line of lines) {
+          if (line.startsWith('event: ')) event = line.slice(7);
+          else if (line.startsWith('data: ')) data += line.slice(6);
+        }
+        try {
+          yield { event, ...JSON.parse(data) };
+        } catch {
+          yield { event, data };
+        }
+      }
+    }
+  }
+}
+
+// ─── GitHub App API (Phase 1 P1.1 v170) ────────────────────
+class GitHubAppAPI {
+  constructor(private z: ZeniCloud) {}
+  installUrl() {
+    return this.z._request('GET', '/github-app/install-url', undefined, { ws: true });
+  }
+  installations() {
+    return this.z._request<any>('GET', '/github-app/installations', undefined, { ws: true });
+  }
+  listRepos(installationId: string) {
+    return this.z._request<any>('GET', `/github-app/installations/${installationId}/repos`, undefined, { ws: true });
+  }
+  /** Import + detect framework. Returns deploy preset. */
+  importRepo(installationId: string, input: { owner: string; repo: string; branch?: string; project_name?: string }) {
+    return this.z._request('POST', `/github-app/installations/${installationId}/import-repo`, input, { ws: true });
   }
 }
 

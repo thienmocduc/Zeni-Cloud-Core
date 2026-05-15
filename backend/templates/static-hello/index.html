@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Welcome to Zeni Cloud Static Hosting</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      min-height:100vh;display:flex;align-items:center;justify-content:center;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      background:linear-gradient(135deg,#0f0f23 0%,#1a1a3e 50%,#2d1b69 100%);
+      color:#fff;padding:24px
+    }
+    .card{
+      max-width:720px;width:100%;text-align:center;
+      background:rgba(255,255,255,0.04);
+      border:1px solid rgba(168,85,247,0.3);
+      border-radius:16px;padding:48px 32px;
+      backdrop-filter:blur(20px)
+    }
+    .logo{font-size:72px;margin-bottom:16px}
+    h1{font-size:36px;background:linear-gradient(90deg,#a855f7,#22d3ee);
+       -webkit-background-clip:text;background-clip:text;color:transparent;
+       margin-bottom:12px}
+    p.lead{color:#cbd5e1;font-size:16px;margin-bottom:32px}
+    ul{list-style:none;text-align:left;background:rgba(0,0,0,0.2);
+       padding:24px;border-radius:12px;border:1px solid rgba(125,104,255,0.2)}
+    li{padding:8px 0;color:#e2e8f0;display:flex;align-items:start;gap:8px}
+    li::before{content:'✓';color:#22d3ee;font-weight:700}
+    .badge{display:inline-block;padding:4px 12px;background:rgba(168,85,247,0.2);
+           color:#a855f7;border-radius:999px;font-size:12px;margin-bottom:16px}
+    .footer{margin-top:32px;font-size:12px;color:#64748b}
+    .footer strong{color:#a855f7}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">Static Hosting</div>
+    <div class="logo">🌐</div>
+    <h1>Welcome to Zeni Cloud Static Hosting</h1>
+    <p class="lead">Your static site is live behind global HTTPS. Replace index.html and redeploy to ship your content.</p>
+    <ul>
+      <li>Nginx alpine — tiny image (~25 MB)</li>
+      <li>Auto-scale on Zeni Cloud Run, free tier friendly</li>
+      <li>Custom domain + auto HTTPS via Zeni Cloud</li>
+      <li>Replace index.html, CSS, JS, assets — anything goes</li>
+      <li>For SPA support: enable try_files fallback in nginx config</li>
+    </ul>
+    <p class="footer">Powered by <strong>Zeni Cloud</strong> · Nginx Static</p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Full Features — Zeni Cloud Docs</title>
+<meta name="description" content="Full danh sách tính năng Zeni Cloud: 6 lớp hạ tầng cốt lõi + 11 services Sprint 1-2. API quick reference cho mỗi tính năng.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root { --bg-void:#0a0a14; --bg-card:#14142a; --border:rgba(168,139,250,0.15); --ink-100:#e5e7eb; --ink-200:#c4b5fd; --ink-300:#9e8be5; --ink-400:#7c6bb0; --gold:#fde68a; --indigo:#7d68ff; --crown:#a855f7; --aurora:#22d3ee; --code-bg:#0d1117; --ok:#22c55e; --warn:#fb923c; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg-void);color:var(--ink-100);font-size:15px;line-height:1.7;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 1000px 700px at 80% 5%,rgba(168,85,247,0.08),transparent 55%),radial-gradient(ellipse 900px 600px at 5% 90%,rgba(99,102,241,0.06),transparent 55%);z-index:-1;pointer-events:none}
+a{color:var(--indigo);text-decoration:none;transition:color .2s}
+a:hover{color:var(--gold)}
+header.topbar{position:sticky;top:0;z-index:100;background:rgba(10,10,20,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.topbar-inner{max-width:1400px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
+.logo-mark{width:32px;height:32px;background:linear-gradient(135deg,var(--indigo),var(--crown));border-radius:8px;display:flex;align-items:center;justify-content:center;color:white}
+.breadcrumb{color:var(--ink-300);font-size:14px}
+.breadcrumb-sep{opacity:.4;margin:0 6px}
+nav.header-nav{display:flex;gap:20px;font-size:14px;align-items:center}
+nav.header-nav a{color:var(--ink-200)}
+nav.header-nav a.cta{background:var(--indigo);color:white;padding:8px 16px;border-radius:8px;font-weight:600}
+.layout{max-width:1200px;margin:0 auto;padding:32px 24px}
+.hero{margin-bottom:36px;text-align:center}
+.hero h1{font-size:40px;font-weight:800;margin-bottom:12px;background:linear-gradient(135deg,var(--gold),var(--crown));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .subtitle{font-size:17px;color:var(--ink-300)}
+.layer-section{margin-bottom:48px;padding:24px;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;border-left:4px solid var(--layer-color,var(--indigo))}
+.layer-section.l1{--layer-color:#22d3ee}
+.layer-section.l2{--layer-color:#7d68ff}
+.layer-section.l3{--layer-color:#a855f7}
+.layer-section.l4{--layer-color:#fde68a}
+.layer-section.l5{--layer-color:#22c55e}
+.layer-section.l6{--layer-color:#fb923c}
+.layer-head{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.layer-num{font-size:36px;font-weight:800;color:var(--layer-color);min-width:50px}
+.layer-head h2{font-size:24px;font-weight:700;flex:1}
+.layer-head .tag{font-size:12px;color:var(--ink-400);text-transform:uppercase;letter-spacing:0.08em}
+.layer-section p.tagline{color:var(--ink-300);margin-bottom:16px;font-size:15px}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:16px}
+.feat-card{padding:14px 16px;background:rgba(10,10,20,0.4);border:1px solid var(--border);border-radius:10px}
+.feat-card h4{font-size:14px;font-weight:600;color:var(--gold);margin-bottom:6px}
+.feat-card p{font-size:13px;color:var(--ink-300);margin-bottom:8px;line-height:1.5}
+.feat-card code{font-family:'JetBrains Mono',ui-monospace,monospace;background:var(--code-bg);color:var(--aurora);padding:2px 6px;border-radius:4px;font-size:11px;display:inline-block}
+.section-h{font-size:22px;font-weight:700;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border);color:var(--gold)}
+.sprint-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.sprint-card{padding:18px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;transition:transform .2s,border-color .2s}
+.sprint-card:hover{transform:translateY(-2px);border-color:rgba(168,85,247,0.4)}
+.sprint-card .icon{font-size:30px;margin-bottom:8px}
+.sprint-card h3{font-size:16px;font-weight:700;margin-bottom:6px;color:var(--ink-100)}
+.sprint-card p{font-size:13px;color:var(--ink-300);margin-bottom:10px;line-height:1.5;min-height:40px}
+.sprint-card .status{font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;display:inline-block;margin-top:6px}
+.status.live{background:rgba(34,197,94,0.15);color:var(--ok)}
+.status.scaffold{background:rgba(251,146,60,0.15);color:var(--warn)}
+.api-table{width:100%;margin-top:8px;font-size:12px;font-family:'JetBrains Mono',ui-monospace,monospace}
+.api-table td{padding:4px 8px;border-bottom:1px solid var(--border);color:var(--ink-300)}
+.api-table td:first-child{color:var(--aurora);font-weight:600;width:60px}
+@media (max-width:768px){.layout{padding:20px 16px}.hero h1{font-size:30px}.feat-grid,.sprint-grid{grid-template-columns:1fr}.layer-num{font-size:28px}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="/" class="logo"><span class="logo-mark">Z</span> Zeni Cloud</a>
+    <div class="breadcrumb"><a href="/docs/">Docs</a><span class="breadcrumb-sep">/</span>Full Features</div>
+    <nav class="header-nav">
+      <a href="/docs/">Docs Home</a>
+      <a href="/docs/deploy-workflow.html">Deploy Guide</a>
+      <a href="/" class="cta">Mở Dashboard</a>
+    </nav>
+  </div>
+</header>
+
+<main class="layout">
+
+<div class="hero">
+  <h1>📋 Full Features</h1>
+  <p class="subtitle">6 lớp hạ tầng cốt lõi · 11 services Sprint 1-2 · API quick reference</p>
+</div>
+
+<h2 class="section-h">🏗️ 6 Lớp Hạ Tầng Cốt Lõi</h2>
+
+<!-- L1 Compute -->
+<div class="layer-section l1">
+  <div class="layer-head">
+    <div class="layer-num">01</div>
+    <div style="flex:1">
+      <h2>Compute & Hosting</h2>
+      <span class="tag">SERVERLESS · CONTAINER · GPU · EDGE</span>
+    </div>
+  </div>
+  <p class="tagline">Deploy mọi loại app: Web (Next.js/React/Vue), API (FastAPI/Express), Worker, AI Agent. Cloud Run dưới hood — auto-scale 0→1000 instances, pay per request.</p>
+  <div class="feat-grid">
+    <div class="feat-card"><h4>Tạo project</h4><p>Wizard 4-step hoặc API.</p><code>POST /api/v1/projects</code></div>
+    <div class="feat-card"><h4>Upload ZIP source</h4><p>Zeni tự build Docker từ ZIP.</p><code>POST /api/v1/upload/source</code></div>
+    <div class="feat-card"><h4>Quick Deploy 1-call</h4><p>Cho AI agent: deploy + status 1 endpoint.</p><code>POST /api/v1/deploy/quick</code></div>
+    <div class="feat-card"><h4>Custom domain</h4><p>Bind domain + auto SSL.</p><code>POST /projects/{id}/domain</code></div>
+    <div class="feat-card"><h4>Logs + metrics</h4><p>Cloud Logging + observability.</p><code>GET /api/v1/observability/*</code></div>
+    <div class="feat-card"><h4>Multi-region</h4><p>asia-southeast1, us-central1, europe-west1.</p><code>region: param</code></div>
+  </div>
+</div>
+
+<!-- L2 Data -->
+<div class="layer-section l2">
+  <div class="layer-head">
+    <div class="layer-num">02</div>
+    <div style="flex:1">
+      <h2>Data Lake & Vector</h2>
+      <span class="tag">POSTGRES · VECTOR · OBJECT · TIME-SERIES</span>
+    </div>
+  </div>
+  <p class="tagline">Multi-tenant Postgres trên Cloud SQL với row-level security. Vector DB cho RAG (pgvector). Object storage S3-compatible.</p>
+  <div class="feat-grid">
+    <div class="feat-card"><h4>SQL query</h4><p>Postgres workspace-isolated.</p><code>POST /api/v1/data/query</code></div>
+    <div class="feat-card"><h4>Vector search</h4><p>pgvector semantic search.</p><code>POST /api/v1/vector/search</code></div>
+    <div class="feat-card"><h4>Vector premium</h4><p>HNSW index, billion-scale.</p><code>POST /api/v1/vector-premium/*</code></div>
+    <div class="feat-card"><h4>Cache (Redis)</h4><p>Per-workspace cache.</p><code>POST /api/v1/cache/*</code></div>
+    <div class="feat-card"><h4>Queue</h4><p>Pub-sub queue cho worker.</p><code>POST /api/v1/queue/*</code></div>
+    <div class="feat-card"><h4>Storage S3-compat</h4><p>Bucket + signed URL.</p><code>POST /api/v1/storage/*</code></div>
+  </div>
+</div>
+
+<!-- L3 AI Engine -->
+<div class="layer-section l3">
+  <div class="layer-head">
+    <div class="layer-num">03</div>
+    <div style="flex:1">
+      <h2>AI Engine</h2>
+      <span class="tag">MODEL GARDEN · AGENT RUNTIME · LLM GATEWAY</span>
+    </div>
+  </div>
+  <p class="tagline">Unified LLM gateway: Claude (Opus/Sonnet/Haiku), Gemini 2.5, GPT-5, DeepSeek R1. Auto-select tier theo cost. Embed + image gen.</p>
+  <div class="feat-grid">
+    <div class="feat-card"><h4>Complete (chat)</h4><p>Một endpoint cho mọi LLM.</p><code>POST /api/v1/ai/complete</code></div>
+    <div class="feat-card"><h4>Stream</h4><p>SSE stream response.</p><code>POST /api/v1/ai/complete-stream</code></div>
+    <div class="feat-card"><h4>Embed</h4><p>Vector embedding cho RAG.</p><code>POST /api/v1/ai/embed</code></div>
+    <div class="feat-card"><h4>Generate image</h4><p>Imagen 3 + DALL-E + sd-lora.</p><code>POST /api/v1/ai/generate-image</code></div>
+    <div class="feat-card"><h4>Agents</h4><p>Build AI agent với tools + memory.</p><code>POST /api/v1/ai/agents</code></div>
+    <div class="feat-card"><h4>List models</h4><p>Liệt kê 50+ models.</p><code>GET /api/v1/ai/models</code></div>
+    <div class="feat-card"><h4>Voice STT/TTS</h4><p>Whisper VN + XTTS-v3 VN.</p><code>POST /api/v1/voice-ai/*</code></div>
+    <div class="feat-card"><h4>OCR + Translate</h4><p>Vision + translate VI/EN/JA/KO.</p><code>POST /api/v1/ocr/*</code></div>
+  </div>
+</div>
+
+<!-- L4 Automation -->
+<div class="layer-section l4">
+  <div class="layer-head">
+    <div class="layer-num">04</div>
+    <div style="flex:1">
+      <h2>Automation</h2>
+      <span class="tag">EVENT BUS · WORKFLOW · 120+ CONNECTORS</span>
+    </div>
+  </div>
+  <p class="tagline">Cloud Scheduler + webhook + connectors. Zalo OA · VNPay · SendGrid · Slack · GitHub · 120+ services.</p>
+  <div class="feat-grid">
+    <div class="feat-card"><h4>Cron jobs</h4><p>Schedule tasks (Cloud Scheduler).</p><code>POST /api/v1/automation/crons</code></div>
+    <div class="feat-card"><h4>Webhooks</h4><p>Receive HTTP triggers.</p><code>POST /api/v1/automation/webhooks</code></div>
+    <div class="feat-card"><h4>Connectors</h4><p>120+ integrations ready.</p><code>GET /api/v1/automation/connectors</code></div>
+    <div class="feat-card"><h4>Email send</h4><p>Transactional + verification.</p><code>POST /api/v1/email/send</code></div>
+    <div class="feat-card"><h4>SMS</h4><p>VN carriers (eSMS, Speedsms).</p><code>POST /api/v1/sms/send</code></div>
+    <div class="feat-card"><h4>Realtime channels</h4><p>WebSocket pub-sub.</p><code>WS /api/v1/realtime/ws/...</code></div>
+    <div class="feat-card"><h4>Push notifications</h4><p>APNs (iOS) + FCM (Android).</p><code>POST /api/v1/push/send</code></div>
+    <div class="feat-card"><h4>Slack integration</h4><p>Bot + slash commands.</p><code>POST /api/v1/slack/*</code></div>
+  </div>
+</div>
+
+<!-- L5 Identity -->
+<div class="layer-section l5">
+  <div class="layer-head">
+    <div class="layer-num">05</div>
+    <div style="flex:1">
+      <h2>Identity & Security</h2>
+      <span class="tag">SSO · VAULT · RLS · ND13 · SOC2</span>
+    </div>
+  </div>
+  <p class="tagline">JWT + refresh + MFA TOTP. OAuth 7 providers (Zalo/Google/Apple/Facebook/Line/Kakao/TikTok/LinkedIn). Vault encryption.</p>
+  <div class="feat-grid">
+    <div class="feat-card"><h4>Auth login/logout</h4><p>JWT pair với refresh.</p><code>POST /api/v1/auth/login</code></div>
+    <div class="feat-card"><h4>MFA TOTP</h4><p>Google Authenticator / Authy.</p><code>POST /api/v1/auth/mfa/setup</code></div>
+    <div class="feat-card"><h4>OAuth providers</h4><p>Zalo, Google, Apple, Facebook…</p><code>GET /auth/oauth/{provider}</code></div>
+    <div class="feat-card"><h4>API tokens (PAT)</h4><p>Long-lived tokens cho CLI/CI.</p><code>POST /api/v1/api-tokens</code></div>
+    <div class="feat-card"><h4>Secrets vault</h4><p>Encrypted secret storage.</p><code>POST /api/v1/identity/secrets</code></div>
+    <div class="feat-card"><h4>Mobile certs</h4><p>Apple .p8 + Android keystore.</p><code>POST /identity/mobile-certs</code></div>
+    <div class="feat-card"><h4>Customer OAuth</h4><p>Setup OAuth cho khách hàng B2B.</p><code>POST /api/v1/customer-oauth/*</code></div>
+    <div class="feat-card"><h4>Audit log</h4><p>Compliance ISO/SOC2.</p><code>GET /api/v1/audit</code></div>
+  </div>
+</div>
+
+<!-- L6 Web3 -->
+<div class="layer-section l6">
+  <div class="layer-head">
+    <div class="layer-num">06</div>
+    <div style="flex:1">
+      <h2>Web3 Bridge</h2>
+      <span class="tag">WALLET-AS-A-SERVICE · SMART CONTRACT · TOKEN</span>
+    </div>
+  </div>
+  <p class="tagline">$ZENI Token deployed Polygon Mainnet (0x2d0Ec889F3889F0a364b82039db9F8Bef78f5EC1). Wallet management, token transfer, NFT badge.</p>
+  <div class="feat-grid">
+    <div class="feat-card"><h4>$ZENI wallet</h4><p>Link, balance, transfer.</p><code>POST /api/v1/zeni-token/wallet/*</code></div>
+    <div class="feat-card"><h4>Pay with token</h4><p>Thanh toán bằng $ZENI.</p><code>POST /zeni-token/pay-with-token</code></div>
+    <div class="feat-card"><h4>Rewards claim</h4><p>Affiliate commission auto.</p><code>POST /zeni-token/rewards/claim</code></div>
+    <div class="feat-card"><h4>NFT Badge (SBT)</h4><p>Soul-bound token cho user.</p><code>POST /zeni-token/badges/mint</code></div>
+    <div class="feat-card"><h4>Polygon RPC reads</h4><p>Read on-chain data.</p><code>POST /api/v1/web3/read</code></div>
+    <div class="feat-card"><h4>Build transfer</h4><p>Unsigned tx cho user sign.</p><code>POST /api/v1/web3/build-transfer</code></div>
+  </div>
+</div>
+
+<!-- Sprint 1-2 Services -->
+<h2 class="section-h">⚡ Sprint 1-2 Services Mới</h2>
+
+<div class="sprint-grid">
+  <div class="sprint-card">
+    <div class="icon">📱</div>
+    <h3>PWA Templates</h3>
+    <p>Next.js PWA + Vite PWA — install-able web app. Auto-inject manifest + service worker + offline cache.</p>
+    <table class="api-table">
+      <tr><td>GET</td><td>/github/frameworks (8 frameworks)</td></tr>
+    </table>
+    <span class="status live">LIVE v120</span>
+  </div>
+
+  <div class="sprint-card">
+    <div class="icon">🏭</div>
+    <h3>Build Farm</h3>
+    <p>Native build cloud cho Tauri/Rust/Electron/Go/Flutter/.NET. KHÔNG cần cài rustc/MSVC/Xcode local.</p>
+    <table class="api-table">
+      <tr><td>GET</td><td>/build-farm/toolchains (6)</td></tr>
+      <tr><td>POST</td><td>/build-farm/jobs</td></tr>
+    </table>
+    <span class="status scaffold">SCAFFOLD — toolchain images Phase 2</span>
+  </div>
+
+  <div class="sprint-card">
+    <div class="icon">📦</div>
+    <h3>Edge Sandbox</h3>
+    <p>Sandboxed microVM cho AI agent: Computer Use, Playwright, Python 3.12, Node 20, Ubuntu Shell.</p>
+    <table class="api-table">
+      <tr><td>GET</td><td>/edge/runtimes (5)</td></tr>
+      <tr><td>POST</td><td>/edge/sandboxes</td></tr>
+    </table>
+    <span class="status scaffold">SCAFFOLD — Phase 2 worker</span>
+  </div>
+
+  <div class="sprint-card">
+    <div class="icon">🎤</div>
+    <h3>Voice STT/TTS</h3>
+    <p>Speech-to-text Whisper VN + Text-to-speech Coqui XTTS-v3 VN. 10 voices: 6 VN + 2 EN + premium.</p>
+    <table class="api-table">
+      <tr><td>POST</td><td>/voice-ai/transcribe</td></tr>
+      <tr><td>POST</td><td>/voice-ai/synthesize</td></tr>
+      <tr><td>GET</td><td>/voice-ai/voices</td></tr>
+    </table>
+    <span class="status live">LIVE — Google Cloud Speech</span>
+  </div>
+
+  <div class="sprint-card">
+    <div class="icon">🔔</div>
+    <h3>Push Notifications</h3>
+    <p>APNs HTTP/2 ES256 (iOS) + FCM HTTPv1 RS256 (Android). Unified send endpoint cho cả 2 platform.</p>
+    <table class="api-table">
+      <tr><td>POST</td><td>/push/devices (register)</td></tr>
+      <tr><td>POST</td><td>/push/credentials</td></tr>
+      <tr><td>POST</td><td>/push/send</td></tr>
+    </table>
+    <span class="status live">LIVE</span>
+  </div>
+
+  <div class="sprint-card">
+    <div class="icon">📊</div>
+    <h3>Benchmark Tracker</h3>
+    <p>AI model benchmark scores: SWE-bench, HumanEval, GPQA, AIME, MMLU, LMSYS Arena, BIG-Bench, AgentBench.</p>
+    <table class="api-table">
+      <tr><td>GET</td><td>/benchmarks/sources (8)</td></tr>
+      <tr><td>GET</td><td>/benchmarks/{name}</td></tr>
+    </table>
+    <span class="status live">LIVE</span>
+  </div>
+
+  <div class="sprint-card">
+    <div class="icon">💸</div>
+    <h3>Outgoing Payouts</h3>
+    <p>Trả tiền: bank VND (queue chờ partnership), $ZENI Polygon (instant), USDT (Phase 2), Stripe/PayPal (opt-in).</p>
+    <table class="api-table">
+      <tr><td>POST</td><td>/payouts</td></tr>
+      <tr><td>GET</td><td>/payouts/settings</td></tr>
+    </table>
+    <span class="status live">LIVE — $ZENI ready</span>
+  </div>
+
+  <div class="sprint-card">
+    <div class="icon">💾</div>
+    <h3>Zeni Storage</h3>
+    <p>S3-compatible bucket + objects + signed URL. Backed by Google Cloud Storage. Bucket-per-workspace.</p>
+    <table class="api-table">
+      <tr><td>POST</td><td>/storage/buckets</td></tr>
+      <tr><td>POST</td><td>/storage/.../objects</td></tr>
+      <tr><td>POST</td><td>/storage/.../signed-url</td></tr>
+    </table>
+    <span class="status live">LIVE</span>
+  </div>
+
+  <div class="sprint-card">
+    <div class="icon">⚡</div>
+    <h3>Zeni Realtime</h3>
+    <p>WebSocket pub-sub channels. Live chat, presence, real-time dashboards.</p>
+    <table class="api-table">
+      <tr><td>POST</td><td>/realtime/channels</td></tr>
+      <tr><td>POST</td><td>/realtime/.../publish</td></tr>
+      <tr><td>WS</td><td>/realtime/ws/{ws}/{ch}</td></tr>
+    </table>
+    <span class="status live">LIVE</span>
+  </div>
+
+  <div class="sprint-card">
+    <div class="icon">📲</div>
+    <h3>Mobile Cert Manager</h3>
+    <p>Encrypted vault cho Apple .p12/.p8 + Android keystore + provisioning profile. Auto-expiry alert.</p>
+    <table class="api-table">
+      <tr><td>POST</td><td>/identity/mobile-certs</td></tr>
+      <tr><td>GET</td><td>/.../expiring</td></tr>
+    </table>
+    <span class="status live">LIVE</span>
+  </div>
+
+  <div class="sprint-card">
+    <div class="icon">📚</div>
+    <h3>Package Registry</h3>
+    <p>npm-private + PyPI-private compatible. <code>npm publish</code> + <code>twine upload</code>.</p>
+    <table class="api-table">
+      <tr><td>GET</td><td>/packages/registry-info</td></tr>
+      <tr><td>PUT</td><td>/npm/{package}</td></tr>
+      <tr><td>POST</td><td>/pypi/</td></tr>
+    </table>
+    <span class="status live">LIVE</span>
+  </div>
+</div>
+
+<h2 class="section-h">🔗 Bonus — Quản trị + Billing</h2>
+<div class="sprint-grid">
+  <div class="sprint-card">
+    <div class="icon">💰</div>
+    <h3>Billing & Wallet</h3>
+    <p>Pay-as-you-go theo VND. Topup qua VietQR (QR Pay) — TPB, VCB, MBB, BIDV, ACB, TCB.</p>
+    <table class="api-table">
+      <tr><td>GET</td><td>/billing/wallet</td></tr>
+      <tr><td>POST</td><td>/billing/wallet/topup</td></tr>
+      <tr><td>GET</td><td>/cost-dashboard</td></tr>
+    </table>
+    <span class="status live">LIVE — VietQR EMV</span>
+  </div>
+
+  <div class="sprint-card">
+    <div class="icon">👥</div>
+    <h3>Members & Roles</h3>
+    <p>5 roles per workspace: Owner / Admin / Developer / Member / Viewer. Invite via email.</p>
+    <table class="api-table">
+      <tr><td>POST</td><td>/members/invite</td></tr>
+      <tr><td>GET</td><td>/members</td></tr>
+    </table>
+    <span class="status live">LIVE</span>
+  </div>
+
+  <div class="sprint-card">
+    <div class="icon">🌍</div>
+    <h3>Multi-Region + Edge CDN</h3>
+    <p>Deploy 3 regions (asia-southeast1, us-central1, europe-west1). Edge CDN cache static assets.</p>
+    <table class="api-table">
+      <tr><td>GET</td><td>/multi-region/zones</td></tr>
+      <tr><td>POST</td><td>/edge-cdn/cache</td></tr>
+    </table>
+    <span class="status live">LIVE</span>
+  </div>
+
+  <div class="sprint-card">
+    <div class="icon">📈</div>
+    <h3>Observability + APM</h3>
+    <p>Metrics, traces, alerts. Cloud Logging integration. Custom alert rules.</p>
+    <table class="api-table">
+      <tr><td>GET</td><td>/observability/metrics</td></tr>
+      <tr><td>GET</td><td>/observability/traces</td></tr>
+      <tr><td>POST</td><td>/observability/alerts</td></tr>
+    </table>
+    <span class="status live">LIVE</span>
+  </div>
+
+  <div class="sprint-card">
+    <div class="icon">🛡️</div>
+    <h3>Backup & DR</h3>
+    <p>Backup policies + scheduled snapshots + disaster recovery. KMS encrypted.</p>
+    <table class="api-table">
+      <tr><td>POST</td><td>/backup/policies</td></tr>
+      <tr><td>POST</td><td>/backup/restore</td></tr>
+    </table>
+    <span class="status live">LIVE</span>
+  </div>
+
+  <div class="sprint-card">
+    <div class="icon">📨</div>
+    <h3>Zeni Mail</h3>
+    <p>Mailing list + campaigns + transactional. SPF/DKIM/DMARC auto-config.</p>
+    <table class="api-table">
+      <tr><td>POST</td><td>/mail/lists</td></tr>
+      <tr><td>POST</td><td>/mail/campaigns</td></tr>
+    </table>
+    <span class="status live">LIVE</span>
+  </div>
+</div>
+
+<div style="margin:48px 0;text-align:center;padding:24px;background:linear-gradient(135deg,rgba(125,104,255,0.1),rgba(168,85,247,0.1));border:1px solid rgba(168,85,247,0.3);border-radius:14px">
+  <h2 style="font-size:22px;margin-bottom:10px;color:var(--gold)">📚 Tài liệu khác</h2>
+  <p style="color:var(--ink-300);margin-bottom:14px">Đọc <a href="/docs/deploy-workflow.html">Deploy Workflow A-Z</a> để hiểu workflow đầy đủ. Hoặc <a href="/docs/quickstart.html">Quickstart 5 phút</a> để bắt đầu nhanh.</p>
+</div>
+
+</main>
+</body>
+</html>

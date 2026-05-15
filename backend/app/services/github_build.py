@@ -161,21 +161,63 @@ async def run_github_build_and_deploy(
             return
 
         # Deploy to Cloud Run
+        # v168 FIX: function thật là `deploy_service` (đã rename từ `deploy_cloud_run`
+        # ở source_build.py v138). github_build.py còn dùng tên cũ → ImportError silent
+        # → worker pickup task nhưng exception → task stuck pending (vietcontech bug #9+#10).
+        # deploy_service signature: workspace, project_name, image, size, region, env_vars,
+        # secrets, port, allow_unauthenticated, created_by. Build params phù hợp.
+        #
+        # Phase 2 P2.1 (v170): nếu push lên BRANCH KHÁC default_branch → preview deploy
+        # với tag = branch slug, 0% traffic. Default branch = production deploy bình thường.
         try:
-            from app.services.cloud_run import deploy_cloud_run, SIZE_TO_RESOURCES
+            from app.services.cloud_run import deploy_service
             sn = f"zeni-{workspace_id}-{project_name}".replace("_", "-")
-            resources = SIZE_TO_RESOURCES.get("s")
-            deploy_result = await deploy_cloud_run(
-                service_name=sn,
+
+            # Lookup default_branch của connection
+            row = (await db.execute(text(
+                "SELECT default_branch FROM github_connections WHERE id=:cid"
+            ), {"cid": connection_id})).first()
+            default_branch = (row[0] if row else None) or "main"
+            is_preview = (branch != default_branch)
+
+            deploy_result = await deploy_service(
+                workspace=workspace_id,
+                project_name=project_name,
                 image=image_tag,
+                size="s",
                 region="asia-southeast1",
-                env_vars={"WORKSPACE": workspace_id, "REPO": f"{repo_owner}/{repo_name}", "BRANCH": branch},
+                env_vars={
+                    "WORKSPACE": workspace_id,
+                    "REPO": f"{repo_owner}/{repo_name}",
+                    "BRANCH": branch,
+                    "COMMIT_SHA": commit_sha[:12],
+                    "DEPLOY_TYPE": "preview" if is_preview else "production",
+                },
                 secrets={},
                 port=port,
-                resources=resources,
                 allow_unauthenticated=True,
             )
-            deploy_url = deploy_result.url or f"https://{sn}-asia-southeast1.run.app"
+
+            # P2.1: nếu preview branch → set traffic tag, no-traffic
+            if is_preview:
+                try:
+                    from app.services.preview_deploys import slugify_branch, _set_preview_tag
+                    branch_slug = slugify_branch(branch)
+                    await _set_preview_tag(
+                        service_name=sn,
+                        region="asia-southeast1",
+                        tag=branch_slug,
+                    )
+                    # Compute preview URL
+                    base_url = deploy_result.url or f"https://{sn}-asia-southeast1.run.app"
+                    deploy_url = base_url.replace("https://", f"https://{branch_slug}---")
+                    log.info("[github_build] preview deploy: branch=%s tag=%s url=%s",
+                             branch, branch_slug, deploy_url)
+                except Exception as e:
+                    log.warning("[github_build] preview tag failed (non-fatal): %s", e)
+                    deploy_url = deploy_result.url or f"https://{sn}-asia-southeast1.run.app"
+            else:
+                deploy_url = deploy_result.url or f"https://{sn}-asia-southeast1.run.app"
             await db.execute(
                 text("""UPDATE github_deploys SET status='success', completed_at=NOW(),
                         image_url=:img, deploy_url=:url WHERE id=:id"""),

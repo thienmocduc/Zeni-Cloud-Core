@@ -1,0 +1,3 @@
+FROM instrumentisto/flutter:latest
+WORKDIR /workspace
+CMD ["bash"]

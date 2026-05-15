@@ -35,6 +35,31 @@ router = APIRouter(prefix="/automation/crons", tags=["automation", "crons"])
 MAX_CRONS_PER_WS = 30
 _NAME_RE = re.compile(r"^[a-z0-9][a-z0-9\-]{2,47}$")
 _CRON_RE = re.compile(r"^\S+\s+\S+\s+\S+\s+\S+\s+\S+$")  # 5 fields cron expression
+_HTTP_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE"}
+
+
+def _validate_cron_create(name: str, schedule: str, target_url: str, method: str) -> None:
+    """Pre-flight 422 validation — friendly VN messages BEFORE Cloud Scheduler call."""
+    if not _NAME_RE.match(name):
+        raise HTTPException(
+            status_code=422,
+            detail=f"Cron name '{name}' không hợp lệ: dùng chữ thường + số + dấu '-', 3-48 ký tự, bắt đầu bằng chữ/số.",
+        )
+    if not _CRON_RE.match(schedule):
+        raise HTTPException(
+            status_code=422,
+            detail=f"Cron expression '{schedule}' không hợp lệ. Format: 'phút giờ ngày tháng thứ' (5 trường). VD '0 7 * * *' = 7AM daily.",
+        )
+    if not (target_url.startswith("http://") or target_url.startswith("https://")):
+        raise HTTPException(
+            status_code=422,
+            detail=f"target_url '{target_url[:80]}' phải bắt đầu bằng http:// hoặc https://.",
+        )
+    if method.upper() not in _HTTP_METHODS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"http_method '{method}' không support. Dùng: {sorted(_HTTP_METHODS)}.",
+        )
 
 
 class CronCreateIn(BaseModel):
@@ -82,9 +107,8 @@ async def create_workspace_cron(
     if me.role == "Viewer":
         raise HTTPException(status_code=403, detail="Viewer không tạo cron được")
 
-    if not _CRON_RE.match(data.schedule):
-        raise HTTPException(status_code=400,
-                            detail="schedule phải là cron expression 5 trường: 'phút giờ ngày tháng thứ' (vd: '0 9 * * 1-5')")
+    # Pre-flight validation (422 fast feedback) — name, schedule, url, method
+    _validate_cron_create(data.name, data.schedule, data.target_url, data.method)
 
     # Cap per-workspace
     try:
@@ -92,6 +116,12 @@ async def create_workspace_cron(
         if len(existing) >= MAX_CRONS_PER_WS:
             raise HTTPException(status_code=429,
                                 detail=f"Vượt giới hạn {MAX_CRONS_PER_WS} crons/workspace")
+        # Name conflict check
+        if any(j.get("name") == data.name for j in existing):
+            raise HTTPException(
+                status_code=409,
+                detail=f"Cron name '{data.name}' đã tồn tại trong workspace '{ws}'. Đặt tên khác hoặc xóa cron cũ.",
+            )
     except CronError:
         pass  # ignore list error during create
 

@@ -1,0 +1,10 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-f', 'Dockerfile.go', '-t', 'gcr.io/zeni-cloud-core/build-farm/go:1.23', '.']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/zeni-cloud-core/build-farm/go:1.23']
+images:
+  - gcr.io/zeni-cloud-core/build-farm/go:1.23
+options:
+  machineType: E2_HIGHCPU_8
+timeout: 1800s

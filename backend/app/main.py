@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
-from app.api import admin_access, admin_access_callback, admin_platform, agents, agents_library, ai, ai_core, api_tokens, audit, auth, automation, backup_dr, benchmarks, billing, billing_v2, books, build_farm, cache, compliance, cost_dashboard, crons, customer_oauth, customer_oauth_flow, data, edge_cdn, edge_runtime, email_api, email_verify, gcp, github_integration, identity, internal_cron, legal_entities, login_2fa, members, messaging, mfa, mobile_certs, multi_region, oauth, observability, ocr, package_registry, payouts, phone_otp, pricing, privacy, projects, push_notifications, queue, quick_deploy, realtime, reseller, router as zeni_router_api, slack, sms, source_upload, storage as zeni_storage, translate, trial, vector, vector_premium, voice_ai, waitlist, wallet, web3, workspaces, zeni_mail, zeni_pay, zeni_token, zeni_voice
+from app.api import admin_access, admin_access_callback, admin_platform, agents, agents_library, ai, ai_core, api_tokens, audit, auth, automation, backup_dr, benchmarks, billing, billing_v2, books, build_farm, cache, compliance, cost_dashboard, crons, customer_oauth, customer_oauth_flow, data, design, edge_cdn, edge_runtime, email_api, email_verify, gcp, github_integration, identity, internal_cron, legal_entities, login_2fa, members, messaging, mfa, mobile_certs, multi_region, oauth, observability, ocr, package_registry, payouts, phone_otp, pricing, privacy, projects, push_notifications, queue, quick_deploy, realtime, reseller, router as zeni_router_api, slack, sms, source_upload, storage as zeni_storage, translate, trial, vector, vector_premium, voice_ai, waitlist, wallet, web3, workspace_whitelist, workspaces, zeni_mail, zeni_pay, zeni_token, zeni_voice
 # Note: zeni_studio, zeni_crm, zeni_workspace = SaaS apps (not cloud infra),
 # code retained in apps/ for future independent deploy as Cloud Run services.
 from app.middleware.metrics_middleware import MetricsMiddleware
@@ -63,9 +63,19 @@ async def apply_pending_migrations() -> None:
         log.warning("migrations dir not found: %s", migrations_dir)
         return
     # Apply migrations 018-030 + 040-099 (idempotent CREATE IF NOT EXISTS / INSERT ON CONFLICT)
+    # BLOCKLIST — these migrations DELETE production data and must NEVER auto-run.
+    # They are kept on disk for historical reference / one-off manual application only.
+    # Re-running them on every boot wipes customer workspaces + cascades user_workspaces.
+    DESTRUCTIVE_MIGRATIONS = {
+        "031_reset_demo_data.sql",         # DELETE FROM workspaces (demo wipe)
+        "042_cleanup_test_workspaces.sql", # DELETE FROM workspaces WHERE id NOT IN ('nexbuild')
+    }
     pending = []
     for i in list(range(18, 31)) + list(range(40, 100)):
         for p in migrations_dir.glob(f"{i:03d}_*.sql"):
+            if p.name in DESTRUCTIVE_MIGRATIONS:
+                log.info("migration SKIPPED (destructive blocklist): %s", p.name)
+                continue
             pending.append(p)
     pending = sorted(pending)
     if not pending:
@@ -238,6 +248,7 @@ async def health() -> dict:
 API_PREFIX = "/api/v1"
 app.include_router(auth.router,        prefix=API_PREFIX)
 app.include_router(workspaces.router,  prefix=API_PREFIX)
+app.include_router(workspace_whitelist.router, prefix=API_PREFIX)  # per-workspace image registry whitelist
 app.include_router(projects.router,    prefix=API_PREFIX)
 app.include_router(data.router,        prefix=API_PREFIX)
 app.include_router(ai.router,          prefix=API_PREFIX)
@@ -329,6 +340,7 @@ app.include_router(customer_oauth_flow.router)    # /auth/{provider}/{ws}/login 
 app.include_router(trial.router,                  prefix=API_PREFIX)  # 14-day trial enforcement
 app.include_router(source_upload.router,          prefix=API_PREFIX)  # ZIP upload deploy (NO GITHUB)
 app.include_router(quick_deploy.router,           prefix=API_PREFIX)  # Quick Deploy (1-call API for AI agents)
+app.include_router(design.router,                 prefix=API_PREFIX)  # Design Agents: 6 KTS AI (kiến trúc + nội thất + kết cấu + MEP + BOQ + QA)
 
 
 # ─── Frontend SPA mount ──────────────────────────────

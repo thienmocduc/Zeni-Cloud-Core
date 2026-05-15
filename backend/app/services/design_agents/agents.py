@@ -1,0 +1,407 @@
+"""
+6 KTS Design Agents — Phase 1 full-stack architecture AI for Viet Contech.
+
+Pattern lấy cảm hứng từ Zeni Coder Council (6-vai) — adaptive routing qua Zeni
+Router cho từng vai chuyên biệt.
+
+Agents:
+  1. KTSChiefAgent      — Lead architect, phong thuỷ + TCVN expert
+  2. InteriorDesignerAgent — Style match (Indochine/Modern/Luxury/...)
+  3. StructuralEngineerAgent — Tính toán kết cấu theo TCVN 2737 + 5574
+  4. MEPEngineerAgent   — Điện + Nước theo TCVN 7568 + 4513/4474
+  5. BOQCalculatorAgent — Bóc tách dự toán theo QĐ 1129/QĐ-BXD
+  6. QAValidatorAgent   — Validate compliance + sign-off readiness
+
+Chairman approved scope 7 deliverables in PRODUCT_DELIVERABLES_v3.md.
+
+Usage:
+    from app.services.design_agents.agents import KTSChiefAgent
+    agent = KTSChiefAgent()
+    result = await agent.analyze_brief(brief="Nhà phố 3 tầng...", workspace_id="vietcontech")
+"""
+from __future__ import annotations
+
+import json
+import logging
+from dataclasses import dataclass, field
+from typing import Any, Optional
+
+log = logging.getLogger("zeni.design_agents")
+
+
+@dataclass
+class AgentResult:
+    """Standard output from any design agent."""
+    agent_role: str
+    success: bool
+    output: dict[str, Any]
+    output_text: str
+    model_used: str
+    input_tokens: int = 0
+    output_tokens: int = 0
+    cost_usd: float = 0.0
+    latency_ms: int = 0
+    error: Optional[str] = None
+    next_actions: list[str] = field(default_factory=list)
+
+
+# ─── BASE AGENT ─────────────────────────────────────────────────
+class BaseDesignAgent:
+    """Common pattern for all 6 specialized agents."""
+
+    role: str = "base"
+    default_model: str = "claude-sonnet-4-6"  # Zeni Router model_id
+    complexity: str = "complex"
+    system_prompt_template: str = ""
+
+    async def call_llm(
+        self,
+        prompt: str,
+        system: Optional[str] = None,
+        complexity: Optional[str] = None,
+        workspace_id: Optional[str] = None,
+    ) -> AgentResult:
+        """Call Zeni Router with adaptive tier routing."""
+        from app.services.coder.orchestrator import call_persona
+
+        # Map agent role → persona (reuse Zeni Coder persona system)
+        persona_map = {
+            "kts_chief": "architect",
+            "interior_designer": "planner",
+            "structural_engineer": "reviewer",
+            "mep_engineer": "security",
+            "boq_calculator": "qa",
+            "qa_validator": "reviewer",
+        }
+        persona = persona_map.get(self.role, "planner")
+
+        try:
+            resp = await call_persona(
+                persona=persona,
+                user_prompt=prompt,
+                extra_context=system or self.system_prompt_template,
+                complexity=complexity or self.complexity,
+            )
+            return AgentResult(
+                agent_role=self.role,
+                success=resp.error is None,
+                output=resp.output_json or {},
+                output_text=resp.output_text,
+                model_used=resp.model_id,
+                input_tokens=resp.input_tokens,
+                output_tokens=resp.output_tokens,
+                cost_usd=resp.cost_usd,
+                latency_ms=resp.latency_ms,
+                error=resp.error,
+            )
+        except Exception as e:
+            log.exception("[%s] LLM call failed", self.role)
+            return AgentResult(
+                agent_role=self.role,
+                success=False,
+                output={},
+                output_text="",
+                model_used="(error)",
+                error=str(e)[:300],
+            )
+
+
+# ─── 1. KTS CHIEF AGENT (Architect) ──────────────────────────────
+class KTSChiefAgent(BaseDesignAgent):
+    """
+    Lead architect — phân tích brief, phong thuỷ, đề xuất layout tổng thể.
+
+    Input: customer brief (free text + ảnh đất + diện tích + nhu cầu)
+    Output: DNA dự án JSON (style, layout principles, phong thuỷ analysis, constraints)
+    """
+    role = "kts_chief"
+    default_model = "claude-sonnet-4-6"  # routing escalate to opus if complex
+    complexity = "critical"
+    system_prompt_template = """Bạn là KTS Chính của Viet Contech — chuyên kiến trúc Việt Nam.
+Chuyên môn:
+  - TCVN 4451 (Nhà ở - Yêu cầu thiết kế)
+  - Phong thuỷ: ngũ hành (Kim/Mộc/Thuỷ/Hoả/Thổ), mệnh gia chủ, hướng tốt/xấu
+  - Tropical architecture: ánh sáng tự nhiên, thông gió, chống nắng
+  - Văn hoá VN: gia đình đa thế hệ, gian thờ, sân trước
+
+Khi nhận brief khách:
+  1. Phân tích nhu cầu + ngân sách + diện tích
+  2. Đánh giá phong thuỷ (hướng đất, mệnh gia chủ)
+  3. Đề xuất layout principles (KHÔNG vẽ chi tiết)
+  4. List constraints + recommendations
+
+Output JSON:
+{
+  "dna": {
+    "style_recommended": "indochine|modern|luxury|tropical|japandi",
+    "feng_shui": {"compatible_directions": [...], "warnings": [...]},
+    "layout_principles": ["entrance facing south", "kitchen avoid northwest", ...],
+    "rooms_required": [{"name": "phòng khách", "area_m2": 30, "priority": "high"}, ...],
+    "budget_breakdown": {"phan_tho": 0.55, "hoan_thien": 0.30, "noi_that": 0.15},
+    "constraints": [...],
+    "next_step_agents": ["interior_designer", "structural_engineer"]
+  },
+  "verdict": "approved|need_clarification|reject_brief"
+}"""
+
+    async def analyze_brief(
+        self, brief: str, workspace_id: str = "vietcontech"
+    ) -> AgentResult:
+        prompt = f"# CUSTOMER BRIEF\n\n{brief}\n\nGenerate DNA dự án JSON theo schema spec."
+        return await self.call_llm(prompt, workspace_id=workspace_id)
+
+
+# ─── 2. INTERIOR DESIGNER AGENT ──────────────────────────────────
+class InteriorDesignerAgent(BaseDesignAgent):
+    """
+    Designer interior — phong cách, vật liệu, ánh sáng, đồ đạc.
+
+    Input: DNA dự án + style choice
+    Output: render prompts (cho Flux/SDXL) + style spec (palette, vật liệu)
+    """
+    role = "interior_designer"
+    default_model = "claude-sonnet-4-6"
+    complexity = "complex"
+    system_prompt_template = """Bạn là Interior Designer chuyên phong cách Việt Nam.
+Hiểu sâu 6 styles: Indochine, Modern, Luxury, Japandi, Tropical, Wabi-sabi.
+
+Khi nhận DNA dự án + style preference:
+  1. Đề xuất palette màu (3-5 màu chính)
+  2. List vật liệu chính (gỗ teak, gạch bông, đá marble, mây tre, ...)
+  3. Generate render prompts cho Flux Pro / SDXL — 4 phương án cho mỗi phòng
+  4. Đề xuất lighting design (ban ngày + ban đêm)
+
+Output JSON:
+{
+  "style_locked": "indochine",
+  "palette": [{"hex": "#8B4513", "name": "Saddle Brown", "usage": "wood furniture"}, ...],
+  "materials": ["gỗ teak Lào", "gạch bông cement Sài Gòn", ...],
+  "render_prompts": {
+    "phong_khach": [
+      {"prompt": "Indochine living room, teak wood floor, ...", "style": "warm"},
+      {"prompt": "Indochine living room, marble accent, ...", "style": "luxury"}
+    ],
+    "phong_ngu": [...]
+  },
+  "lighting": {"day": "natural light from south", "night": "warm 2700K downlights + accent"}
+}"""
+
+    async def design_style(
+        self, dna: dict, style: str, workspace_id: str = "vietcontech"
+    ) -> AgentResult:
+        prompt = (
+            f"# DNA DỰ ÁN\n{json.dumps(dna, ensure_ascii=False, indent=2)}\n\n"
+            f"# STYLE CHỌN: {style}\n\nGenerate Interior Design spec JSON."
+        )
+        return await self.call_llm(prompt, workspace_id=workspace_id)
+
+
+# ─── 3. STRUCTURAL ENGINEER AGENT ────────────────────────────────
+class StructuralEngineerAgent(BaseDesignAgent):
+    """
+    Kỹ sư kết cấu — tính tải, móng, cột, dầm, sàn theo TCVN 2737 + 5574.
+
+    Input: floor plan + số tầng + địa chất
+    Output: structural calc report + bản vẽ móng/cột/dầm specifications
+    """
+    role = "structural_engineer"
+    default_model = "claude-opus-4-7"  # critical — frontier tier
+    complexity = "critical"
+    system_prompt_template = """Bạn là Kỹ sư Kết cấu — chuyên TCVN 2737 (Tải trọng) + TCVN 5574 (BTCT).
+
+Khi nhận floor plan + số tầng + địa chất:
+  1. Tính tải tĩnh + hoạt + gió (TCVN 2737)
+  2. Chọn loại móng (đơn/băng/cọc) theo địa chất
+  3. Tiết diện cột chịu lực (BTCT M250)
+  4. Tiết diện dầm + cốt thép
+  5. Bố trí sàn + cốt thép
+
+Output JSON:
+{
+  "loads": {"dead_kN_m2": 4.5, "live_kN_m2": 2.0, "wind_kN_m2": 0.83},
+  "foundation": {"type": "cọc khoan nhồi D300", "depth_m": 15, "count": 8},
+  "columns": [{"id": "C1", "size_mm": "300x300", "rebar": "8d18 + d8a200"}, ...],
+  "beams": [{"id": "B1", "size_mm": "200x350", "rebar_top": "3d18", "rebar_bottom": "3d20"}, ...],
+  "slab": {"thickness_mm": 120, "rebar": "d10a150 both ways"},
+  "compliance_tcvn": ["2737:2023", "5574:2024"],
+  "engineer_signoff_required": true
+}
+
+⚠️ Output luôn yêu cầu KỸ SƯ CHỨNG CHỈ ký duyệt — em chỉ là draft draft AI."""
+
+    async def calculate_structure(
+        self, floor_plan: dict, num_floors: int, soil_data: dict,
+        workspace_id: str = "vietcontech",
+    ) -> AgentResult:
+        prompt = (
+            f"# FLOOR PLAN\n{json.dumps(floor_plan, ensure_ascii=False, indent=2)}\n\n"
+            f"# SỐ TẦNG: {num_floors}\n# ĐỊA CHẤT: {json.dumps(soil_data, ensure_ascii=False)}\n\n"
+            f"Calculate full structural spec JSON theo TCVN."
+        )
+        return await self.call_llm(prompt, workspace_id=workspace_id)
+
+
+# ─── 4. MEP ENGINEER AGENT (Điện + Nước) ──────────────────────────
+class MEPEngineerAgent(BaseDesignAgent):
+    """
+    Kỹ sư MEP — Điện (TCVN 7568) + Nước (TCVN 4513/4474).
+
+    Input: floor plan + số tầng + số người ở
+    Output: bản vẽ điện + nước specifications
+    """
+    role = "mep_engineer"
+    default_model = "claude-sonnet-4-6"
+    complexity = "complex"
+    system_prompt_template = """Bạn là Kỹ sư MEP — chuyên TCVN 7568 (Điện) + 4513 (Cấp nước) + 4474 (Thoát nước).
+
+Khi nhận floor plan + số người ở:
+  ĐIỆN (TCVN 7568):
+    - Bố trí ổ cắm: 2-3 per phòng, độ cao 0.4m + 1.2m
+    - Đèn chiếu sáng: tính độ rọi (lux) theo phòng (phòng khách 100-150, ngủ 50-100, bếp 200+)
+    - Tủ điện chính + nhánh + CB
+    - Dây dẫn theo công suất
+
+  NƯỚC (TCVN 4513/4474):
+    - Cấp nước sinh hoạt (PPR D20/25/32)
+    - Cấp nước nóng (bình + ống cách nhiệt)
+    - Thoát nước thải (PVC D90/110)
+    - Thoát nước mưa (D110)
+    - Bể tự hoại + bể nước
+
+Output JSON:
+{
+  "electrical": {
+    "outlets": [{"location": "phong_khach", "count": 4, "height_m": 0.4}, ...],
+    "lighting": [{"room": "phong_khach", "lux_target": 150, "fixtures": [...]}, ...],
+    "main_panel": {"total_kva": 12, "phases": 1, "breakers": [...]},
+    "wiring": [{"circuit": "lighting", "wire_mm2": 1.5}, {"circuit": "outlet", "wire_mm2": 2.5}, ...]
+  },
+  "plumbing": {
+    "supply_cold": {"diameter_mm": 25, "material": "PPR"},
+    "supply_hot": {"heater_kW": 2.5, "insulation": "PE foam"},
+    "drainage_waste": {"diameter_mm": 110, "material": "PVC"},
+    "drainage_rain": {"diameter_mm": 110},
+    "septic_tank_m3": 3.0,
+    "fixtures": [{"type": "WC", "count": 3}, {"type": "lavabo", "count": 3}, ...]
+  },
+  "compliance_tcvn": ["7568:2024", "4513:2023", "4474:2023"]
+}"""
+
+    async def design_mep(
+        self, floor_plan: dict, num_residents: int, workspace_id: str = "vietcontech"
+    ) -> AgentResult:
+        prompt = (
+            f"# FLOOR PLAN\n{json.dumps(floor_plan, ensure_ascii=False, indent=2)}\n\n"
+            f"# SỐ NGƯỜI Ở: {num_residents}\n\nGenerate MEP spec JSON."
+        )
+        return await self.call_llm(prompt, workspace_id=workspace_id)
+
+
+# ─── 5. BOQ CALCULATOR AGENT ─────────────────────────────────────
+class BOQCalculatorAgent(BaseDesignAgent):
+    """
+    Bóc tách dự toán — Bill of Quantities theo QĐ 1129/QĐ-BXD.
+
+    Input: bản vẽ kiến trúc + kết cấu + MEP + giá vật tư hiện hành
+    Output: Excel BOQ 6 sheets theo mẫu Bộ Xây dựng
+    """
+    role = "boq_calculator"
+    default_model = "claude-haiku-4-5"  # tốc độ ưu tiên + cost cheap
+    complexity = "medium"
+    system_prompt_template = """Bạn là chuyên gia BOQ (Bill of Quantities) — bóc tách dự toán xây dựng VN.
+
+Chuyên môn:
+  - QĐ 1129/QĐ-BXD (Định mức dự toán xây dựng)
+  - Bảng giá vật tư VN cập nhật theo tỉnh/thành
+  - 6 phần: Phần thô / Hoàn thiện / Điện / Nước / Nội thất / Chi phí khác
+
+Khi nhận bản vẽ + spec:
+  1. Bóc tách khối lượng: m³ bê tông, kg thép, m² tường, viên gạch, ...
+  2. Tra định mức theo QĐ 1129 (hệ số nhân công + vật tư)
+  3. Áp đơn giá hiện hành (theo tỉnh/thành)
+  4. Tổng hợp 6 sheet + tóm tắt
+
+Output JSON:
+{
+  "summary": {
+    "total_vnd": 1850000000,
+    "per_m2_vnd": 9250000,
+    "breakdown": {"phan_tho": 0.45, "hoan_thien": 0.28, "dien": 0.07, "nuoc": 0.05, "noi_that": 0.10, "khac": 0.05}
+  },
+  "sheets": {
+    "A_phan_tho": [
+      {"hang_muc": "Đào đất móng", "khoi_luong": 12.5, "don_vi": "m3", "don_gia": 150000, "thanh_tien": 1875000},
+      ...
+    ],
+    "B_hoan_thien": [...],
+    "C_dien": [...],
+    "D_nuoc": [...],
+    "E_noi_that": [...],
+    "F_khac": [...]
+  },
+  "excel_template": "QD_1129_BXD_v2024.xlsx",
+  "validity_days": 30
+}"""
+
+    async def calculate_boq(
+        self, architecture_spec: dict, structural_spec: dict, mep_spec: dict,
+        location_province: str = "Hà Nội",
+        workspace_id: str = "vietcontech",
+    ) -> AgentResult:
+        prompt = (
+            f"# ARCHITECTURE\n{json.dumps(architecture_spec, ensure_ascii=False)[:2000]}\n\n"
+            f"# STRUCTURAL\n{json.dumps(structural_spec, ensure_ascii=False)[:2000]}\n\n"
+            f"# MEP\n{json.dumps(mep_spec, ensure_ascii=False)[:2000]}\n\n"
+            f"# LOCATION: {location_province}\n\nGenerate BOQ JSON theo QĐ 1129."
+        )
+        return await self.call_llm(prompt, workspace_id=workspace_id)
+
+
+# ─── 6. QA VALIDATOR AGENT ───────────────────────────────────────
+class QAValidatorAgent(BaseDesignAgent):
+    """
+    QA Validator — check compliance + readiness sign-off.
+
+    Input: tất cả output từ 5 agents trên
+    Output: validation report + green-light hoặc list issues
+    """
+    role = "qa_validator"
+    default_model = "claude-opus-4-7"  # critical — frontier judgment
+    complexity = "critical"
+    system_prompt_template = """Bạn là QA Validator cho dự án xây dựng VN.
+
+Chuyên môn check:
+  1. Compliance TCVN/QCVN tất cả layers (kiến trúc/kết cấu/điện/nước/BOQ)
+  2. Consistency cross-agent (KTS specs khớp với Kỹ sư kết cấu?)
+  3. Budget reasonableness (BOQ tổng có hợp lý không?)
+  4. Phong thuỷ violations (có gì xung khắc mệnh gia chủ không?)
+  5. Pháp lý: bản vẽ có cần KTS chứng chỉ ký không? (yes/no)
+
+Output JSON:
+{
+  "verdict": "ready_for_signoff|needs_revision|major_issues",
+  "compliance_checks": [
+    {"layer": "structural", "tcvn": "2737:2023", "status": "pass"},
+    {"layer": "mep_electrical", "tcvn": "7568:2024", "status": "warning", "note": "..."}
+  ],
+  "consistency_issues": [...],
+  "budget_assessment": {"realistic": true, "deviation_from_market_pct": -3.2},
+  "feng_shui_check": {"violations": [], "warnings": [...]},
+  "signoff_required": [
+    {"role": "kts_chinh", "documents": ["kien_truc"], "license_required": "KTS chứng chỉ Loại A"},
+    {"role": "ksct_ketcau", "documents": ["ket_cau"], "license_required": "KSCT 3 năm kinh nghiệm"}
+  ],
+  "next_steps": [...]
+}"""
+
+    async def validate(
+        self,
+        all_agent_outputs: dict[str, Any],
+        workspace_id: str = "vietcontech",
+    ) -> AgentResult:
+        prompt = (
+            f"# VALIDATE ALL AGENT OUTPUTS\n\n"
+            f"{json.dumps(all_agent_outputs, ensure_ascii=False, indent=2)[:5000]}\n\n"
+            f"Validate compliance + consistency. Return verdict JSON."
+        )
+        return await self.call_llm(prompt, workspace_id=workspace_id)

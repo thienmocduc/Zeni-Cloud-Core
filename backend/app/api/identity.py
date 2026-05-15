@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import random
+import re
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
@@ -16,6 +17,28 @@ from app.schemas.resources import IdentityFlowIn, SecretCreateIn, SecretOut
 from app.services.audit import audit_push, billing_push
 
 router = APIRouter(prefix="/identity", tags=["identity"])
+
+# Pre-flight validators — fail-fast với message tiếng Việt rõ ràng
+# (Pydantic schema đã enforce pattern/length, đây là double-check + thân thiện hơn)
+_SECRET_NAME_RE = re.compile(r"^[A-Z][A-Z0-9_]{2,63}$")
+_MAX_SECRET_BYTES = 64 * 1024  # 64KB — Secret Manager hard limit
+
+
+def _validate_secret_create(name: str, value: str) -> None:
+    """Pre-flight validate trước khi gọi Vault encrypt / DB insert."""
+    if not _SECRET_NAME_RE.match(name or ""):
+        raise HTTPException(
+            status_code=422,
+            detail="Tên secret không hợp lệ — cần CHỮ HOA, số, gạch dưới (3-64 ký tự, bắt đầu bằng chữ cái). VD: API_KEY_GEMINI",
+        )
+    if not value:
+        raise HTTPException(status_code=422, detail="Giá trị secret không được rỗng.")
+    size = len(value.encode("utf-8"))
+    if size > _MAX_SECRET_BYTES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Secret value vượt 64KB (Secret Manager limit). Hiện tại: {size} bytes.",
+        )
 
 
 # ─── Secrets / Vault ─────────────────────────────────
@@ -43,17 +66,25 @@ async def create_secret(
     if me.role not in ("Owner", "Admin"):
         raise HTTPException(status_code=403, detail="Cần Admin để tạo secret")
 
+    # Pre-flight fail-fast (pattern L1)
+    _validate_secret_create(data.name, data.value)
+
     existing = (await db.execute(
         select(Secret).where(Secret.workspace_id == ws, Secret.name == data.name, Secret.env == data.env)
     )).scalar_one_or_none()
     if existing:
-        raise HTTPException(status_code=409, detail="Secret đã tồn tại — dùng rotate")
+        raise HTTPException(status_code=409, detail=f"Secret '{data.name}' env={data.env} đã tồn tại — dùng rotate.")
+
+    try:
+        encrypted = encrypt(data.value)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Vault encrypt thất bại: {e}") from e
 
     secret = Secret(
         workspace_id=ws,
         name=data.name,
         env=data.env,
-        value_encrypted=encrypt(data.value),
+        value_encrypted=encrypted,
     )
     db.add(secret)
     await audit_push(db, actor=me.email, workspace_id=ws, action="secret.create", target=data.name, severity="ok",

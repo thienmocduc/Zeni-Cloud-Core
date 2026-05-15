@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deploy Workflow A-Z — Zeni Cloud Docs</title>
+<meta name="description" content="Hướng dẫn deploy app lên Zeni Cloud từ A-Z: register, tạo project, upload code, bind domain, troubleshoot.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root { --bg-void:#0a0a14; --bg-elev:#11111d; --bg-card:#14142a; --border:rgba(168,139,250,0.15); --ink-100:#e5e7eb; --ink-200:#c4b5fd; --ink-300:#9e8be5; --ink-400:#7c6bb0; --gold:#fde68a; --indigo:#7d68ff; --crown:#a855f7; --aurora:#22d3ee; --code-bg:#0d1117; --ok:#22c55e; --warn:#fb923c; --err:#ef4444; }
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg-void);color:var(--ink-100);font-size:15px;line-height:1.7;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 1000px 700px at 80% 5%,rgba(168,85,247,0.08),transparent 55%),radial-gradient(ellipse 900px 600px at 5% 90%,rgba(99,102,241,0.06),transparent 55%);z-index:-1;pointer-events:none}
+a{color:var(--indigo);text-decoration:none;transition:color .2s}
+a:hover{color:var(--gold)}
+header.topbar{position:sticky;top:0;z-index:100;background:rgba(10,10,20,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.topbar-inner{max-width:1400px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
+.logo-mark{width:32px;height:32px;background:linear-gradient(135deg,var(--indigo),var(--crown));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;color:white}
+.breadcrumb{color:var(--ink-300);font-size:14px}
+.breadcrumb-sep{opacity:.4;margin:0 6px}
+nav.header-nav{display:flex;gap:20px;font-size:14px;align-items:center}
+nav.header-nav a{color:var(--ink-200)}
+nav.header-nav a.cta{background:var(--indigo);color:white;padding:8px 16px;border-radius:8px;font-weight:600}
+.layout{max-width:1100px;margin:0 auto;padding:32px 24px}
+.hero{margin-bottom:32px}
+.hero h1{font-size:36px;font-weight:800;margin-bottom:12px;background:linear-gradient(135deg,var(--gold),var(--crown));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .subtitle{font-size:17px;color:var(--ink-300);margin-bottom:8px}
+.hero .meta{font-size:13px;color:var(--ink-400)}
+section{margin-bottom:48px}
+h2{font-size:24px;font-weight:700;margin-bottom:16px;color:var(--ink-100);padding-bottom:8px;border-bottom:1px solid var(--border)}
+h2 .num{color:var(--indigo);margin-right:8px}
+h3{font-size:18px;font-weight:600;margin:24px 0 10px;color:var(--gold)}
+p{margin-bottom:12px}
+ul,ol{margin-left:22px;margin-bottom:12px}
+li{margin-bottom:6px}
+code{font-family:'JetBrains Mono',ui-monospace,monospace;background:var(--code-bg);color:var(--gold);padding:2px 6px;border-radius:4px;font-size:13px}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:16px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;line-height:1.6}
+pre code{background:transparent;padding:0;color:var(--ink-100)}
+.callout{padding:14px 18px;border-radius:10px;margin:16px 0;font-size:14px;line-height:1.6}
+.callout.info{background:rgba(34,211,238,0.08);border-left:3px solid var(--aurora)}
+.callout.warn{background:rgba(251,146,60,0.08);border-left:3px solid var(--warn)}
+.callout.ok{background:rgba(34,197,94,0.08);border-left:3px solid var(--ok)}
+.callout.err{background:rgba(239,68,68,0.08);border-left:3px solid var(--err)}
+.callout strong{color:var(--ink-100)}
+.steps{counter-reset:step;list-style:none;margin-left:0}
+.steps li{counter-increment:step;padding-left:48px;position:relative;margin-bottom:20px;padding-bottom:20px;border-bottom:1px dashed var(--border)}
+.steps li:last-child{border-bottom:none}
+.steps li::before{content:counter(step);position:absolute;left:0;top:0;width:36px;height:36px;background:linear-gradient(135deg,var(--indigo),var(--crown));border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:14px}
+.steps li h3{margin-top:0}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px}
+th,td{padding:10px 12px;text-align:left;border:1px solid var(--border)}
+th{background:rgba(125,104,255,0.1);color:var(--gold);font-weight:600}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;margin-left:6px}
+.badge.ok{background:rgba(34,197,94,0.15);color:var(--ok)}
+.badge.warn{background:rgba(251,146,60,0.15);color:var(--warn)}
+.badge.new{background:rgba(168,85,247,0.15);color:var(--crown)}
+.tabs{display:flex;gap:0;margin:16px 0 0;border-bottom:1px solid var(--border)}
+.tab{padding:10px 18px;cursor:pointer;color:var(--ink-300);border-bottom:2px solid transparent;font-weight:500;font-size:14px}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.tab-content{display:none;padding:16px 0}
+.tab-content.active{display:block}
+.cta-box{padding:20px 24px;background:linear-gradient(135deg,rgba(125,104,255,0.1),rgba(168,85,247,0.1));border:1px solid rgba(168,85,247,0.3);border-radius:12px;margin:24px 0}
+.cta-box h3{margin-top:0}
+.three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:16px 0}
+.col-card{padding:16px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px}
+.col-card h4{margin-bottom:8px;color:var(--gold);font-size:15px}
+.col-card .icon{font-size:24px;margin-bottom:8px}
+@media (max-width:768px){.three-col{grid-template-columns:1fr}.layout{padding:20px 16px}.hero h1{font-size:28px}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="/" class="logo"><span class="logo-mark">Z</span> Zeni Cloud</a>
+    <div class="breadcrumb"><a href="/docs/">Docs</a><span class="breadcrumb-sep">/</span>Deploy Workflow A-Z</div>
+    <nav class="header-nav">
+      <a href="/docs/">Docs Home</a>
+      <a href="/docs/full-features.html">All Features</a>
+      <a href="/" class="cta">Mở Dashboard</a>
+    </nav>
+  </div>
+</header>
+
+<main class="layout">
+
+<div class="hero">
+  <h1>🚀 Deploy Workflow A-Z</h1>
+  <p class="subtitle">Hướng dẫn từ register → deploy app thật → bind domain → troubleshoot. 5 phút đọc.</p>
+  <p class="meta">Updated 2026-05-08 · Zeni Cloud v121</p>
+</div>
+
+<div class="callout info">
+  <strong>📌 Đọc trước:</strong> Trang này dành cho dev muốn deploy app (web/api/worker) từ source code lên Zeni Cloud.
+  Thay thế Vercel + Supabase + Auth0 + OpenAI API + Zapier — 1 account, 6 lớp hạ tầng.
+</div>
+
+<section>
+<h2><span class="num">1.</span>Hiểu workflow trước khi click</h2>
+<p>Zeni Cloud deploy mỗi project = 1 service Cloud Run độc lập. Để deploy app của bạn, cần <strong>1 image Docker</strong>. Có 3 cách lấy image:</p>
+
+<div class="three-col">
+  <div class="col-card">
+    <div class="icon">📦</div>
+    <h4>① Upload ZIP source</h4>
+    <p style="font-size:13px">Bạn upload file zip code → Zeni tự build Docker image. Phù hợp Next.js/Vite/FastAPI/Express với Dockerfile chuẩn.</p>
+    <code style="display:block;margin-top:8px;font-size:11px">POST /api/v1/upload/source</code>
+  </div>
+  <div class="col-card">
+    <div class="icon">🏭</div>
+    <h4>② Build Farm (native)</h4>
+    <p style="font-size:13px">Build Tauri/Rust/Electron/Go/Flutter/.NET trên cloud. Khách KHÔNG cần cài rustc/MSVC/Xcode local.</p>
+    <code style="display:block;margin-top:8px;font-size:11px">POST /api/v1/build-farm/jobs</code>
+  </div>
+  <div class="col-card">
+    <div class="icon">🐳</div>
+    <h4>③ Image có sẵn Docker Hub</h4>
+    <p style="font-size:13px">Dùng image public hoặc private đã build sẵn, push lên Docker Hub / Artifact Registry.</p>
+    <code style="display:block;margin-top:8px;font-size:11px">docker.io/yourname/app:v1</code>
+  </div>
+</div>
+</section>
+
+<section>
+<h2><span class="num">2.</span>5 bước deploy</h2>
+<ol class="steps">
+
+<li>
+<h3>Đăng ký + Login</h3>
+<p>Vào <a href="https://zenicloud.io">zenicloud.io</a> → click "Đăng ký" → nhập email + password (mạnh ≥8 ký tự). Sau khi register, hệ thống tự tạo personal workspace cho bạn (tên = email slug).</p>
+<div class="callout warn"><strong>⚠️ Token JWT</strong> hết hạn sau 1 giờ. Nếu thấy "Phiên đăng nhập hết hạn" → login lại (Zeni tự redirect).</div>
+</li>
+
+<li>
+<h3>Click "+ Project mới"</h3>
+<p>Trên dashboard, button góc trên-phải. Mở wizard 4 bước:</p>
+<table>
+  <tr><th>Bước</th><th>Chọn gì</th></tr>
+  <tr><td>1</td><td>Loại: <code>Web App</code> / <code>API</code> / <code>Worker</code> / <code>AI Agent</code></td></tr>
+  <tr><td>2</td><td>Tên project (3-48 ký tự, lowercase + dash) + region (mặc định <code>asia-southeast1</code> Singapore — nhanh nhất cho VN)</td></tr>
+  <tr><td>3</td><td>Runtime + Size: Node 20 / Python 3.12 / Go / Static; Size XS-Large + GPU</td></tr>
+  <tr><td>4</td><td>Confirm — đọc kỹ <strong>"💡 Lưu ý quan trọng"</strong> về image mặc định</td></tr>
+</table>
+</li>
+
+<li>
+<h3>Chọn cách đặt image (CHÍNH YẾU)</h3>
+<p>Khi confirm Step 4, image mặc định là <code>us-docker.pkg.dev/cloudrun/container/hello</code> — placeholder Google. Nếu bạn click <strong>Tạo & Deploy</strong> ngay, project sẽ chạy trang "Hello World" của Google, KHÔNG phải code của bạn.</p>
+<div class="callout ok"><strong>✅ Để deploy CODE THẬT,</strong> sau khi project tạo, làm 1 trong 3 cách:</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab(event,'tab1')">① Upload ZIP</div>
+  <div class="tab" onclick="switchTab(event,'tab2')">② Build Farm</div>
+  <div class="tab" onclick="switchTab(event,'tab3')">③ Docker Hub</div>
+</div>
+
+<div class="tab-content active" id="tab1">
+<p><strong>Phù hợp:</strong> Next.js, React Vite, Vue, FastAPI, Express, Static HTML.</p>
+<pre><code># Zip thư mục code (loại trừ node_modules, .git, .env)
+zip -r my-app.zip . -x "node_modules/*" ".git/*" ".env*"
+
+# Upload qua API
+curl -X POST 'https://zenicloud.io/api/v1/upload/source?ws=YOUR_WS&framework=auto' \
+  -H "Authorization: Bearer $ZENI_TOKEN" \
+  -F "file=@my-app.zip" \
+  -F "project_name=my-app"
+
+# Zeni tự detect framework + generate Dockerfile + build + deploy
+# Trả về upload_id, poll status:
+curl 'https://zenicloud.io/api/v1/upload/source/{upload_id}?ws=YOUR_WS' \
+  -H "Authorization: Bearer $ZENI_TOKEN"</code></pre>
+<p>Hoặc dùng CLI <code>npm install -g @zenicloud/cli</code> rồi <code>zeni deploy</code>.</p>
+</div>
+
+<div class="tab-content" id="tab2">
+<p><strong>Phù hợp:</strong> Tauri (.exe / .dmg / .AppImage), Rust binary, Electron app, Go static, Flutter mobile, .NET 8.</p>
+<pre><code>curl -X POST 'https://zenicloud.io/api/v1/build-farm/jobs?ws=YOUR_WS' \
+  -H "Authorization: Bearer $ZENI_TOKEN" \
+  -d '{
+    "toolchain": "tauri-latest",
+    "source_type": "github",
+    "source_ref": "github://thienmocduc/my-tauri-app@main",
+    "target_platforms": ["windows-x64", "linux-x64"]
+  }'
+
+# Returns job_id. Poll until status="success":
+curl 'https://zenicloud.io/api/v1/build-farm/jobs/{job_id}?ws=YOUR_WS' \
+  -H "Authorization: Bearer $ZENI_TOKEN"
+
+# Artifact URL trả về sau build success — download .exe / .dmg / .AppImage</code></pre>
+<p>Hỗ trợ 6 toolchain: <code>tauri-latest</code>, <code>rust-stable</code>, <code>electron-builder</code>, <code>go-modules</code>, <code>flutter-stable</code>, <code>dotnet-8</code>.</p>
+</div>
+
+<div class="tab-content" id="tab3">
+<p><strong>Phù hợp:</strong> Bạn đã có Docker image build sẵn, push lên Docker Hub / Artifact Registry.</p>
+<pre><code># Build + push lên Docker Hub
+docker build -t yourname/my-app:v1 .
+docker push yourname/my-app:v1
+
+# Update project image qua API
+curl -X PATCH 'https://zenicloud.io/api/v1/projects/{project_id}/image?ws=YOUR_WS' \
+  -H "Authorization: Bearer $ZENI_TOKEN" \
+  -d '{"image": "docker.io/yourname/my-app:v1"}'
+
+# Hoặc tạo project mới với image này từ đầu (Step 4 wizard có field "Image")</code></pre>
+<div class="callout info"><strong>Tip:</strong> Public Docker Hub OK ngay. Private cần wire credentials qua <code>/identity/secrets</code>.</div>
+</div>
+</li>
+
+<li>
+<h3>Deploy + Poll status</h3>
+<p>Sau khi click "Tạo & Deploy" hoặc gọi API, status chuyển: <code>deploying</code> → <code>running</code> (~30-60s). Cloud Run service tạo ra với URL dạng <code>https://zeni-{ws}-{project}-xxx.a.run.app</code>.</p>
+<pre><code>curl 'https://zenicloud.io/api/v1/projects/{project_id}?ws=YOUR_WS' \
+  -H "Authorization: Bearer $ZENI_TOKEN"
+
+# Response:
+{
+  "id": "...",
+  "status": "running",
+  "domain": "https://zeni-myws-myapp-lijavjpb2a-as.a.run.app",
+  "version": "rev-myws-myapp-00001-abc"
+}</code></pre>
+</li>
+
+<li>
+<h3>Bind custom domain</h3>
+<p>Nếu bạn muốn URL riêng (vd: <code>app.example.com</code>):</p>
+<pre><code>curl -X POST 'https://zenicloud.io/api/v1/projects/{project_id}/domain?ws=YOUR_WS' \
+  -H "Authorization: Bearer $ZENI_TOKEN" \
+  -d '{"domain": "app.example.com"}'
+
+# Response trả CNAME records cần add vào DNS:
+{
+  "status": "pending_dns",
+  "dns_records": [
+    {"type": "CNAME", "name": "app", "value": "ghs.googlehosted.com"}
+  ]
+}</code></pre>
+<p>Add CNAME vào Namecheap/Cloudflare DNS → đợi 5-15 phút → SSL auto-issue. Domain LIVE.</p>
+</li>
+
+</ol>
+</section>
+
+<section>
+<h2><span class="num">3.</span>Troubleshoot lỗi thường gặp</h2>
+
+<h3>❌ "missing bearer token" (HTTP 401)</h3>
+<p><strong>Nguyên nhân:</strong> Token JWT trong localStorage browser hết hạn (TTL 1h) hoặc bị clear.</p>
+<p><strong>Fix:</strong> Logout → Login lại. Sau v121, frontend tự redirect login khi detect token expire.</p>
+
+<h3>❌ "Image 'X' không tồn tại trong registry" (HTTP 422)</h3>
+<p><strong>Nguyên nhân:</strong> Bạn submit image ref (vd: <code>gcr.io/project/app:v1</code>) nhưng chưa build/push image lên registry.</p>
+<p><strong>Fix:</strong> Build image trước (1 trong 3 cách trên), HOẶC dùng Docker Hub public (<code>docker.io/library/nginx:alpine</code>).</p>
+
+<h3>❌ "Container failed to start on PORT=3000"</h3>
+<p><strong>Nguyên nhân:</strong> App của bạn không listen đúng port. Cloud Run truyền env <code>PORT</code>, app phải listen port đó (default 8080).</p>
+<p><strong>Fix:</strong> Sửa code app: <code>app.listen(process.env.PORT || 8080)</code>. Hoặc khi tạo project, chỉnh field <code>port</code> đúng với app của bạn.</p>
+
+<h3>❌ "Workspace access denied" (HTTP 403)</h3>
+<p><strong>Nguyên nhân:</strong> Bạn login OK nhưng không có quyền vào workspace đó.</p>
+<p><strong>Fix:</strong> Liên hệ Owner workspace để invite bạn qua tab Members. Hoặc tạo workspace riêng.</p>
+
+<h3>❌ Build Farm fail "image not found"</h3>
+<p><strong>Nguyên nhân:</strong> Toolchain image <code>gcr.io/zeni-cloud-core/build-farm/tauri:2</code> chưa build (Phase 2 pending).</p>
+<p><strong>Workaround:</strong> Tạm dùng GitHub Actions hoặc local build → push image lên Docker Hub → deploy ZeniCloud qua cách ③.</p>
+</section>
+
+<section>
+<div class="cta-box">
+<h3>📚 Tiếp theo nên đọc</h3>
+<ul style="margin-bottom:0">
+  <li><a href="/docs/full-features.html">Full Features</a> — list 6 lớp hạ tầng + 11 services Sprint 1-2</li>
+  <li><a href="/docs/quickstart.html">Quickstart 5 phút</a> — Hello World từ đầu</li>
+  <li><a href="/docs/custom-domain.html">Custom Domain</a> — bind domain chi tiết</li>
+  <li><a href="/docs/ai-call.html">AI Engine</a> — call Claude/Gemini/GPT qua /ai/complete</li>
+  <li><a href="/docs/cron.html">Cron Jobs</a> — schedule tasks</li>
+  <li><a href="/docs/pwa-templates.html">PWA Templates</a> — install-able web app</li>
+</ul>
+</div>
+</section>
+
+</main>
+
+<script>
+function switchTab(e, id) {
+  const tabs = e.target.parentElement.querySelectorAll('.tab');
+  const contents = e.target.parentElement.parentElement.querySelectorAll('.tab-content');
+  tabs.forEach(t => t.classList.remove('active'));
+  contents.forEach(c => c.classList.remove('active'));
+  e.target.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+</script>
+
+</body>
+</html>

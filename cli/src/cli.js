@@ -11,6 +11,12 @@ import { listProjects } from './commands/list.js';
 import { open as openCmd } from './commands/open.js';
 import { help } from './commands/help.js';
 import { alias } from './commands/alias.js';
+// v0.3 Phase 1+2 commands (chairman approved 2026-05-11)
+import { env } from './commands/env.js';
+import { domain } from './commands/domain.js';
+import { revisions, rollback } from './commands/rollback.js';
+// v0.3 Phase 3 — project templates
+import { create } from './commands/create.js';
 
 const COMMANDS = {
   login,
@@ -22,12 +28,19 @@ const COMMANDS = {
   list: listProjects,
   ls: listProjects,
   open: openCmd,
-  alias,         // NEW v0.2: multi-project tokens
+  alias,         // v0.2: multi-project tokens
+  // v0.3 Phase 1+2 features
+  env,           // env vars CRUD
+  domain,        // custom domain mapping (v169 auto HTTPS LB)
+  revisions,     // list Cloud Run revisions
+  rollback,      // 1-click rollback (P2.2)
+  create,        // scaffold from official template (P3.2)
+  new: create,   // alias
   help,
   '-h': help,
   '--help': help,
-  '-v': () => console.log('zeni-cli v0.2.0'),
-  '--version': () => console.log('zeni-cli v0.2.0'),
+  '-v': () => console.log('zeni-cli v0.3.0'),
+  '--version': () => console.log('zeni-cli v0.3.0'),
 };
 
 export async function run(args) {

@@ -427,20 +427,21 @@ async def run_build_and_deploy(
         log.info("[source_build] %s build SUCCESS, deploying", upload_id)
 
         # 7. AUTO-DEPLOY to Cloud Run (call internal projects flow)
+        # FIX: function thật trong cloud_run.py là `deploy_service`, KHÔNG phải `deploy_cloud_run`.
+        # Bug cũ silent ImportError → image build OK nhưng project không được update image.
         try:
-            from app.services.cloud_run import deploy_cloud_run, CloudRunError
-            from app.services.cloud_run import service_name_for, SIZE_TO_RESOURCES, SIZE_DISPLAY
+            from app.services.cloud_run import deploy_service, CloudRunError
+            from app.services.cloud_run import service_name_for
             sn = service_name_for(workspace_id, project_name)
-            resources = SIZE_TO_RESOURCES.get("s", SIZE_TO_RESOURCES.get("xs"))
-            cpu_disp, mem_disp, _ = SIZE_DISPLAY.get("s", SIZE_DISPLAY.get("xs"))
-            deploy_result = await deploy_cloud_run(
-                service_name=sn,
+            deploy_result = await deploy_service(
+                workspace=workspace_id,
+                project_name=project_name,
                 image=image_tag,
+                size="s",
                 region="asia-southeast1",
                 env_vars={"WORKSPACE": workspace_id, "DEPLOY_BY": "zeni-source-build"},
                 secrets={},
                 port=port,
-                resources=resources,
                 allow_unauthenticated=True,
             )
             deploy_url = deploy_result.url or f"https://{sn}-asia-southeast1.run.app"

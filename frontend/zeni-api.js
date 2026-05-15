@@ -81,6 +81,11 @@
     // Clear legacy + remove active account from multi-account
     localStorage.removeItem(ACCESS_KEY);
     localStorage.removeItem(REFRESH_KEY);
+    // Nuke per-tenant cached state so next login does not see prior tenant data
+    try {
+      localStorage.removeItem('zeniCloud_v2_clean');
+      localStorage.removeItem('zeniCloud_session_v1');
+    } catch (e) { /* swallow */ }
     const id = _getActiveId();
     if (id) {
       const accounts = _getAccounts().filter(a => a.id !== id);
@@ -112,7 +117,16 @@
     };
     if (!noAuth) {
       const tok = getAccess();
-      if (tok) opts.headers.Authorization = 'Bearer ' + tok;
+      if (!tok) {
+        // FIX: throw clear error early instead of submitting without auth header.
+        // Backend would reject with "missing bearer token" — confusing UX.
+        const err = new Error('Phiên đăng nhập hết hạn — vui lòng login lại');
+        err.status = 401;
+        err.expired = true;
+        err.redirect = '/login.html';
+        throw err;
+      }
+      opts.headers.Authorization = 'Bearer ' + tok;
     }
     if (body !== undefined) opts.body = typeof body === 'string' ? body : JSON.stringify(body);
 
@@ -291,6 +305,29 @@
       try {
         await ZeniAPI.login(email, pass);
         const user = await ZeniAPI.me();
+        // Cross-tenant safety: if cached session belongs to a different user,
+        // wipe stale per-tenant state (auditLog, projects, connectors, ws map)
+        // BEFORE the new session writes to localStorage.
+        try {
+          const cachedRaw = localStorage.getItem('zeniCloud_session_v1');
+          if (cachedRaw) {
+            const cached = JSON.parse(cachedRaw);
+            const cachedId = cached && cached.user && cached.user.id;
+            if (cachedId && user && user.id && cachedId !== user.id) {
+              localStorage.removeItem('zeniCloud_v2_clean');
+              localStorage.removeItem('zeniCloud_session_v1');
+              if (window.state) {
+                window.state.projects = [];
+                window.state.agents = [];
+                window.state.secrets = [];
+                window.state.connectors = [];
+                window.state.auditLog = [];
+                window.state.members = [];
+              }
+              console.log('[ZeniAPI] tenant change detected — wiped stale state');
+            }
+          }
+        } catch (e) { console.warn('[ZeniAPI] mismatch-check failed:', e); }
         window.__ZENI_REAL_USER = user;
 
         const mappedUser = {
@@ -305,6 +342,29 @@
         // Map backend user → state shape demo đang dùng
         if (window.state) {
           window.state.currentUser = mappedUser;
+          // Defensive guard: empty workspaces array → don't set undefined (prevents ?ws=undefined cascade)
+          if (mappedUser.ws.length === 0) {
+            console.warn('[ZeniAPI] user has no workspace — opening create workspace modal');
+            window.state.currentWs = null;
+            try { localStorage.setItem('zeniCloud_session_v1', JSON.stringify({ userId: mappedUser.id, currentWs: null, ts: Date.now(), user: mappedUser })); } catch {}
+            // Boot UI first so navigation/sidebar work, then prompt create workspace
+            if (typeof window.bootApp === 'function') {
+              try { window.bootApp(); } catch (e) { console.warn('[ZeniAPI] bootApp failed:', e); }
+            } else {
+              const loginEl = document.getElementById('login');
+              const appEl   = document.getElementById('app');
+              if (loginEl) loginEl.classList.add('hidden');
+              if (appEl)   appEl.classList.add('active');
+            }
+            setTimeout(() => {
+              if (typeof window.openCreateWorkspace === 'function') {
+                window.openCreateWorkspace();
+              } else if (typeof window.toast === 'function') {
+                window.toast('Tài khoản chưa có workspace — vui lòng tạo workspace mới', 'warn');
+              }
+            }, 500);
+            return;
+          }
           window.state.currentWs = mappedUser.ws[0];
           if (typeof window.saveSession === 'function') window.saveSession();
         }
@@ -327,7 +387,7 @@
         // Persist session to localStorage so demo IIFE (which uses state closure) picks it up on reload
         try {
           localStorage.setItem('zeniCloud_session_v1', JSON.stringify({
-            userId: mappedUser.id, currentWs: mappedUser.ws[0], ts: Date.now(),
+            userId: mappedUser.id, currentWs: mappedUser.ws[0] || null, ts: Date.now(),
             user: mappedUser,
           }));
         } catch {}
@@ -374,9 +434,25 @@
               avatar: user.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(),
               ws: (user.workspaces && user.workspaces.length) ? user.workspaces : [],
             };
-            window.state.currentWs = window.state.currentUser.ws[0];
-            if (typeof window.saveSession === 'function') window.saveSession();
-            if (typeof window.bootApp === 'function') window.bootApp();
+            // Defensive guard: empty workspaces → null, then prompt create workspace
+            if (window.state.currentUser.ws.length === 0) {
+              console.warn('[ZeniAPI] auto-verify: user has no workspace');
+              window.state.currentWs = null;
+              if (typeof window.bootApp === 'function') {
+                try { window.bootApp(); } catch (e) { console.warn('[ZeniAPI] bootApp failed:', e); }
+              }
+              setTimeout(() => {
+                if (typeof window.openCreateWorkspace === 'function') {
+                  window.openCreateWorkspace();
+                } else if (typeof window.toast === 'function') {
+                  window.toast('Tài khoản chưa có workspace — vui lòng tạo workspace mới', 'warn');
+                }
+              }, 500);
+            } else {
+              window.state.currentWs = window.state.currentUser.ws[0];
+              if (typeof window.saveSession === 'function') window.saveSession();
+              if (typeof window.bootApp === 'function') window.bootApp();
+            }
           }
           console.log('[ZeniAPI] phiên backend hợp lệ:', user.email);
         })
