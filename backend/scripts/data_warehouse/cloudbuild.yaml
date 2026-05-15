@@ -1,0 +1,38 @@
+# Cloud Build config — build data warehouse Docker image, push Artifact Registry.
+#
+# Usage:
+#   gcloud builds submit --config=cloudbuild.yaml --region=us-central1
+#
+# Output:
+#   us-central1-docker.pkg.dev/zeni-cloud-core/zeni/data-warehouse:latest
+#   us-central1-docker.pkg.dev/zeni-cloud-core/zeni/data-warehouse:$SHORT_SHA
+
+steps:
+  # Build image
+  - name: gcr.io/cloud-builders/docker
+    id: build
+    args:
+      - build
+      - --tag=us-central1-docker.pkg.dev/$PROJECT_ID/zeni/data-warehouse:latest
+      - --tag=us-central1-docker.pkg.dev/$PROJECT_ID/zeni/data-warehouse:$SHORT_SHA
+      - --cache-from=us-central1-docker.pkg.dev/$PROJECT_ID/zeni/data-warehouse:latest
+      - .
+
+  # Push tags
+  - name: gcr.io/cloud-builders/docker
+    id: push-latest
+    args: [push, "us-central1-docker.pkg.dev/$PROJECT_ID/zeni/data-warehouse:latest"]
+  - name: gcr.io/cloud-builders/docker
+    id: push-sha
+    args: [push, "us-central1-docker.pkg.dev/$PROJECT_ID/zeni/data-warehouse:$SHORT_SHA"]
+
+images:
+  - us-central1-docker.pkg.dev/$PROJECT_ID/zeni/data-warehouse:latest
+  - us-central1-docker.pkg.dev/$PROJECT_ID/zeni/data-warehouse:$SHORT_SHA
+
+# Use high-CPU builder for faster image build
+options:
+  machineType: E2_HIGHCPU_8
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 1200s  # 20 minutes

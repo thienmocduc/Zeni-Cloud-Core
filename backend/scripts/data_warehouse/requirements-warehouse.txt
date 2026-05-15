@@ -1,0 +1,30 @@
+# Data warehouse pipeline dependencies
+# Pinned for reproducibility on Cloud Run Job
+
+# Core
+datasets>=2.18.0
+img2dataset>=1.45.0
+pandas>=2.2.0
+pyarrow>=15.0.0
+
+# Image processing
+Pillow>=10.2.0
+opencv-python-headless>=4.9.0.80
+
+# CLIP scoring (Vertex AI GPU L4)
+torch>=2.2.0
+torchvision>=0.17.0
+open-clip-torch>=2.24.0
+
+# Deduplication
+imagededup>=0.3.2
+
+# Common Crawl WARC
+warcio>=1.7.4
+requests>=2.31.0
+
+# GCS upload
+google-cloud-storage>=2.14.0
+
+# Logging
+google-cloud-logging>=3.9.0
