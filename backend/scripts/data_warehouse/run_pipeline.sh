@@ -10,7 +10,9 @@
 #   WARC_URL          - Common Crawl WARC URL (1 segment)
 #   GCP_PROJECT       - injected by Cloud Run
 
-set -euo pipefail
+# NOTE: KHÔNG dùng -e — nếu 1 stage fail (vd HF gated dataset), pipeline phải
+# continue sang stage tiếp theo (Open Images / Common Crawl) thay vì stop hoàn toàn.
+set -uo pipefail
 
 STAGE="${STAGE:-all}"
 GCS_BUCKET="${GCS_BUCKET:-zeni-data-warehouse}"
@@ -24,19 +26,22 @@ cd /workspace
 
 log "===== Stage config: STAGE=$STAGE TARGET=$TARGET BUCKET=gs://$GCS_BUCKET ====="
 
-# ── Stage 1: LAION-Aesthetics filter ──────────────────────────
+# ── Stage 1: HF Hub dataset filter (PD12M / COYO / Conceptual-12M) ──
 if [[ "$STAGE" == "all" || "$STAGE" == "laion" ]]; then
-    log "Stage 1/4: LAION-Aesthetics filter..."
+    log "Stage 1/4: HF Hub public dataset filter (PD12M/COYO/Conceptual)..."
     python laion_downloader.py \
         --target "$TARGET" \
-        --output-dir "$WORK_DIR/laion-interior"
+        --output-dir "$WORK_DIR/laion-interior" \
+        || log "WARN: Stage 1 failed (HF Hub unreachable or all datasets gated), continuing to Stage 2"
 
-    log "Upload LAION URL parquet to GCS..."
-    gsutil -m cp "$WORK_DIR/laion-interior/urls_filtered.parquet" \
-        "gs://$GCS_BUCKET/v1/laion/urls_filtered.parquet" || \
-        log "WARN: gsutil missing in image, skipping upload (will mount GCS Fuse next iteration)"
+    if [[ -f "$WORK_DIR/laion-interior/urls_filtered.parquet" ]]; then
+        log "Upload Stage 1 URL parquet to GCS..."
+        gsutil -m cp "$WORK_DIR/laion-interior/urls_filtered.parquet" \
+            "gs://$GCS_BUCKET/v1/laion/urls_filtered.parquet" || \
+            log "WARN: gsutil upload failed"
+    fi
 
-    log "Stage 1 done."
+    log "Stage 1 done (or skipped)."
 fi
 
 # ── Stage 2: Open Images filter ───────────────────────────────
@@ -55,23 +60,35 @@ if [[ "$STAGE" == "all" || "$STAGE" == "openimages" ]]; then
         --labels-csv /tmp/oidv7-class-descriptions.csv \
         --annotations-csv /tmp/oidv7-annotations.csv \
         --output-dir "$WORK_DIR/openimages-interior" \
-        --target "$TARGET"
+        --target "$TARGET" \
+        || log "WARN: Stage 2 failed, continuing"
 
-    log "Stage 2 done."
+    if [[ -f "$WORK_DIR/openimages-interior/urls.txt" ]]; then
+        gsutil -m cp "$WORK_DIR/openimages-interior/urls.txt" \
+            "gs://$GCS_BUCKET/v1/openimages/urls.txt" || log "WARN: gsutil failed"
+    fi
+
+    log "Stage 2 done (or skipped)."
 fi
 
 # ── Stage 3: Common Crawl image extract ───────────────────────
 if [[ "$STAGE" == "all" || "$STAGE" == "commoncrawl" ]]; then
     log "Stage 3/4: Common Crawl image extract..."
     if [[ -z "${WARC_URL:-}" ]]; then
-        log "WARN: WARC_URL not set, skipping Stage 3"
+        log "INFO: WARC_URL not set, skipping Stage 3 (you can add WARC_URL env later)"
     else
         python commoncrawl_image.py \
             --warc-url "$WARC_URL" \
             --output-dir "$WORK_DIR/cc-interior" \
-            --target "$TARGET"
+            --target "$TARGET" \
+            || log "WARN: Stage 3 failed, continuing"
+
+        if [[ -f "$WORK_DIR/cc-interior/urls.txt" ]]; then
+            gsutil -m cp "$WORK_DIR/cc-interior/urls.txt" \
+                "gs://$GCS_BUCKET/v1/cc/urls.txt" || log "WARN: gsutil failed"
+        fi
     fi
-    log "Stage 3 done."
+    log "Stage 3 done (or skipped)."
 fi
 
 # ── Stage 4: img2dataset batch download ───────────────────────
