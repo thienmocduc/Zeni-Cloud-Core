@@ -80,7 +80,7 @@ jobs:
         id: gcp-auth
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github/providers/github-provider
+          workload_identity_provider: projects/1026010018600/locations/global/workloadIdentityPools/github/providers/github-provider
           service_account: github-deployer@zeni-cloud-core.iam.gserviceaccount.com
 
       - name: Set up Cloud SDK
