@@ -2688,6 +2688,73 @@ document.addEventListener('keydown', e => {
   }
   function clearSession() { localStorage.removeItem(SESSION_KEY); }
 
+  /* ═══ OAuth callback handler — parse #oauth=access_token=...&refresh_token=...&is_new=0 ═══
+   * Backend redirect /app#oauth=ACCESS&refresh_token=REFRESH&expires_in=3600&is_new=1
+   * Frontend phải parse fragment, save tokens, fetch /auth/me, set currentUser, clear hash.
+   * Trước đó FE thiếu function này → OAuth callback bị mất token → loop về login.
+   */
+  async function handleOAuthCallback() {
+    const hash = window.location.hash;
+    if (!hash || !hash.startsWith('#oauth=')) return false;
+
+    const params = new URLSearchParams(hash.slice(7)); // skip "#oauth="
+    const access  = params.get('access_token');
+    const refresh = params.get('refresh_token');
+    const isNew   = params.get('is_new') === '1';
+
+    if (!access || !refresh) {
+      console.warn('[oauth] fragment present but missing tokens');
+      return false;
+    }
+
+    // Save tokens before fetch
+    localStorage.setItem('zeni.jwt.access', access);
+    localStorage.setItem('zeni.jwt.refresh', refresh);
+    // Clear hash from URL (security: avoid token in browser history)
+    try { history.replaceState(null, '', window.location.pathname); } catch(e) {}
+
+    // Fetch user info
+    try {
+      const r = await fetch('/api/v1/auth/me', {
+        headers: { 'Authorization': 'Bearer ' + access },
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const me = await r.json();
+
+      // OAuth user might not be in hardcoded USERS array → create dynamic user
+      const wsIds = (me.workspaces || []).map(w => typeof w === 'string' ? w : (w.id || w));
+      const dynUser = {
+        id:     me.id,
+        email:  me.email,
+        name:   me.name || me.email.split('@')[0],
+        role:   me.role || 'Member',
+        ws:     wsIds.length ? wsIds : [],
+        avatar: me.avatar || null,
+      };
+      // Push to USERS array để loadSession() find được
+      try {
+        const idx = USERS.findIndex(u => u.id === dynUser.id);
+        if (idx >= 0) USERS[idx] = dynUser;
+        else USERS.push(dynUser);
+      } catch(e) { console.warn('[oauth] USERS push failed', e); }
+
+      state.currentUser = dynUser;
+      state.currentWs = wsIds[0] || null;
+      saveSession();
+
+      if (typeof toast === 'function') {
+        toast(isNew ? 'Tài khoản mới tạo · Welcome to Zeni Cloud!' : 'Đã đăng nhập', 'ok');
+      }
+      return true;
+    } catch (e) {
+      console.error('[oauth] /auth/me fail', e);
+      localStorage.removeItem('zeni.jwt.access');
+      localStorage.removeItem('zeni.jwt.refresh');
+      if (typeof toast === 'function') toast('OAuth login fail: ' + e.message, 'err');
+      return false;
+    }
+  }
+
   function seedData() {
     // DISABLED — Production phải sạch data, mỗi workspace fetch real data từ API.
     // KHÔNG seed mock data của Anima/ZeniIPO/Digital cross-tenant.
@@ -6667,8 +6734,14 @@ document.addEventListener('keydown', e => {
 
   loadState();
   wireNavDelegated();   // Wire nav clicks BEFORE login — works even if bootApp doesn't run
-  loadSession();
-  if (state.currentUser) bootApp();
+
+  // OAuth callback support: nếu URL có #oauth=... từ /auth/oauth/{provider}/callback
+  // → parse tokens, fetch /auth/me, set currentUser. Phải chạy TRƯỚC loadSession.
+  (async () => {
+    const oauthOk = await handleOAuthCallback();
+    if (!oauthOk) loadSession();  // chỉ load cache session nếu KHÔNG phải OAuth callback
+    if (state.currentUser) bootApp();
+  })();
 })();
 </script>
 
