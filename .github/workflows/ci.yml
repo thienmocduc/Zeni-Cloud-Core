@@ -116,7 +116,7 @@ jobs:
       DATABASE_URL_SYNC: postgresql://zeni_app:testpass@localhost:5432/zeni_cloud
       JWT_SECRET: test-jwt-secret-do-not-use-in-prod
       JWT_ALG: HS256
-      VAULT_KEY: ZmFrZS1mZXJuZXQta2V5LWZvci1jaS10ZXN0c19fX19fX19fXz0=
+      VAULT_KEY: WGitKvCvztOri3XV8-lEQ0sLoK3ZsAJKDBvx9aROUiE=
       ADMIN_EMAIL: admin@test.local
       ADMIN_PASSWORD: TestAdmin123!
       ADMIN_NAME: Test Admin

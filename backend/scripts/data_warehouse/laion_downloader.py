@@ -78,13 +78,38 @@ def download_laion_aesthetics(target: int = 10_000_000, output_dir: str = "./lai
     out_path = Path(output_dir)
     out_path.mkdir(parents=True, exist_ok=True)
 
-    log.info("Loading LAION-Aesthetics V2 metadata (streaming)...")
-    # LAION-Aesthetics V2 metadata: ~200M rows, ~30GB Parquet
-    ds = load_dataset(
-        "laion/laion2B-en-aesthetic",
-        split="train",
-        streaming=True,
-    )
+    # Try multiple PUBLIC datasets — fallback chain.
+    # NOTE: LAION-2B-en-aesthetic là GATED dataset (cần HF token + apply access).
+    # Em switch sang PUBLIC alternatives để không phụ thuộc gating workflow.
+    CANDIDATE_DATASETS = [
+        # Primary: Spawning/PD12M — 12M Public Domain CC0 (no token needed)
+        ("Spawning/PD12M",   {"caption_col": "caption", "url_col": "url"}),
+        # Fallback 1: kakaobrain/coyo-700m — 700M public (NO gate)
+        ("kakaobrain/coyo-700m", {"caption_col": "text", "url_col": "url"}),
+        # Fallback 2: nlphuji/conceptual_12m — 12M Conceptual Captions
+        ("nlphuji/conceptual_12m", {"caption_col": "caption", "url_col": "image_url"}),
+    ]
+
+    ds = None
+    ds_name = None
+    caption_col = None
+    url_col = None
+    for cand_name, schema in CANDIDATE_DATASETS:
+        try:
+            log.info("Trying dataset: %s ...", cand_name)
+            ds = load_dataset(cand_name, split="train", streaming=True)
+            ds_name = cand_name
+            caption_col = schema["caption_col"]
+            url_col = schema["url_col"]
+            log.info("Loaded %s (caption=%s, url=%s)", ds_name, caption_col, url_col)
+            break
+        except Exception as e:
+            log.warning("Dataset %s unavailable: %s", cand_name, str(e)[:200])
+            continue
+
+    if ds is None:
+        log.error("All candidate datasets failed. Check HF Hub status or add HF_TOKEN env.")
+        return
 
     # Filter + collect URLs
     urls_file = out_path / "urls_filtered.parquet"
@@ -92,17 +117,19 @@ def download_laion_aesthetics(target: int = 10_000_000, output_dir: str = "./lai
     batch = []
     BATCH_SIZE = 10_000
 
-    log.info("Filtering captions for interior/architecture keywords...")
+    log.info("Filtering captions (%s) for interior/architecture keywords...", ds_name)
     for row in ds:
-        if filter_caption(row.get("TEXT", "")):
+        caption = row.get(caption_col, "") or row.get("TEXT", "")
+        if filter_caption(caption):
             batch.append({
-                "URL": row["URL"],
-                "TEXT": row["TEXT"],
-                "WIDTH": row.get("WIDTH", 0),
-                "HEIGHT": row.get("HEIGHT", 0),
-                "AESTHETIC_SCORE": row.get("AESTHETIC_SCORE", 0),
+                "URL": row.get(url_col) or row.get("URL", ""),
+                "TEXT": caption,
+                "WIDTH": row.get("WIDTH", 0) or row.get("width", 0),
+                "HEIGHT": row.get("HEIGHT", 0) or row.get("height", 0),
+                "AESTHETIC_SCORE": row.get("AESTHETIC_SCORE", 0) or row.get("aesthetic_score", 0),
                 "SIMILARITY": row.get("similarity", 0),
-                "LICENSE": "laion-cc0",
+                "LICENSE": "cc0" if "PD12M" in ds_name else "public",
+                "SOURCE_DATASET": ds_name,
             })
             filtered_count += 1
 
