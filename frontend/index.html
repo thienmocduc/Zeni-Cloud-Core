@@ -3538,7 +3538,11 @@ document.addEventListener('keydown', e => {
         el('p', { class: 'page-sub', text: 'Mỗi project là một service Cloud Run độc lập, auto-scale, có domain riêng. Click một project để xem logs, deploy, biến môi trường.' })
       ]),
       el('div', { class: 'page-head-right' }, [
-        el('button', { class: 'btn btn-md btn-ghost', onclick: () => fetchProjectsFromBackend(), text: '↻ Refresh' }),
+        el('button', { class: 'btn btn-md btn-ghost', onclick: () => {
+          // Force refresh: clear cache flag để fetch lại
+          if (state._fetchedProjectsWs) state._fetchedProjectsWs.delete(state.currentWs);
+          fetchProjectsFromBackend();
+        }, text: '↻ Refresh' }),
         el('button', {
           onclick: () => window.openCreateWorkspace(),
           style: { background: 'transparent', color: 'var(--ink-300)', border: '1px solid var(--border)', padding: '8px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px', marginRight: '8px' },
@@ -3549,8 +3553,15 @@ document.addEventListener('keydown', e => {
     ]));
 
     // Auto-fetch projects từ backend nếu state empty (lần đầu load)
-    if (state.projects.length === 0) {
-      fetchProjectsFromBackend();
+    // GUARD: chỉ fetch 1 LẦN per workspace để tránh infinite loop renderProjects ↔ fetch ↔ setView.
+    // Bug trước: fetch returns [] → setView trigger renderProjects → state vẫn 0 → fetch lại → flicker.
+    state._fetchedProjectsWs = state._fetchedProjectsWs || new Set();
+    if (state.projects.length === 0
+        && !state._fetchedProjectsWs.has(state.currentWs)
+        && !state._fetchingProjects) {
+      state._fetchingProjects = true;
+      state._fetchedProjectsWs.add(state.currentWs);
+      fetchProjectsFromBackend().finally(() => { state._fetchingProjects = false; });
     }
 
     const projs = getProjects();

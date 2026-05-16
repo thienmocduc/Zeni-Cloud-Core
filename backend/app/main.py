@@ -413,6 +413,36 @@ if _static_dir.exists():
             return FileResponse(str(target))
         return FileResponse(str(_docs_dir / "index.html")) if (_docs_dir / "index.html").exists() else FileResponse(str(_landing_path))
 
+    # ── Legal pages /legal, /legal/{page} ────────────────────
+    # Bug chairman 2026-05-16: signup link /legal/terms.html bị catch-all bắt
+    # → serve landing thay vì terms. Fix: add explicit route TRƯỚC catch-all.
+    _legal_dir = _static_dir / "legal"
+
+    @app.get("/legal", include_in_schema=False)
+    @app.get("/legal/", include_in_schema=False)
+    async def serve_legal_index() -> FileResponse:
+        idx = _legal_dir / "index.html"
+        if idx.exists():
+            return FileResponse(str(idx))
+        return FileResponse(str(_landing_path))
+
+    @app.get("/legal/{page:path}", include_in_schema=False)
+    async def serve_legal_page(page: str) -> FileResponse:
+        # Normalize: legal/terms → legal/terms.html
+        if page and not page.endswith(".html"):
+            page = page + ".html"
+        target = _legal_dir / page
+        # Security: prevent path traversal
+        try:
+            target_resolved = target.resolve()
+            if _legal_dir.resolve() not in target_resolved.parents and target_resolved != _legal_dir.resolve():
+                return FileResponse(str(_legal_dir / "index.html")) if (_legal_dir / "index.html").exists() else FileResponse(str(_landing_path))
+        except Exception:
+            return FileResponse(str(_landing_path))
+        if target.exists() and target.is_file():
+            return FileResponse(str(target))
+        return FileResponse(str(_legal_dir / "index.html")) if (_legal_dir / "index.html").exists() else FileResponse(str(_landing_path))
+
     # ── Authenticated app dashboard at /app and /app/* ──────
     @app.get("/app", include_in_schema=False)
     @app.get("/app/", include_in_schema=False)
