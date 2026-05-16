@@ -3228,23 +3228,81 @@ document.addEventListener('keydown', e => {
       } catch (e) { /* silent */ }
     })();
 
-    // KPIs — chỉ hiển thị data thực, không có mock
+    // KPIs — render với placeholder, sau đó fire async fetch để wire data thực
+    // (commit A: replace hardcoded '0 VND' / '0' / '—' bằng /observability + /cost-dashboard + /api-tokens)
     const kpis = el('div', { class: 'kpi-strip' });
     [
-      { lbl: 'Projects đang chạy', val: running, total: projs.length, color: 'var(--L1)', delta: projs.length === 0 ? 'Tạo project đầu tiên' : projs.length + ' total' },
-      { lbl: 'Agents hoạt động', val: totalAgents, total: totalAgents, color: 'var(--L3)', delta: totalAgents === 0 ? 'Chưa có agent' : 'active' },
-      { lbl: 'Spend tháng này', val: '0 VND', total: '', color: 'var(--gold)', delta: 'Wallet 50K free credit' },
-      { lbl: 'Sự kiện automation', val: '0', total: '', color: 'var(--L4)', delta: 'Chưa có flow' },
-      { lbl: 'API tokens', val: '—', total: '', color: 'var(--L5)', delta: 'Tạo trong tab L5' }
+      { id: 'projects',   lbl: 'Projects đang chạy',   val: running,     color: 'var(--L1)',   delta: projs.length === 0 ? 'Tạo project đầu tiên' : projs.length + ' total' },
+      { id: 'agents',     lbl: 'Agents hoạt động',     val: totalAgents, color: 'var(--L3)',   delta: totalAgents === 0 ? 'Chưa có agent' : 'active' },
+      { id: 'spend',      lbl: 'Spend tháng này',      val: '… đang tải', color: 'var(--gold)', delta: 'GET /cost-dashboard/summary' },
+      { id: 'requests',   lbl: 'Calls 24h',            val: '… đang tải', color: 'var(--L4)',   delta: 'GET /observability/dashboard' },
+      { id: 'apitokens',  lbl: 'API tokens',           val: '… đang tải', color: 'var(--L5)',   delta: 'GET /api-tokens' }
     ].forEach(k => {
-      const deltaCls = k.deltaCls === 'ok' ? 'kpi-delta' : 'kpi-delta flat';
-      kpis.appendChild(el('div', { class: 'kpi', style: { '--kpi-color': k.color } }, [
+      const valSpan = el('span', { text: String(k.val) });
+      const deltaDiv = el('div', { class: 'kpi-delta flat', text: k.delta });
+      kpis.appendChild(el('div', { class: 'kpi', 'data-kpi-id': k.id, style: { '--kpi-color': k.color } }, [
         el('div', { class: 'kpi-label' }, [ el('span', { class: 'kpi-dot' }), el('span', { text: k.lbl }) ]),
-        el('div', { class: 'kpi-value' }, [ el('span', { text: String(k.val) }) ]),
-        el('div', { class: deltaCls, text: k.delta })
+        el('div', { class: 'kpi-value', 'data-kpi-val': k.id }, [ valSpan ]),
+        deltaDiv
       ]));
     });
     c.appendChild(kpis);
+
+    // ── Async wire 3 KPIs động (spend / requests / apitokens) ─────
+    (async () => {
+      const token = localStorage.getItem('zeni.jwt.access') || '';
+      if (!token) return;
+      const ws = encodeURIComponent(state.currentWs);
+      const auth = { 'Authorization': 'Bearer ' + token };
+
+      const setKpi = (id, val, delta) => {
+        const valEl = c.querySelector(`[data-kpi-val="${id}"] span`);
+        const cardEl = c.querySelector(`[data-kpi-id="${id}"]`);
+        if (valEl) valEl.textContent = String(val);
+        if (cardEl && delta) {
+          const d = cardEl.querySelector('.kpi-delta');
+          if (d) d.textContent = delta;
+        }
+      };
+
+      // 1. Cost spend (last 30 days, VND from wallet_transactions)
+      try {
+        const r = await fetch(`/api/v1/cost-dashboard/summary?ws=${ws}&days=30`, { headers: auth });
+        if (r.ok) {
+          const j = await r.json();
+          const vnd = Math.round(j.total_spent || 0);
+          const formatted = vnd.toLocaleString('vi-VN') + ' VND';
+          setKpi('spend', formatted, (j.total_charges || 0) + ' lần charge · 30d');
+        } else {
+          setKpi('spend', '0 VND', 'Chưa có spending');
+        }
+      } catch (e) { setKpi('spend', '0 VND', 'Network err'); }
+
+      // 2. Observability requests count (24h)
+      try {
+        const r = await fetch(`/api/v1/observability/dashboard?ws=${ws}&hours=24`, { headers: auth });
+        if (r.ok) {
+          const j = await r.json();
+          const reqs = Math.round(j.http?.total_requests || 0);
+          const lat = Math.round(j.http?.avg_latency_ms || 0);
+          setKpi('requests', reqs.toLocaleString('vi-VN'), 'p50≈' + lat + 'ms · err ' + ((j.http?.error_rate || 0) * 100).toFixed(2) + '%');
+        } else {
+          setKpi('requests', '0', 'Chưa có traffic');
+        }
+      } catch (e) { setKpi('requests', '0', 'Network err'); }
+
+      // 3. API tokens count
+      try {
+        const r = await fetch(`/api/v1/api-tokens?ws=${ws}`, { headers: auth });
+        if (r.ok) {
+          const list = await r.json();
+          const count = Array.isArray(list) ? list.length : 0;
+          setKpi('apitokens', count, count === 0 ? 'Tạo trong Settings' : count + ' active token');
+        } else {
+          setKpi('apitokens', '0', 'Chưa có token');
+        }
+      } catch (e) { setKpi('apitokens', '0', 'Network err'); }
+    })();
 
     // Grid: workspaces overview + recent activity
     const grid = el('div', { class: 'grid-2' });
