@@ -91,9 +91,9 @@ if [[ "$STAGE" == "all" || "$STAGE" == "commoncrawl" ]]; then
     log "Stage 3 done (or skipped)."
 fi
 
-# ── Stage 4: img2dataset batch download ───────────────────────
+# ── Stage 4: img2dataset direct → GCS (bypass container disk 10GB limit) ──
 if [[ "$STAGE" == "all" || "$STAGE" == "download" ]]; then
-    log "Stage 4/4: img2dataset batch download..."
+    log "Stage 4/4: img2dataset batch download → gs:// (direct, no local disk)..."
     for source in laion-interior openimages-interior cc-interior; do
         src_dir="$WORK_DIR/$source"
         urls_file=""
@@ -105,10 +105,12 @@ if [[ "$STAGE" == "all" || "$STAGE" == "download" ]]; then
             continue
         fi
 
-        log "Downloading $source from $urls_file..."
+        # Output direct to GCS via gcsfs (fsspec gs:// scheme).
+        # img2dataset stream binary → GCS without local staging → bypass 10GB tmpfs limit.
+        log "Downloading $source from $urls_file → gs://$GCS_BUCKET/v1/$source/images/ (direct)..."
         img2dataset \
             --url_list="$urls_file" \
-            --output_folder="$src_dir/images" \
+            --output_folder="gs://$GCS_BUCKET/v1/$source/images/" \
             --processes_count=8 \
             --thread_count=32 \
             --image_size=1024 \
@@ -116,12 +118,11 @@ if [[ "$STAGE" == "all" || "$STAGE" == "download" ]]; then
             --resize_mode=keep_ratio \
             --enable_wandb=False \
             --retries=2 \
-            --timeout=20 || log "img2dataset failed for $source, continuing..."
+            --timeout=20 \
+            --incremental_mode=incremental \
+            || log "img2dataset failed for $source, continuing..."
 
-        # Upload .tar shards to GCS
-        log "Upload $source shards to GCS..."
-        gsutil -m cp -r "$src_dir/images" \
-            "gs://$GCS_BUCKET/v1/$source/" || log "gsutil upload failed, skip"
+        log "Stage 4 $source done — output already on GCS."
     done
     log "Stage 4 done."
 fi
