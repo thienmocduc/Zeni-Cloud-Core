@@ -115,6 +115,14 @@ async def complete(
     await require_workspace_access(ws, me)
     _validate_ai_request(data.model, data.max_tokens)
 
+    # ── Quota check pre-flight (best-effort: dùng max_tokens làm proxy) ──
+    # Vision tokens dùng cho multimodal (Gemini Pro với image input).
+    # Reasoning tokens dùng cho text-only.
+    from app.services.quota_check import check_quota, increment_usage
+    is_vision = bool(getattr(data, "image_url", None) or getattr(data, "image_base64", None))
+    quota_kind = "vision" if is_vision else "reasoning"
+    await check_quota(db, ws, kind=quota_kind, amount=data.max_tokens)
+
     result = await run_inference(
         model=data.model,
         prompt=data.prompt,
@@ -122,6 +130,10 @@ async def complete(
         temperature=data.temperature,
         max_tokens=data.max_tokens,
     )
+
+    # Increment usage actual tokens used (sau success)
+    total_tokens = (result.input_tokens or 0) + (result.output_tokens or 0)
+    await increment_usage(db, ws, kind=quota_kind, amount=total_tokens)
 
     await audit_push(db, actor=me.email, workspace_id=ws, action="ai.inference", target=data.model, severity="ok",
                      metadata={"input_tokens": result.input_tokens, "output_tokens": result.output_tokens})
