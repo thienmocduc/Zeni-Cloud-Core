@@ -160,6 +160,82 @@ def _dns_records_for_domain(domain: str, selector: str, dkim_public: str, dmarc_
     }
 
 
+async def _resolve_dns_records(
+    domain: str,
+    dkim_selector: str,
+    expected_dkim_public: str,
+) -> dict[str, Any]:
+    """Resolve MX/SPF/DKIM/DMARC for `domain` using async dnspython.
+
+    Returns dict with per-record boolean flags + raw found values for debugging.
+    Failures (NXDOMAIN, timeout) translate to flag=False; only network errors propagate
+    upstream as logged warnings — never crash the endpoint.
+    """
+    import dns.asyncresolver
+    import dns.exception
+
+    out: dict[str, Any] = {
+        "mx_verified": False,
+        "spf_verified": False,
+        "dkim_verified": False,
+        "dmarc_verified": False,
+        "details": {},
+    }
+
+    resolver = dns.asyncresolver.Resolver()
+    resolver.timeout = 5.0
+    resolver.lifetime = 10.0
+    # Use Google + Cloudflare public resolvers to avoid local cache poisoning
+    resolver.nameservers = ["8.8.8.8", "1.1.1.1"]
+
+    spf_include_host = MX_HOST.replace("mx.", "")  # zenicloud.io
+
+    # MX
+    try:
+        ans = await resolver.resolve(domain, "MX")
+        hosts = sorted(str(r.exchange).rstrip(".").lower() for r in ans)
+        out["details"]["mx_found"] = hosts
+        if MX_HOST.lower() in hosts:
+            out["mx_verified"] = True
+    except (dns.exception.DNSException, OSError) as e:
+        out["details"]["mx_error"] = str(e)[:200]
+
+    # TXT @ root → SPF + (optional) extra
+    try:
+        ans = await resolver.resolve(domain, "TXT")
+        txt = [b"".join(r.strings).decode("utf-8", errors="ignore") for r in ans]
+        spf = [t for t in txt if t.startswith("v=spf1")]
+        out["details"]["spf_found"] = spf
+        if any(f"include:{spf_include_host}" in t for t in spf):
+            out["spf_verified"] = True
+    except (dns.exception.DNSException, OSError) as e:
+        out["details"]["spf_error"] = str(e)[:200]
+
+    # DKIM (TXT at selector._domainkey.domain)
+    try:
+        ans = await resolver.resolve(f"{dkim_selector}._domainkey.{domain}", "TXT")
+        txt = [b"".join(r.strings).decode("utf-8", errors="ignore") for r in ans]
+        out["details"]["dkim_found"] = txt
+        # Match first 32 chars of base64 public key (full match is risky if DNS provider line-wraps)
+        pub_prefix = (expected_dkim_public or "")[:32]
+        if pub_prefix and any(pub_prefix in t for t in txt):
+            out["dkim_verified"] = True
+    except (dns.exception.DNSException, OSError) as e:
+        out["details"]["dkim_error"] = str(e)[:200]
+
+    # DMARC (TXT at _dmarc.domain)
+    try:
+        ans = await resolver.resolve(f"_dmarc.{domain}", "TXT")
+        txt = [b"".join(r.strings).decode("utf-8", errors="ignore") for r in ans]
+        out["details"]["dmarc_found"] = txt
+        if any("v=DMARC1" in t for t in txt):
+            out["dmarc_verified"] = True
+    except (dns.exception.DNSException, OSError) as e:
+        out["details"]["dmarc_error"] = str(e)[:200]
+
+    return out
+
+
 # ─── ENDPOINTS · DOMAIN ───────────────────────────────────────
 @router.post("/domains", response_model=DomainOut, status_code=201)
 async def create_domain(
@@ -297,32 +373,69 @@ async def verify_domain_dns(
     me: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """Phase 1 stub: returns current verification state.
+    """Phase 2a: resolve MX/SPF/DKIM/DMARC live via dnspython (Rule 9 compliant).
 
-    Phase 2 thực sự sẽ resolve DNS bằng dnspython, check:
-      - MX → mx.zenicloud.io
-      - SPF → contains include:zenicloud.io
-      - DKIM → match public key đã gen
-      - DMARC → policy match
-    Update mx_verified / spf_verified / dkim_verified, status → 'active' nếu cả 3 pass.
+    Resolver uses Google (8.8.8.8) + Cloudflare (1.1.1.1) public DNS to bypass
+    local Cloud Run cache. Status flips to 'active' when MX + SPF + DKIM all pass
+    (DMARC tracked separately — informational only, not blocking for activation).
     """
     await require_workspace_access(ws, me)
     row = (await db.execute(text("""
-        SELECT id, domain, mx_verified, spf_verified, dkim_verified, status
+        SELECT id, domain, dkim_selector, dkim_public_key, dmarc_policy, status
         FROM mail_domains WHERE id = :id AND workspace_id = :ws
     """), {"id": domain_id, "ws": ws})).mappings().first()
     if not row:
         raise HTTPException(status_code=404, detail="Domain không tồn tại")
 
-    # Phase 1: chỉ trả state hiện tại
+    result = await _resolve_dns_records(
+        domain=row["domain"],
+        dkim_selector=row["dkim_selector"],
+        expected_dkim_public=row["dkim_public_key"],
+    )
+
+    # Activate domain only when the three trust-establishing records pass
+    new_status = "active" if (
+        result["mx_verified"] and result["spf_verified"] and result["dkim_verified"]
+    ) else row["status"]
+
+    await db.execute(text("""
+        UPDATE mail_domains
+        SET mx_verified = :mx,
+            spf_verified = :spf,
+            dkim_verified = :dkim,
+            status = :status,
+            updated_at = NOW()
+        WHERE id = :id
+    """), {
+        "id": domain_id,
+        "mx": result["mx_verified"],
+        "spf": result["spf_verified"],
+        "dkim": result["dkim_verified"],
+        "status": new_status,
+    })
+
+    await audit_push(
+        db, actor=me.email, workspace_id=ws, action="mail.domain_verify",
+        target=row["domain"], severity="ok" if new_status == "active" else "info",
+        metadata={
+            "mx": result["mx_verified"],
+            "spf": result["spf_verified"],
+            "dkim": result["dkim_verified"],
+            "dmarc": result["dmarc_verified"],
+            "new_status": new_status,
+        },
+    )
+    await db.commit()
+
     return {
         "domain_id": domain_id,
         "domain": row["domain"],
-        "status": row["status"],
-        "mx_verified": row["mx_verified"],
-        "spf_verified": row["spf_verified"],
-        "dkim_verified": row["dkim_verified"],
-        "note": "Phase 1 stub — DNS resolver chưa wire. Phase 2 sẽ dnspython.resolve() thực.",
+        "status": new_status,
+        "mx_verified": result["mx_verified"],
+        "spf_verified": result["spf_verified"],
+        "dkim_verified": result["dkim_verified"],
+        "dmarc_verified": result["dmarc_verified"],
+        "details": result["details"],
     }
 
 
