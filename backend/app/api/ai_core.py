@@ -74,6 +74,11 @@ async def generate_image(
     await require_workspace_access(ws, me)
     if me.auth_scope and not any(s in me.auth_scope for s in ("ai", "full")):
         raise HTTPException(status_code=403, detail="Token thiếu scope 'ai'")
+
+    # ── Quota check (workspace_ai_quotas table, migration 075) ────
+    from app.services.quota_check import check_quota, increment_usage
+    await check_quota(db, ws, kind="image", amount=data.n)
+
     try:
         result = await ai_core.generate_image(
             prompt=data.prompt, aspect_ratio=data.aspect_ratio, n=data.n,
@@ -82,6 +87,9 @@ async def generate_image(
     except Exception as e:
         log.exception("generate_image failed")
         raise HTTPException(status_code=502, detail=f"Imagen 3 lỗi: {e}")
+
+    # Increment usage (sau success)
+    await increment_usage(db, ws, kind="image", amount=data.n)
 
     await audit_push(
         db, actor=me.email, workspace_id=ws, action="ai.generate_image",
