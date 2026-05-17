@@ -6,7 +6,11 @@ Endpoints (all GCP-only via Vertex AI):
   POST /ai/analyze-image     — Gemini multi-modal (image input)
   POST /ai/embed             — text-embedding-004
   POST /ai/complete-stream   — SSE streaming
-  GET  /ai/models            — list of available models + pricing
+  GET  /ai/registry          — public list of models + pricing (marketing/transparency)
+
+Note: ai.py owns GET /ai/models (auth-required, used by frontend zeni-api.js).
+This module exposes /ai/registry as the public, rich-JSON alternative — same
+underlying data shape but no auth and includes per-model pricing + use cases.
 
 For NexBuild + BTHome interior design AI use cases.
 """
@@ -216,9 +220,13 @@ async def complete_stream(
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
-@router.get("/models")
+@router.get("/registry")
 async def list_models() -> dict:
-    """List all AI models available + pricing."""
+    """Public model registry with pricing + capabilities. No auth required.
+
+    Renamed from /ai/models (2026-05-17) to resolve duplicate path with ai.py
+    which owns the auth-required /ai/models endpoint used by frontend.
+    """
     return {
         "text": [
             {"id": "gemini-2.5-pro",        "provider": "vertex-ai", "input_per_1m": 1.25, "output_per_1m": 10.0,
