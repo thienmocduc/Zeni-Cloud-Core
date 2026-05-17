@@ -17,8 +17,11 @@ log = logging.getLogger("zeni.email")
 
 SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
-SMTP_USER = os.environ.get("GMAIL_SMTP_USER", "")
-SMTP_PASS = os.environ.get("GMAIL_SMTP_PASSWORD", "")
+# Fallback chain: support cả 2 tên env (GMAIL_SMTP_* legacy + SMTP_* mới Cloud Run đã wire).
+# Bug Viet Contech 2026-05-17: Cloud Run wire SMTP_USER/SMTP_PASSWORD nhưng code đọc
+# GMAIL_SMTP_USER/GMAIL_SMTP_PASSWORD → empty → email skip → /register/zalo-otp/start upstream_error.
+SMTP_USER = os.environ.get("GMAIL_SMTP_USER") or os.environ.get("SMTP_USER", "")
+SMTP_PASS = os.environ.get("GMAIL_SMTP_PASSWORD") or os.environ.get("SMTP_PASSWORD", "")
 FROM_NAME = "Zeni Cloud"
 
 
