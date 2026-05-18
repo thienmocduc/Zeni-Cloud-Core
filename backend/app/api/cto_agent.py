@@ -1,0 +1,383 @@
+"""
+Zeni Cloud Core — CTO Chat Assistant API (Phase 1 MVP).
+
+Khách paste 1 trong 4 input → AI orchestrator tự deploy lên Cloud Run:
+  1. GitHub URL: github.com/user/repo (+ branch optional)
+  2. Docker image URL: docker.io/user/repo:tag hoặc gcr.io/..., us-central1-docker.pkg.dev/...
+  3. ZIP upload (multipart) — đẩy về /api/v1/upload/source (existing endpoint)
+  4. Mô tả tự nhiên (Phase 2 — chưa implement)
+
+Endpoints (prefix /cto):
+  POST   /deploy?ws=X     — analyze input + start deploy (returns session_id)
+  GET    /session/{id}    — poll status + log messages
+  GET    /sessions?ws=X   — list sessions in workspace
+
+Storage: cto_sessions table (migration sẽ tạo qua main.py boot)
+"""
+from __future__ import annotations
+
+import asyncio
+import logging
+import re
+import uuid
+from datetime import datetime, timezone
+from typing import Any
+
+import httpx
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.deps import CurrentUser, get_current_user, require_workspace_access
+from app.db.base import SessionLocal, get_db
+from app.services.audit import audit_push
+
+log = logging.getLogger("zeni.api.cto")
+router = APIRouter(prefix="/cto", tags=["cto-assistant"])
+
+
+# ─── Pydantic schemas ─────────────────────────────────────────
+class DeployIn(BaseModel):
+    input_text: str = Field(min_length=3, max_length=2000,
+                            description="GitHub URL, image URL, or natural language description")
+    project_name: str | None = Field(default=None, max_length=48,
+                                     description="Optional project name; auto-derive if omitted")
+    size: str = Field(default="s", pattern=r"^(xs|s|m|l)$")
+    region: str = Field(default="asia-southeast1", max_length=32)
+
+
+class SessionOut(BaseModel):
+    session_id: str
+    workspace_id: str
+    status: str   # 'analyzing' | 'building' | 'deploying' | 'success' | 'failed'
+    detected_input_type: str | None = None  # 'github' | 'image' | 'zip' | 'description' | 'unknown'
+    project_id: str | None = None
+    project_url: str | None = None
+    messages: list[dict]   # [{ts, level, text}]
+    created_at: datetime
+    completed_at: datetime | None = None
+
+
+# ─── Input detector ──────────────────────────────────────────
+_GITHUB_RE = re.compile(r"^https?://github\.com/([\w.-]+)/([\w.-]+)(?:\.git)?(?:/tree/([\w./-]+))?/?$", re.IGNORECASE)
+_IMAGE_RE = re.compile(
+    r"^([a-z0-9][a-z0-9._\-/]*?(?:\.[a-z0-9._\-]+)?)/"  # registry host
+    r"([a-z0-9][a-z0-9._\-/]*)"                          # repo
+    r"(:[\w.\-]+)?"                                        # optional tag
+    r"(@sha256:[a-f0-9]{64})?$",                          # optional digest
+    re.IGNORECASE,
+)
+
+
+def detect_input_type(text: str) -> tuple[str, dict[str, Any]]:
+    """Return (input_type, parsed_meta)."""
+    t = text.strip()
+
+    # GitHub URL
+    m = _GITHUB_RE.match(t)
+    if m:
+        owner, repo, branch = m.groups()
+        return ("github", {"owner": owner, "repo": repo.rstrip(".git"), "branch": branch or "main"})
+
+    # Image URL (docker.io, gcr.io, ghcr.io, *.pkg.dev, etc.)
+    if "/" in t and not t.startswith("http"):
+        m = _IMAGE_RE.match(t)
+        if m:
+            return ("image", {"image_url": t})
+
+    # Otherwise — natural language description (Phase 2)
+    return ("description", {"text": t})
+
+
+# ─── DB helpers ──────────────────────────────────────────────
+async def _ensure_table(db: AsyncSession) -> None:
+    """Best-effort table create — idempotent."""
+    await db.execute(text("""
+        CREATE TABLE IF NOT EXISTS cto_sessions (
+            id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            workspace_id    VARCHAR(64) NOT NULL,
+            user_email      VARCHAR(255),
+            input_text      TEXT NOT NULL,
+            input_type      VARCHAR(32),
+            status          VARCHAR(32) NOT NULL DEFAULT 'analyzing',
+            project_id      UUID,
+            project_url     TEXT,
+            messages        JSONB NOT NULL DEFAULT '[]'::jsonb,
+            created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            completed_at    TIMESTAMPTZ
+        )
+    """))
+    await db.commit()
+
+
+async def _push_message(db: AsyncSession, session_id: str, level: str, text_msg: str) -> None:
+    """Append a log line to messages JSONB array."""
+    ts = datetime.now(timezone.utc).isoformat()
+    msg = {"ts": ts, "level": level, "text": text_msg}
+    await db.execute(text("""
+        UPDATE cto_sessions
+        SET messages = messages || CAST(:m AS JSONB)
+        WHERE id = :id
+    """), {"id": session_id, "m": __import__("json").dumps([msg])})
+    await db.commit()
+
+
+async def _set_status(db: AsyncSession, session_id: str, status: str,
+                      project_id: str | None = None, project_url: str | None = None) -> None:
+    completed = "NOW()" if status in ("success", "failed") else "NULL"
+    await db.execute(text(f"""
+        UPDATE cto_sessions
+        SET status = :s, project_id = :pid, project_url = :url, completed_at = {completed}
+        WHERE id = :id
+    """), {"id": session_id, "s": status, "pid": project_id, "url": project_url})
+    await db.commit()
+
+
+# ─── Background orchestrator ─────────────────────────────────
+async def _bg_orchestrate(session_id: str, workspace_id: str, user_email: str,
+                          input_type: str, parsed: dict, project_name: str,
+                          size: str, region: str, jwt_token: str | None) -> None:
+    """Run the deploy orchestration in background. Each step pushes a log message."""
+    async with SessionLocal() as db:
+        try:
+            await _push_message(db, session_id, "info",
+                                f"Detected input type: {input_type}. Starting orchestration...")
+
+            if input_type == "image":
+                await _orchestrate_image(db, session_id, workspace_id, user_email,
+                                          parsed["image_url"], project_name, size, region, jwt_token)
+            elif input_type == "github":
+                await _push_message(db, session_id, "warn",
+                                    "GitHub URL flow chưa implement đầy đủ ở Phase 1. "
+                                    "Tạm thời dùng image URL hoặc upload ZIP qua /api/v1/upload/source.")
+                await _set_status(db, session_id, "failed")
+            elif input_type == "description":
+                await _push_message(db, session_id, "warn",
+                                    "Mô tả tự nhiên (code generation) thuộc Phase 2. "
+                                    "Hãy paste GitHub URL hoặc Docker image URL.")
+                await _set_status(db, session_id, "failed")
+            else:
+                await _push_message(db, session_id, "error", f"Unknown input type: {input_type}")
+                await _set_status(db, session_id, "failed")
+
+        except Exception as e:
+            log.exception("[cto orchestrate] session=%s failed: %s", session_id, e)
+            try:
+                await _push_message(db, session_id, "error", f"Internal error: {e}")
+                await _set_status(db, session_id, "failed")
+            except Exception:
+                pass
+
+
+async def _orchestrate_image(db: AsyncSession, session_id: str, workspace_id: str,
+                              user_email: str, image_url: str, project_name: str,
+                              size: str, region: str, jwt_token: str | None) -> None:
+    """Image URL → verify whitelist → auto-add prefix → POST /projects to deploy."""
+    await _push_message(db, session_id, "info", f"Verifying image URL: {image_url}")
+
+    # 1. Auto-add whitelist for the image's prefix (everything before the last `/`)
+    if "/" in image_url:
+        prefix = image_url.rsplit("/", 1)[0] + "/"
+        try:
+            await db.execute(text("""
+                INSERT INTO workspace_image_whitelist (workspace_id, prefix, description, enabled)
+                VALUES (:ws, :p, 'auto-added by CTO assistant', TRUE)
+                ON CONFLICT (workspace_id, prefix) DO NOTHING
+            """), {"ws": workspace_id, "p": prefix})
+            await db.commit()
+            await _push_message(db, session_id, "info", f"Whitelist prefix added: {prefix}")
+        except Exception as e:
+            await _push_message(db, session_id, "warn", f"Whitelist insert skipped: {e}")
+
+    # 2. POST /api/v1/projects via internal call (reuse existing deploy logic)
+    await _set_status(db, session_id, "deploying")
+    await _push_message(db, session_id, "info", "Creating Cloud Run service...")
+
+    from app.api.projects import deploy_project as projects_deploy
+    from app.schemas.resources import ProjectCreateIn
+
+    payload = ProjectCreateIn(
+        name=project_name,
+        type="web",
+        runtime="container",
+        size=size,
+        region=region,
+        image=image_url,
+        port=8080,
+        allow_unauthenticated=True,
+    )
+
+    # Mock CurrentUser since we already validated workspace access in /deploy endpoint
+    class _MockUser:
+        def __init__(self, email: str):
+            self.email = email
+            self.id = None
+            self.role = "Developer"
+            self.auth_scope = "full"
+
+    me = _MockUser(user_email)
+    bg = BackgroundTasks()
+
+    try:
+        result = await projects_deploy(payload=payload, ws=workspace_id,
+                                        background_tasks=bg, me=me, db=db)
+        proj_id = str(result.id)
+        await _push_message(db, session_id, "info",
+                            f"Project created: {result.name} (id={proj_id})")
+        # Run any background tasks scheduled by projects_deploy
+        for task in bg.tasks:
+            asyncio.create_task(task())
+
+        # Poll project status for up to 90s
+        for _ in range(30):
+            await asyncio.sleep(3)
+            row = (await db.execute(text("""
+                SELECT status, domain FROM projects WHERE id = :id
+            """), {"id": proj_id})).mappings().first()
+            if not row:
+                continue
+            if row["status"] == "running":
+                url = row["domain"] or ""
+                await _push_message(db, session_id, "info", f"✓ Live: {url}")
+                await _set_status(db, session_id, "success", project_id=proj_id, project_url=url)
+                return
+            if row["status"] == "failed":
+                await _push_message(db, session_id, "error", "Cloud Run deploy failed. Check projects page.")
+                await _set_status(db, session_id, "failed", project_id=proj_id)
+                return
+        await _push_message(db, session_id, "warn", "Deploy taking longer than 90s — check projects page.")
+        await _set_status(db, session_id, "failed", project_id=proj_id)
+    except HTTPException as e:
+        await _push_message(db, session_id, "error", f"Deploy rejected: {e.detail}")
+        await _set_status(db, session_id, "failed")
+    except Exception as e:
+        await _push_message(db, session_id, "error", f"Deploy failed: {e}")
+        await _set_status(db, session_id, "failed")
+
+
+# ─── Endpoints ───────────────────────────────────────────────
+@router.post("/deploy", response_model=SessionOut, status_code=202)
+async def cto_deploy(
+    payload: DeployIn,
+    ws: str = Query(..., min_length=1, max_length=64),
+    background_tasks: BackgroundTasks = None,
+    me: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> SessionOut:
+    """Analyze input + kick off background orchestration."""
+    await require_workspace_access(ws, me)
+    if me.role == "Viewer":
+        raise HTTPException(status_code=403, detail="Viewer không được trigger deploy")
+
+    await _ensure_table(db)
+
+    input_type, parsed = detect_input_type(payload.input_text)
+
+    # Auto-derive project name
+    if not payload.project_name:
+        if input_type == "image":
+            base = payload.input_text.rsplit("/", 1)[-1].split(":")[0]
+            payload.project_name = re.sub(r"[^a-z0-9-]", "-", base.lower())[:40].strip("-") or "cto-app"
+        elif input_type == "github":
+            payload.project_name = re.sub(r"[^a-z0-9-]", "-", parsed["repo"].lower())[:40].strip("-")
+        else:
+            payload.project_name = "cto-app-" + uuid.uuid4().hex[:6]
+
+    # Create session row
+    row = (await db.execute(text("""
+        INSERT INTO cto_sessions (workspace_id, user_email, input_text, input_type, status)
+        VALUES (:ws, :email, :inp, :it, 'analyzing')
+        RETURNING id, created_at
+    """), {"ws": ws, "email": me.email, "inp": payload.input_text, "it": input_type})).mappings().first()
+    session_id = str(row["id"])
+    await db.commit()
+
+    await audit_push(
+        db, actor=me.email, workspace_id=ws, action="cto.deploy.start",
+        target=payload.project_name, severity="info",
+        metadata={"input_type": input_type, "session_id": session_id},
+    )
+    await db.commit()
+
+    # Schedule background work
+    asyncio.create_task(_bg_orchestrate(
+        session_id, ws, me.email, input_type, parsed,
+        payload.project_name, payload.size, payload.region,
+        jwt_token=None,
+    ))
+
+    return SessionOut(
+        session_id=session_id,
+        workspace_id=ws,
+        status="analyzing",
+        detected_input_type=input_type,
+        project_id=None,
+        project_url=None,
+        messages=[],
+        created_at=row["created_at"],
+        completed_at=None,
+    )
+
+
+@router.get("/session/{session_id}", response_model=SessionOut)
+async def cto_session_status(
+    session_id: str,
+    ws: str = Query(..., min_length=1, max_length=64),
+    me: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> SessionOut:
+    """Poll session status + messages."""
+    await require_workspace_access(ws, me)
+    row = (await db.execute(text("""
+        SELECT id, workspace_id, status, input_type, project_id, project_url,
+               messages, created_at, completed_at
+        FROM cto_sessions
+        WHERE id = :id AND workspace_id = :ws
+    """), {"id": session_id, "ws": ws})).mappings().first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Session không tồn tại")
+
+    return SessionOut(
+        session_id=str(row["id"]),
+        workspace_id=row["workspace_id"],
+        status=row["status"],
+        detected_input_type=row["input_type"],
+        project_id=str(row["project_id"]) if row["project_id"] else None,
+        project_url=row["project_url"],
+        messages=row["messages"] or [],
+        created_at=row["created_at"],
+        completed_at=row["completed_at"],
+    )
+
+
+@router.get("/sessions", response_model=list[SessionOut])
+async def cto_sessions_list(
+    ws: str = Query(..., min_length=1, max_length=64),
+    me: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[SessionOut]:
+    """List recent CTO sessions in workspace."""
+    await require_workspace_access(ws, me)
+    rows = (await db.execute(text("""
+        SELECT id, workspace_id, status, input_type, project_id, project_url,
+               messages, created_at, completed_at
+        FROM cto_sessions
+        WHERE workspace_id = :ws
+        ORDER BY created_at DESC
+        LIMIT 50
+    """), {"ws": ws})).mappings().all()
+    return [
+        SessionOut(
+            session_id=str(r["id"]),
+            workspace_id=r["workspace_id"],
+            status=r["status"],
+            detected_input_type=r["input_type"],
+            project_id=str(r["project_id"]) if r["project_id"] else None,
+            project_url=r["project_url"],
+            messages=r["messages"] or [],
+            created_at=r["created_at"],
+            completed_at=r["completed_at"],
+        )
+        for r in rows
+    ]
