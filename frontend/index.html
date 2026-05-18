@@ -3213,39 +3213,44 @@ document.addEventListener('keydown', e => {
 
   function renderCTOAssistant(container) {
     container.innerHTML = '';
-    container.appendChild(el('div', { style: { padding: '24px', maxWidth: '900px', margin: '0 auto' } }, [
-      el('div', { style: { marginBottom: '20px' } }, [
-        el('h2', { style: { fontSize: '24px', color: 'var(--ink-50)', marginBottom: '8px' }, text: '🤖 Zeni CTO Assistant' }),
-        el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', lineHeight: '1.55' },
-                   text: 'Paste GitHub URL hoặc Docker image URL → em build + deploy hộ. Nhanh hơn wizard 4 bước.' })
+    container.appendChild(el('div', { style: { padding: '16px 24px', maxWidth: '1280px', margin: '0 auto',
+                                                 display: 'flex', flexDirection: 'column',
+                                                 height: 'calc(100vh - 110px)' } }, [
+      // Compact header (1 dòng thay vì 2)
+      el('div', { style: { display: 'flex', alignItems: 'baseline', gap: '14px',
+                            marginBottom: '12px', flexShrink: '0' } }, [
+        el('h2', { style: { fontSize: '22px', color: 'var(--ink-50)', margin: 0 }, text: '🤖 Zeni CTO Assistant' }),
+        el('span', { style: { fontSize: '14px', color: 'var(--ink-300)' },
+                      text: '— paste URL → em deploy hộ trong ~60s' })
       ]),
-      // Chat history pane
+      // Chat history pane CHIẾM TOÀN BỘ chiều cao còn lại
       el('div', { id: 'cto-chat-log', style: {
         background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: '12px',
-        padding: '16px', minHeight: '320px', maxHeight: '520px', overflowY: 'auto',
-        fontFamily: 'ui-monospace, "Cascadia Code", Menlo, monospace', fontSize: '12px',
-        color: 'var(--ink-100)', marginBottom: '14px', whiteSpace: 'pre-wrap'
+        padding: '20px 24px', flex: '1', overflowY: 'auto',
+        fontFamily: 'ui-monospace, "Cascadia Code", Menlo, monospace', fontSize: '15px',
+        color: 'var(--ink-100)', marginBottom: '12px', whiteSpace: 'pre-wrap',
+        lineHeight: '1.7'
       } }, [
-        el('div', { style: { color: 'var(--ink-400)' },
+        el('div', { style: { color: 'var(--ink-400)', fontSize: '14px' },
                     text: 'Ví dụ paste:\n  • docker.io/library/nginx:alpine\n  • us-docker.pkg.dev/cloudrun/container/hello\n  • github.com/user/repo (Phase 2)' })
       ]),
-      // Input row
-      el('div', { style: { display: 'flex', gap: '8px' } }, [
+      // Input row — to hơn, dễ thấy
+      el('div', { style: { display: 'flex', gap: '10px', flexShrink: '0' } }, [
         (() => {
           const i = el('input', { id: 'cto-input', type: 'text',
             placeholder: 'docker.io/yourname/your-app:v1   hoặc   github.com/user/repo',
-            style: { flex: '1', padding: '12px 14px', background: 'var(--bg-card,#14142a)',
-                     border: '1px solid var(--border)', borderRadius: '8px',
-                     color: 'var(--ink-50)', fontFamily: 'monospace', fontSize: '13px' }
+            style: { flex: '1', padding: '14px 18px', background: 'var(--bg-card,#14142a)',
+                     border: '1px solid var(--border)', borderRadius: '10px',
+                     color: 'var(--ink-50)', fontFamily: 'monospace', fontSize: '15px' }
           });
           i.onkeydown = e => { if (e.key === 'Enter') ctoSubmit(); };
           return i;
         })(),
         (() => {
           const b = el('button', { id: 'cto-submit-btn',
-            style: { padding: '12px 22px', background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
-                     color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer',
-                     fontWeight: '600' },
+            style: { padding: '14px 32px', background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+                     color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
+                     fontWeight: '600', fontSize: '15px' },
             text: '🚀 Deploy' });
           b.onclick = ctoSubmit;
           return b;
@@ -3261,7 +3266,7 @@ document.addEventListener('keydown', e => {
                      error: '#fb7185', success: 'var(--aurora,#22d3ee)' };
     const prefix = { info: 'ℹ', warn: '⚠', error: '✗', success: '✓' }[level] || '·';
     const line = el('div', { style: { color: colors[level] || 'var(--ink-100)',
-                                       padding: '4px 0', lineHeight: '1.5' },
+                                       padding: '6px 0', lineHeight: '1.7', fontSize: '15px' },
                               text: `${prefix} ${text}` });
     log.appendChild(line);
     log.scrollTop = log.scrollHeight;
