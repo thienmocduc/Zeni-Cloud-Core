@@ -4519,18 +4519,78 @@ document.addEventListener('keydown', e => {
       const wrap = el('div', { style: { padding: '28px', minWidth: '480px', maxWidth: '560px' } });
       wrap.appendChild(el('h3', { style: { fontSize: '20px', color: 'var(--ink-50)', marginBottom: '12px' }, text: '🐳 Cần Docker image để deploy' }));
       wrap.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '14px' }, text: 'Bạn chưa có image? Chọn 1 trong 3 cách:' }));
-      wrap.appendChild(el('div', { style: { display: 'grid', gap: '8px', marginBottom: '14px' } }, [
-        el('a', { href: '/docs/deploy-workflow.html#tab1', target: '_blank', style: { padding: '10px 14px', background: 'var(--bg-card,#14142a)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--ink-100)', textDecoration: 'none' }, text: '① Upload ZIP source — Zeni tự build (Next.js/Vite/FastAPI)' }),
-        el('a', { href: '/docs/deploy-workflow.html#tab2', target: '_blank', style: { padding: '10px 14px', background: 'var(--bg-card,#14142a)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--ink-100)', textDecoration: 'none' }, text: '② Build Farm — Tauri/Rust/Electron native build' }),
-        el('a', { href: '/docs/deploy-workflow.html#tab3', target: '_blank', style: { padding: '10px 14px', background: 'var(--bg-card,#14142a)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--ink-100)', textDecoration: 'none' }, text: '③ Đã có image trên Docker Hub — nhập URL bên dưới' })
+
+      // FIX Bug 1: hidden file input cho Upload ZIP — trigger thật, không phải link docs
+      const zipInput = el('input', { type: 'file', accept: '.zip', style: { display: 'none' } });
+      zipInput.onchange = async (ev) => {
+        const file = ev.target.files && ev.target.files[0];
+        if (!file) return;
+        if (file.size > 100 * 1024 * 1024) { alert('File ZIP > 100MB, vui lòng nén nhỏ hơn'); return; }
+        const statusEl = byId('zip-upload-status');
+        if (statusEl) statusEl.textContent = `⏳ Đang upload ${file.name} (${(file.size/1024/1024).toFixed(1)}MB) → Zeni build farm...`;
+        try {
+          const fd = new FormData();
+          fd.append('file', file);
+          const ws = state.currentWs;
+          const r = await fetch('/api/v1/upload/source?ws=' + encodeURIComponent(ws) + '&framework=auto', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') },
+            body: fd
+          });
+          const j = await r.json().catch(() => ({}));
+          if (!r.ok) {
+            if (statusEl) statusEl.textContent = `✗ Upload thất bại: ${j.detail || r.status}`;
+            return;
+          }
+          if (statusEl) statusEl.textContent = `✓ Upload xong. Build đang chạy (upload_id=${j.upload_id}). Tự dùng image này để deploy.`;
+          // Server trả image URL khi build xong; nếu pending thì để khách quay lại "Update image" sau
+          if (j.image) {
+            cpData.image = j.image;
+            setTimeout(() => { closeModal(); cpCreate(); }, 1500);
+          } else {
+            // Build async — khách tự quay lại sau ~1-3 phút
+            const imgInput2 = byId('docker-image-url');
+            if (imgInput2 && j.image_placeholder) imgInput2.value = j.image_placeholder;
+          }
+        } catch (e) {
+          if (statusEl) statusEl.textContent = `✗ Lỗi mạng: ${e.message}`;
+        }
+      };
+      wrap.appendChild(zipInput);
+
+      // 3 nút THẬT — click làm action thay vì mở docs (Bug 1 fix)
+      wrap.appendChild(el('div', { style: { display: 'grid', gap: '8px', marginBottom: '8px' } }, [
+        (() => {
+          const b = el('button', { style: { padding: '10px 14px', background: 'var(--bg-card,#14142a)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--ink-100)', textAlign: 'left', cursor: 'pointer' }, text: '① Upload ZIP source — Zeni tự build (Next.js/Vite/FastAPI)' });
+          b.onclick = () => zipInput.click();
+          return b;
+        })(),
+        (() => {
+          const b = el('button', { style: { padding: '10px 14px', background: 'var(--bg-card,#14142a)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--ink-100)', textAlign: 'left', cursor: 'pointer' }, text: '② Build Farm — Tauri/Rust/Electron native build' });
+          b.onclick = () => { closeModal(); setTimeout(() => window.openBuildFarm && window.openBuildFarm(), 100); };
+          return b;
+        })(),
+        (() => {
+          const b = el('button', { style: { padding: '10px 14px', background: 'var(--bg-card,#14142a)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--ink-100)', textAlign: 'left', cursor: 'pointer' }, text: '③ Đã có image trên Docker Hub — nhập URL bên dưới' });
+          b.onclick = () => { setTimeout(() => byId('docker-image-url') && byId('docker-image-url').focus(), 50); };
+          return b;
+        })()
       ]));
+      // Status line cho upload progress
+      wrap.appendChild(el('div', { id: 'zip-upload-status', style: { fontSize: '12px', color: 'var(--ink-400)', marginBottom: '14px', minHeight: '18px' }, text: '' }));
+
       wrap.appendChild(el('label', { style: { display: 'block', fontSize: '12px', color: 'var(--ink-300)', marginBottom: '4px' }, text: 'Docker image URL (vd: docker.io/library/nginx:alpine)' }));
-      const imgInput = el('input', { type: 'text', placeholder: 'docker.io/yourname/your-app:v1', style: { width: '100%', padding: '10px 12px', background: 'var(--bg-card,#14142a)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--ink-50)', marginBottom: '14px', fontFamily: 'monospace' } });
+      const imgInput = el('input', { type: 'text', id: 'docker-image-url', placeholder: 'docker.io/yourname/your-app:v1', style: { width: '100%', padding: '10px 12px', background: 'var(--bg-card,#14142a)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--ink-50)', marginBottom: '14px', fontFamily: 'monospace' } });
       wrap.appendChild(imgInput);
       const submitBtn = el('button', { style: { width: '100%', padding: '12px', background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }, text: 'Deploy với image này' });
       submitBtn.onclick = () => {
         const v = imgInput.value.trim();
-        if (!v) { alert('Vui lòng nhập image URL'); return; }
+        if (!v) { alert('Vui lòng nhập image URL hoặc upload ZIP ở trên'); return; }
+        // FIX Bug 2: validate format trước khi gửi backend — tránh fail silent vì backend reject
+        if (!/^[a-z0-9][a-z0-9._\-\/]*(:[\w.\-]+)?(@sha256:[a-f0-9]{64})?$/i.test(v)) {
+          alert('Image URL không hợp lệ. Ví dụ đúng: docker.io/library/nginx:alpine hoặc us-docker.pkg.dev/.../app:v1');
+          return;
+        }
         cpData.image = v;
         closeModal();
         cpCreate();
@@ -5728,6 +5788,15 @@ document.addEventListener('keydown', e => {
   }
   function closeModal() {
     byId('modal-wrap').classList.remove('active');
+    // FIX Bug 3 (UI vỡ bố cục lần 2): clear modal phụ inline styles + content khi đóng.
+    // Code khác (cpCreate "Cần Docker image") dùng byId('modal') + set display:flex/classList active
+    // mà không reset → lần mở modal sau bị conflict layout.
+    const m = byId('modal');
+    if (m) {
+      m.classList.remove('active');
+      m.style.display = '';
+      m.innerHTML = '';
+    }
   }
 
   function buildKpi(lbl, val, unit, color) {
