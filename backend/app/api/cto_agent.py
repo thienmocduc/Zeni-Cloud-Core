@@ -220,8 +220,8 @@ async def _orchestrate_image(db: AsyncSession, session_id: str, workspace_id: st
     bg = BackgroundTasks()
 
     try:
-        result = await projects_deploy(payload=payload, ws=workspace_id,
-                                        background_tasks=bg, me=me, db=db)
+        # NOTE: projects.deploy_project signature is (ws, data, bg, me, db) — kwargs must match exactly
+        result = await projects_deploy(ws=workspace_id, data=payload, bg=bg, me=me, db=db)
         proj_id = str(result.id)
         await _push_message(db, session_id, "info",
                             f"Project created: {result.name} (id={proj_id})")
