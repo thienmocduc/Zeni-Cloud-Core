@@ -2133,6 +2133,9 @@ select {
         <button onclick="openEdgeRuntime()" class="btn btn-md" style="background:linear-gradient(135deg,rgba(168,85,247,0.12),rgba(34,211,238,0.12));color:var(--crown,#a855f7);border:1px solid var(--crown,#a855f7);display:inline-flex;align-items:center;gap:6px;" title="Sandboxed microVM cho AI agent — Computer Use, Playwright, Python sandbox">
           <span>📦</span> <span>Edge Runtime</span>
         </button>
+        <button class="btn btn-md" onclick="setView('cto')" style="background:linear-gradient(135deg,rgba(125,104,255,0.18),rgba(168,85,247,0.18));color:var(--indigo,#7d68ff);border:1px solid var(--indigo,#7d68ff);display:inline-flex;align-items:center;gap:6px;" title="CTO Assistant — paste URL/image, em deploy hộ">
+          <span>🤖</span> <span>CTO Assistant</span>
+        </button>
         <button class="btn btn-md btn-accent" onclick="openCreateProject()">+ Project mới</button>
       </div>
     </div>
@@ -3195,9 +3198,134 @@ document.addEventListener('keydown', e => {
       case 'audit': renderAudit(container); break;
       case 'members': renderMembers(container); break;
       case 'settings': renderSettings(container); break;
+      case 'cto': renderCTOAssistant(container); break;
       default: container.appendChild(el('div', { text: 'Unknown view' }));
     }
     return container;
+  }
+
+  /* ═══════════════════════════════════════════════
+     CTO Chat Assistant · AI-driven deploy (Phase 1 MVP)
+     Khách paste GitHub URL / Docker image URL → AI deploy hộ
+     ═══════════════════════════════════════════════ */
+  let _ctoCurrentSession = null;
+  let _ctoPollTimer = null;
+
+  function renderCTOAssistant(container) {
+    container.innerHTML = '';
+    container.appendChild(el('div', { style: { padding: '24px', maxWidth: '900px', margin: '0 auto' } }, [
+      el('div', { style: { marginBottom: '20px' } }, [
+        el('h2', { style: { fontSize: '24px', color: 'var(--ink-50)', marginBottom: '8px' }, text: '🤖 Zeni CTO Assistant' }),
+        el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', lineHeight: '1.55' },
+                   text: 'Paste GitHub URL hoặc Docker image URL → em build + deploy hộ. Nhanh hơn wizard 4 bước.' })
+      ]),
+      // Chat history pane
+      el('div', { id: 'cto-chat-log', style: {
+        background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: '12px',
+        padding: '16px', minHeight: '320px', maxHeight: '520px', overflowY: 'auto',
+        fontFamily: 'ui-monospace, "Cascadia Code", Menlo, monospace', fontSize: '12px',
+        color: 'var(--ink-100)', marginBottom: '14px', whiteSpace: 'pre-wrap'
+      } }, [
+        el('div', { style: { color: 'var(--ink-400)' },
+                    text: 'Ví dụ paste:\n  • docker.io/library/nginx:alpine\n  • us-docker.pkg.dev/cloudrun/container/hello\n  • github.com/user/repo (Phase 2)' })
+      ]),
+      // Input row
+      el('div', { style: { display: 'flex', gap: '8px' } }, [
+        (() => {
+          const i = el('input', { id: 'cto-input', type: 'text',
+            placeholder: 'docker.io/yourname/your-app:v1   hoặc   github.com/user/repo',
+            style: { flex: '1', padding: '12px 14px', background: 'var(--bg-card,#14142a)',
+                     border: '1px solid var(--border)', borderRadius: '8px',
+                     color: 'var(--ink-50)', fontFamily: 'monospace', fontSize: '13px' }
+          });
+          i.onkeydown = e => { if (e.key === 'Enter') ctoSubmit(); };
+          return i;
+        })(),
+        (() => {
+          const b = el('button', { id: 'cto-submit-btn',
+            style: { padding: '12px 22px', background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+                     color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer',
+                     fontWeight: '600' },
+            text: '🚀 Deploy' });
+          b.onclick = ctoSubmit;
+          return b;
+        })()
+      ])
+    ]));
+  }
+
+  function ctoAppendLog(level, text) {
+    const log = byId('cto-chat-log');
+    if (!log) return;
+    const colors = { info: 'var(--ink-100)', warn: 'var(--gold-l,#facc15)',
+                     error: '#fb7185', success: 'var(--aurora,#22d3ee)' };
+    const prefix = { info: 'ℹ', warn: '⚠', error: '✗', success: '✓' }[level] || '·';
+    const line = el('div', { style: { color: colors[level] || 'var(--ink-100)',
+                                       padding: '4px 0', lineHeight: '1.5' },
+                              text: `${prefix} ${text}` });
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  async function ctoSubmit() {
+    const inp = byId('cto-input');
+    const btn = byId('cto-submit-btn');
+    if (!inp || !btn) return;
+    const v = inp.value.trim();
+    if (!v) { inp.focus(); return; }
+
+    btn.disabled = true; btn.textContent = '⏳ Đang xử lý...';
+    ctoAppendLog('info', `→ Bạn: ${v}`);
+
+    try {
+      const r = await fetch('/api/v1/cto/deploy?ws=' + encodeURIComponent(state.currentWs), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json',
+                   'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') },
+        body: JSON.stringify({ input_text: v, size: 's', region: 'asia-southeast1' })
+      });
+      const j = await r.json();
+      if (!r.ok) {
+        ctoAppendLog('error', `Lỗi ${r.status}: ${j.detail || JSON.stringify(j)}`);
+        btn.disabled = false; btn.textContent = '🚀 Deploy';
+        return;
+      }
+      _ctoCurrentSession = j.session_id;
+      ctoAppendLog('info', `Session ${j.session_id.slice(0, 8)}… created. Detected type: ${j.detected_input_type}`);
+      inp.value = '';
+      ctoStartPoll();
+    } catch (e) {
+      ctoAppendLog('error', `Network error: ${e.message}`);
+      btn.disabled = false; btn.textContent = '🚀 Deploy';
+    }
+  }
+
+  let _ctoLastMsgCount = 0;
+  function ctoStartPoll() {
+    if (_ctoPollTimer) clearInterval(_ctoPollTimer);
+    _ctoLastMsgCount = 0;
+    _ctoPollTimer = setInterval(async () => {
+      if (!_ctoCurrentSession) return;
+      try {
+        const r = await fetch('/api/v1/cto/session/' + _ctoCurrentSession + '?ws=' + encodeURIComponent(state.currentWs), {
+          headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') }
+        });
+        const j = await r.json();
+        const msgs = j.messages || [];
+        for (let i = _ctoLastMsgCount; i < msgs.length; i++) {
+          ctoAppendLog(msgs[i].level, msgs[i].text);
+        }
+        _ctoLastMsgCount = msgs.length;
+        if (j.status === 'success' || j.status === 'failed') {
+          clearInterval(_ctoPollTimer); _ctoPollTimer = null;
+          const btn = byId('cto-submit-btn');
+          if (btn) { btn.disabled = false; btn.textContent = '🚀 Deploy'; }
+          if (j.status === 'success' && j.project_url) {
+            ctoAppendLog('success', `🌍 ${j.project_url}`);
+          }
+        }
+      } catch (e) { /* ignore polling errors, will retry */ }
+    }, 2000);
   }
 
   function getProjects() {
