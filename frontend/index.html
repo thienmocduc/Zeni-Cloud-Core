@@ -3209,53 +3209,69 @@ document.addEventListener('keydown', e => {
   }
 
   /* ═══════════════════════════════════════════════
-     CTO Chat Assistant · AI-driven deploy (Phase 1 MVP)
-     Khách paste GitHub URL / Docker image URL → AI deploy hộ
+     CTO Chat Assistant · LIVE LLM agent (Phase 2)
+     Gemini 2.5 Pro + Claude Sonnet 4.6 fallback
+     Strict scope: chỉ deploy/Zeni Cloud, refuse off-topic
      ═══════════════════════════════════════════════ */
   let _ctoCurrentSession = null;
   let _ctoPollTimer = null;
+  let _ctoLastMsgCount = 0;
+  let _ctoThinkingNode = null;
 
   function renderCTOAssistant(container) {
     container.innerHTML = '';
+    _ctoLastMsgCount = 0; _ctoThinkingNode = null;
+    if (_ctoPollTimer) { clearInterval(_ctoPollTimer); _ctoPollTimer = null; }
+
     container.appendChild(el('div', { style: { padding: '16px 24px', maxWidth: '1280px', margin: '0 auto',
                                                  display: 'flex', flexDirection: 'column',
                                                  height: 'calc(100vh - 110px)' } }, [
-      // Compact header (1 dòng thay vì 2)
-      el('div', { style: { display: 'flex', alignItems: 'baseline', gap: '14px',
+      // Header row
+      el('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                             marginBottom: '12px', flexShrink: '0' } }, [
-        el('h2', { style: { fontSize: '22px', color: 'var(--ink-50)', margin: 0 }, text: '🤖 Zeni CTO Assistant' }),
-        el('span', { style: { fontSize: '14px', color: 'var(--ink-300)' },
-                      text: '— paste URL → em deploy hộ trong ~60s' })
+        el('div', { style: { display: 'flex', alignItems: 'baseline', gap: '12px' } }, [
+          el('h2', { style: { fontSize: '22px', color: 'var(--ink-50)', margin: 0 }, text: '🤖 Zeni CTO Assistant' }),
+          el('span', { style: { fontSize: '13px', color: 'var(--ink-400)' },
+                        text: 'Gemini 2.5 Pro · Sonnet 4.6 fallback · scope: deploy/Zeni Cloud only' })
+        ]),
+        (() => {
+          const b = el('button', { id: 'cto-new-chat-btn',
+            style: { padding: '8px 16px', background: 'transparent',
+                     color: 'var(--ink-300)', border: '1px solid var(--border)',
+                     borderRadius: '8px', cursor: 'pointer', fontSize: '13px' },
+            text: '+ Cuộc trò chuyện mới' });
+          b.onclick = ctoNewChat;
+          return b;
+        })()
       ]),
-      // Chat history pane CHIẾM TOÀN BỘ chiều cao còn lại
+      // Chat bubbles pane
       el('div', { id: 'cto-chat-log', style: {
         background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: '12px',
         padding: '20px 24px', flex: '1', overflowY: 'auto',
-        fontFamily: 'ui-monospace, "Cascadia Code", Menlo, monospace', fontSize: '15px',
-        color: 'var(--ink-100)', marginBottom: '12px', whiteSpace: 'pre-wrap',
-        lineHeight: '1.7'
-      } }, [
-        el('div', { style: { color: 'var(--ink-400)', fontSize: '14px' },
-                    text: 'Ví dụ paste:\n  • docker.io/library/nginx:alpine\n  • us-docker.pkg.dev/cloudrun/container/hello\n  • github.com/user/repo (Phase 2)' })
-      ]),
-      // Input row — to hơn, dễ thấy
-      el('div', { style: { display: 'flex', gap: '10px', flexShrink: '0' } }, [
+        fontSize: '15px', color: 'var(--ink-100)', marginBottom: '12px',
+        display: 'flex', flexDirection: 'column', gap: '12px'
+      } }, [ctoWelcomeNode()]),
+      // Input row
+      el('div', { style: { display: 'flex', gap: '10px', flexShrink: '0', alignItems: 'flex-end' } }, [
         (() => {
-          const i = el('input', { id: 'cto-input', type: 'text',
-            placeholder: 'docker.io/yourname/your-app:v1   hoặc   github.com/user/repo',
+          const i = el('textarea', { id: 'cto-input',
+            placeholder: 'Hỏi em hỗ trợ deploy app... (vd: "deploy nginx:alpine giúp em" hoặc "list các project hiện tại")',
             style: { flex: '1', padding: '14px 18px', background: 'var(--bg-card,#14142a)',
                      border: '1px solid var(--border)', borderRadius: '10px',
-                     color: 'var(--ink-50)', fontFamily: 'monospace', fontSize: '15px' }
+                     color: 'var(--ink-50)', fontFamily: 'inherit', fontSize: '15px',
+                     resize: 'none', minHeight: '52px', maxHeight: '160px',
+                     lineHeight: '1.5', outline: 'none' }
           });
-          i.onkeydown = e => { if (e.key === 'Enter') ctoSubmit(); };
+          i.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ctoSubmit(); } };
+          i.oninput = () => { i.style.height = '52px'; i.style.height = Math.min(160, i.scrollHeight) + 'px'; };
           return i;
         })(),
         (() => {
           const b = el('button', { id: 'cto-submit-btn',
-            style: { padding: '14px 32px', background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+            style: { padding: '14px 28px', background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
                      color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
-                     fontWeight: '600', fontSize: '15px' },
-            text: '🚀 Deploy' });
+                     fontWeight: '600', fontSize: '15px', minHeight: '52px' },
+            text: 'Gửi' });
           b.onclick = ctoSubmit;
           return b;
         })()
@@ -3263,17 +3279,97 @@ document.addEventListener('keydown', e => {
     ]));
   }
 
-  function ctoAppendLog(level, text) {
+  function ctoWelcomeNode() {
+    const wrap = el('div', { style: { padding: '8px 4px', color: 'var(--ink-300)', fontSize: '14px',
+                                       lineHeight: '1.7' } });
+    wrap.appendChild(el('div', { style: { fontSize: '15px', color: 'var(--ink-100)', marginBottom: '8px' },
+                                  text: 'Em là CTO Assistant của Zeni Cloud. Em hỗ trợ deploy, Container Registry, debug log, billing...' }));
+    wrap.appendChild(el('div', { style: { color: 'var(--ink-400)', marginBottom: '8px' },
+                                  text: 'Thử các câu sau:' }));
+    const examples = [
+      'Deploy giúp em docker.io/library/nginx:alpine',
+      'List các project hiện tại của workspace',
+      'Tạo Container Registry cho workspace',
+      'Status của project XYZ thế nào?'
+    ];
+    examples.forEach(ex => {
+      const chip = el('div', { style: { display: 'inline-block', margin: '4px 6px 4px 0',
+              padding: '6px 12px', background: 'var(--bg-card,#14142a)',
+              border: '1px solid var(--border)', borderRadius: '14px', fontSize: '13px',
+              color: 'var(--aurora,#22d3ee)', cursor: 'pointer' },
+            text: ex });
+      chip.onclick = () => { const inp = byId('cto-input'); if (inp) { inp.value = ex; inp.focus(); } };
+      wrap.appendChild(chip);
+    });
+    return wrap;
+  }
+
+  function ctoAppendUserBubble(text) {
     const log = byId('cto-chat-log');
     if (!log) return;
-    const colors = { info: 'var(--ink-100)', warn: 'var(--gold-l,#facc15)',
-                     error: '#fb7185', success: 'var(--aurora,#22d3ee)' };
-    const prefix = { info: 'ℹ', warn: '⚠', error: '✗', success: '✓' }[level] || '·';
-    const line = el('div', { style: { color: colors[level] || 'var(--ink-100)',
-                                       padding: '6px 0', lineHeight: '1.7', fontSize: '15px' },
+    const row = el('div', { style: { display: 'flex', justifyContent: 'flex-end' } });
+    row.appendChild(el('div', { style: {
+      maxWidth: '70%', padding: '12px 16px',
+      background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+      color: '#fff', borderRadius: '16px 16px 4px 16px', fontSize: '15px',
+      lineHeight: '1.6', whiteSpace: 'pre-wrap', wordBreak: 'break-word'
+    }, text }));
+    log.appendChild(row);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function ctoAppendAssistantBubble(text) {
+    const log = byId('cto-chat-log');
+    if (!log) return;
+    const row = el('div', { style: { display: 'flex', justifyContent: 'flex-start' } });
+    row.appendChild(el('div', { style: {
+      maxWidth: '85%', padding: '12px 16px',
+      background: 'var(--bg-card,#14142a)', border: '1px solid var(--border)',
+      color: 'var(--ink-50)', borderRadius: '16px 16px 16px 4px', fontSize: '15px',
+      lineHeight: '1.7', whiteSpace: 'pre-wrap', wordBreak: 'break-word'
+    }, text }));
+    log.appendChild(row);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function ctoAppendSystemLine(level, text) {
+    const log = byId('cto-chat-log');
+    if (!log) return;
+    const colors = { info: 'var(--ink-400)', warn: 'var(--gold-l,#facc15)',
+                     error: '#fb7185', tool: 'var(--aurora,#22d3ee)' };
+    const prefix = { info: '·', warn: '⚠', error: '✗', tool: '🔧' }[level] || '·';
+    const line = el('div', { style: { color: colors[level] || 'var(--ink-400)',
+                                       fontSize: '12px', fontFamily: 'monospace',
+                                       padding: '0 8px', opacity: '0.8',
+                                       whiteSpace: 'pre-wrap', wordBreak: 'break-word' },
                               text: `${prefix} ${text}` });
     log.appendChild(line);
     log.scrollTop = log.scrollHeight;
+  }
+
+  function ctoSetThinking(on) {
+    if (_ctoThinkingNode) { _ctoThinkingNode.remove(); _ctoThinkingNode = null; }
+    if (!on) return;
+    const log = byId('cto-chat-log');
+    if (!log) return;
+    const row = el('div', { style: { display: 'flex', justifyContent: 'flex-start' } });
+    row.appendChild(el('div', { style: {
+      padding: '10px 16px', background: 'var(--bg-card,#14142a)', border: '1px solid var(--border)',
+      color: 'var(--ink-400)', borderRadius: '16px 16px 16px 4px', fontSize: '14px',
+      fontStyle: 'italic'
+    }, text: 'Em đang nghĩ...' }));
+    log.appendChild(row);
+    _ctoThinkingNode = row;
+    log.scrollTop = log.scrollHeight;
+  }
+
+  async function ctoNewChat() {
+    if (_ctoPollTimer) { clearInterval(_ctoPollTimer); _ctoPollTimer = null; }
+    _ctoCurrentSession = null;
+    _ctoLastMsgCount = 0;
+    const log = byId('cto-chat-log');
+    if (log) { log.innerHTML = ''; log.appendChild(ctoWelcomeNode()); }
+    const inp = byId('cto-input'); if (inp) inp.focus();
   }
 
   async function ctoSubmit() {
@@ -3283,29 +3379,33 @@ document.addEventListener('keydown', e => {
     const v = inp.value.trim();
     if (!v) { inp.focus(); return; }
 
-    btn.disabled = true; btn.textContent = '⏳ Đang xử lý...';
-    ctoAppendLog('info', `→ Bạn: ${v}`);
+    btn.disabled = true; btn.textContent = '...';
+    ctoAppendUserBubble(v);
+    inp.value = ''; inp.style.height = '52px';
+    ctoSetThinking(true);
 
     try {
-      const r = await fetch('/api/v1/cto/deploy?ws=' + encodeURIComponent(state.currentWs), {
+      const r = await fetch('/api/v1/cto/chat?ws=' + encodeURIComponent(state.currentWs), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json',
                    'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') },
-        body: JSON.stringify({ input_text: v, size: 's', region: 'asia-southeast1' })
+        body: JSON.stringify({ session_id: _ctoCurrentSession, message: v })
       });
       const j = await r.json();
       if (!r.ok) {
-        ctoAppendLog('error', `Lỗi ${r.status}: ${j.detail || JSON.stringify(j)}`);
-        btn.disabled = false; btn.textContent = '🚀 Deploy';
+        ctoSetThinking(false);
+        ctoAppendSystemLine('error', `Lỗi ${r.status}: ${j.detail || JSON.stringify(j)}`);
+        btn.disabled = false; btn.textContent = 'Gửi';
         return;
       }
       _ctoCurrentSession = j.session_id;
-      ctoAppendLog('info', `Session ${j.session_id.slice(0, 8)}… created. Detected type: ${j.detected_input_type}`);
-      inp.value = '';
+      // Note: skip 1 user message in poll (we already rendered it)
+      _ctoLastMsgCount += 1;
       ctoStartPoll();
     } catch (e) {
-      ctoAppendLog('error', `Network error: ${e.message}`);
-      btn.disabled = false; btn.textContent = '🚀 Deploy';
+      ctoSetThinking(false);
+      ctoAppendSystemLine('error', `Network error: ${e.message}`);
+      btn.disabled = false; btn.textContent = 'Gửi';
     }
   }
 
@@ -3458,10 +3558,8 @@ document.addEventListener('keydown', e => {
     }
   }
 
-  let _ctoLastMsgCount = 0;
   function ctoStartPoll() {
     if (_ctoPollTimer) clearInterval(_ctoPollTimer);
-    _ctoLastMsgCount = 0;
     _ctoPollTimer = setInterval(async () => {
       if (!_ctoCurrentSession) return;
       try {
@@ -3471,19 +3569,27 @@ document.addEventListener('keydown', e => {
         const j = await r.json();
         const msgs = j.messages || [];
         for (let i = _ctoLastMsgCount; i < msgs.length; i++) {
-          ctoAppendLog(msgs[i].level, msgs[i].text);
-        }
-        _ctoLastMsgCount = msgs.length;
-        if (j.status === 'success' || j.status === 'failed') {
-          clearInterval(_ctoPollTimer); _ctoPollTimer = null;
-          const btn = byId('cto-submit-btn');
-          if (btn) { btn.disabled = false; btn.textContent = '🚀 Deploy'; }
-          if (j.status === 'success' && j.project_url) {
-            ctoAppendLog('success', `🌍 ${j.project_url}`);
+          const m = msgs[i];
+          const lvl = m.level || 'info';
+          if (lvl === 'user') {
+            // Already rendered in ctoSubmit (skip duplicate)
+          } else if (lvl === 'assistant') {
+            ctoSetThinking(false);
+            ctoAppendAssistantBubble(m.text);
+          } else {
+            ctoAppendSystemLine(lvl === 'success' ? 'tool' : lvl, m.text);
           }
         }
+        _ctoLastMsgCount = msgs.length;
+        if (j.status === 'ready') {
+          clearInterval(_ctoPollTimer); _ctoPollTimer = null;
+          ctoSetThinking(false);
+          const btn = byId('cto-submit-btn');
+          if (btn) { btn.disabled = false; btn.textContent = 'Gửi'; }
+          const inp = byId('cto-input'); if (inp) inp.focus();
+        }
       } catch (e) { /* ignore polling errors, will retry */ }
-    }, 2000);
+    }, 1500);
   }
 
   function getProjects() {

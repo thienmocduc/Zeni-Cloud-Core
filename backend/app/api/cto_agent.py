@@ -1,18 +1,18 @@
 """
-Zeni Cloud Core — CTO Chat Assistant API (Phase 1 MVP).
+Zeni Cloud Core — CTO Chat Assistant API.
 
-Khách paste 1 trong 4 input → AI orchestrator tự deploy lên Cloud Run:
-  1. GitHub URL: github.com/user/repo (+ branch optional)
-  2. Docker image URL: docker.io/user/repo:tag hoặc gcr.io/..., us-central1-docker.pkg.dev/...
-  3. ZIP upload (multipart) — đẩy về /api/v1/upload/source (existing endpoint)
-  4. Mô tả tự nhiên (Phase 2 — chưa implement)
-
-Endpoints (prefix /cto):
-  POST   /deploy?ws=X     — analyze input + start deploy (returns session_id)
-  GET    /session/{id}    — poll status + log messages
+Phase 1 (legacy regex deploy):
+  POST   /deploy?ws=X     — paste image URL → em deploy hộ
+  GET    /session/{id}    — poll status + messages
   GET    /sessions?ws=X   — list sessions in workspace
 
-Storage: cto_sessions table (migration sẽ tạo qua main.py boot)
+Phase 2 (LIVE LLM chat — Gemini 2.5 Pro + Sonnet 4.6 fallback):
+  POST   /chat?ws=X       — send user message, agent calls tools + replies
+                            (Background task → poll GET /session/{id} for streaming output)
+  POST   /chat/new?ws=X   — create fresh chat session
+
+Storage: cto_sessions table — messages JSONB holds mixed entries
+  {ts, level: "user"|"assistant"|"info"|"warn"|"error"|"tool", text}
 """
 from __future__ import annotations
 
@@ -388,3 +388,171 @@ async def cto_sessions_list(
         )
         for r in rows
     ]
+
+
+# ═══════════════════════════════════════════════════════════════
+# Phase 2 — LIVE LLM chat (Gemini 2.5 + Sonnet 4.6)
+# ═══════════════════════════════════════════════════════════════
+
+class ChatIn(BaseModel):
+    session_id: str | None = Field(default=None, description="Existing session UUID; omit to start new chat")
+    message: str = Field(min_length=1, max_length=4000)
+
+
+class ChatOut(BaseModel):
+    session_id: str
+    status: str   # 'thinking' — frontend polls GET /session/{id} for streaming progress
+    accepted_at: datetime
+
+
+async def _bg_chat_turn(session_id: str, workspace_id: str, user_email: str,
+                         user_message: str) -> None:
+    """Background: run LLM tool-use loop, write progress + final answer to messages."""
+    from app.services.cto_chat import chat_turn
+
+    async with SessionLocal() as db:
+        try:
+            # Mark thinking
+            await db.execute(text("""
+                UPDATE cto_sessions SET status = 'thinking' WHERE id = :id
+            """), {"id": session_id})
+            await db.commit()
+
+            # Load history (only user/assistant turns — filter out info/tool/error)
+            row = (await db.execute(text("""
+                SELECT messages FROM cto_sessions WHERE id = :id
+            """), {"id": session_id})).mappings().first()
+            all_msgs = (row["messages"] or []) if row else []
+            history: list[dict] = []
+            for m in all_msgs:
+                lvl = m.get("level")
+                if lvl == "user":
+                    history.append({"role": "user", "content": m.get("text", "")})
+                elif lvl == "assistant":
+                    history.append({"role": "assistant", "content": m.get("text", "")})
+
+            # Append user message to log
+            await _push_message(db, session_id, "user", user_message)
+
+            # Progress callback writes to messages JSONB for frontend polling
+            async def progress(level: str, txt: str) -> None:
+                async with SessionLocal() as cb_db:
+                    await _push_message(cb_db, session_id, level, txt)
+
+            result = await chat_turn(
+                workspace_id=workspace_id, user_email=user_email, db=db,
+                history=history, user_message=user_message,
+                progress_callback=progress,
+            )
+
+            # Write final assistant answer
+            await _push_message(db, session_id, "assistant", result["final_text"])
+
+            # Update status + metadata
+            project_id = None
+            project_url = None
+            for tc in result["tool_calls"]:
+                if tc["tool"] == "deploy_image" and tc["result"].get("ok"):
+                    project_id = tc["result"].get("project_id")
+                elif tc["tool"] == "get_project_status" and tc["result"].get("ok"):
+                    project_url = tc["result"].get("url") or project_url
+                    if not project_id:
+                        project_id = tc["result"].get("project_id")
+
+            await db.execute(text("""
+                UPDATE cto_sessions
+                SET status = 'ready',
+                    project_id = COALESCE(CAST(NULLIF(:pid, '') AS UUID), project_id),
+                    project_url = COALESCE(NULLIF(:url, ''), project_url)
+                WHERE id = :id
+            """), {"id": session_id, "pid": project_id or "", "url": project_url or ""})
+            await db.commit()
+
+            await audit_push(
+                db, actor=user_email, workspace_id=workspace_id,
+                action="cto.chat.turn", target=session_id, severity="ok",
+                metadata={"model": result["model_used"], "iterations": result["iterations"],
+                          "tool_calls": len(result["tool_calls"])},
+            )
+            await db.commit()
+
+        except Exception as e:
+            log.exception("[cto.chat] session=%s failed: %s", session_id, e)
+            try:
+                await _push_message(db, session_id, "error", f"Chat turn failed: {e}")
+                await db.execute(text("UPDATE cto_sessions SET status = 'ready' WHERE id = :id"),
+                                  {"id": session_id})
+                await db.commit()
+            except Exception:
+                pass
+
+
+@router.post("/chat", response_model=ChatOut, status_code=202)
+async def cto_chat(
+    payload: ChatIn,
+    ws: str = Query(..., min_length=1, max_length=64),
+    me: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ChatOut:
+    """Send a user message to CTO chat agent. Returns immediately;
+    poll GET /cto/session/{id} every 1-2s for streaming output."""
+    await require_workspace_access(ws, me)
+    if me.role == "Viewer":
+        raise HTTPException(status_code=403, detail="Viewer không được chat với CTO Assistant")
+
+    await _ensure_table(db)
+
+    # Get-or-create session
+    session_id = payload.session_id
+    if session_id:
+        row = (await db.execute(text("""
+            SELECT id FROM cto_sessions WHERE id = :id AND workspace_id = :ws
+        """), {"id": session_id, "ws": ws})).mappings().first()
+        if not row:
+            raise HTTPException(status_code=404, detail="Session không tồn tại trong workspace này")
+    else:
+        row = (await db.execute(text("""
+            INSERT INTO cto_sessions (workspace_id, user_email, input_text, input_type, status)
+            VALUES (:ws, :email, :msg, 'chat', 'thinking')
+            RETURNING id
+        """), {"ws": ws, "email": me.email, "msg": payload.message[:500]})).mappings().first()
+        session_id = str(row["id"])
+        await db.commit()
+
+    # Background tool-use loop
+    asyncio.create_task(_bg_chat_turn(session_id, ws, me.email, payload.message))
+
+    return ChatOut(
+        session_id=session_id,
+        status="thinking",
+        accepted_at=datetime.now(timezone.utc),
+    )
+
+
+@router.post("/chat/new", response_model=SessionOut, status_code=201)
+async def cto_chat_new(
+    ws: str = Query(..., min_length=1, max_length=64),
+    me: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> SessionOut:
+    """Create a fresh chat session (no initial message)."""
+    await require_workspace_access(ws, me)
+    if me.role == "Viewer":
+        raise HTTPException(status_code=403, detail="Viewer không được tạo chat session")
+    await _ensure_table(db)
+
+    row = (await db.execute(text("""
+        INSERT INTO cto_sessions (workspace_id, user_email, input_text, input_type, status)
+        VALUES (:ws, :email, '', 'chat', 'ready')
+        RETURNING id, created_at
+    """), {"ws": ws, "email": me.email})).mappings().first()
+    await db.commit()
+
+    return SessionOut(
+        session_id=str(row["id"]),
+        workspace_id=ws,
+        status="ready",
+        detected_input_type="chat",
+        project_id=None, project_url=None,
+        messages=[], created_at=row["created_at"], completed_at=None,
+    )
