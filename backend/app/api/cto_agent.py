@@ -34,7 +34,19 @@ from app.db.base import SessionLocal, get_db
 from app.services.audit import audit_push
 
 log = logging.getLogger("zeni.api.cto")
+log.setLevel(logging.INFO)
 router = APIRouter(prefix="/cto", tags=["cto-assistant"])
+
+# Hold strong references to bg tasks → tránh GC cancel task lúc đang chạy LLM.
+# Bug Phase 2: asyncio.create_task(...) không hold ref → GC có thể dọn → task cancelled silently.
+_BG_TASKS: set = set()
+
+
+def _spawn_bg(coro) -> None:
+    """Schedule a background coroutine and keep a strong reference until it completes."""
+    task = asyncio.create_task(coro)
+    _BG_TASKS.add(task)
+    task.add_done_callback(_BG_TASKS.discard)
 
 
 # ─── Pydantic schemas ─────────────────────────────────────────
@@ -308,7 +320,7 @@ async def cto_deploy(
     await db.commit()
 
     # Schedule background work
-    asyncio.create_task(_bg_orchestrate(
+    _spawn_bg(_bg_orchestrate(
         session_id, ws, me.email, input_type, parsed,
         payload.project_name, payload.size, payload.region,
         jwt_token=None,
@@ -410,6 +422,8 @@ async def _bg_chat_turn(session_id: str, workspace_id: str, user_email: str,
     """Background: run LLM tool-use loop, write progress + final answer to messages."""
     from app.services.cto_chat import chat_turn
 
+    log.info("[cto.chat] START session=%s ws=%s user=%s", session_id, workspace_id, user_email)
+
     async with SessionLocal() as db:
         try:
             # Mark thinking
@@ -417,6 +431,7 @@ async def _bg_chat_turn(session_id: str, workspace_id: str, user_email: str,
                 UPDATE cto_sessions SET status = 'thinking' WHERE id = :id
             """), {"id": session_id})
             await db.commit()
+            log.info("[cto.chat] marked thinking session=%s", session_id)
 
             # Load history (only user/assistant turns — filter out info/tool/error)
             row = (await db.execute(text("""
@@ -439,14 +454,19 @@ async def _bg_chat_turn(session_id: str, workspace_id: str, user_email: str,
                 async with SessionLocal() as cb_db:
                     await _push_message(cb_db, session_id, level, txt)
 
+            log.info("[cto.chat] calling chat_turn session=%s history_len=%d", session_id, len(history))
             result = await chat_turn(
                 workspace_id=workspace_id, user_email=user_email, db=db,
                 history=history, user_message=user_message,
                 progress_callback=progress,
             )
+            log.info("[cto.chat] chat_turn DONE session=%s model=%s iters=%d tools=%d final_len=%d",
+                      session_id, result.get("model_used"), result.get("iterations", 0),
+                      len(result.get("tool_calls", [])), len(result.get("final_text", "")))
 
             # Write final assistant answer
             await _push_message(db, session_id, "assistant", result["final_text"])
+            log.info("[cto.chat] assistant message pushed session=%s", session_id)
 
             # Update status + metadata
             project_id = None
@@ -478,13 +498,25 @@ async def _bg_chat_turn(session_id: str, workspace_id: str, user_email: str,
 
         except Exception as e:
             log.exception("[cto.chat] session=%s failed: %s", session_id, e)
+            # Recovery: outer db có thể đã rollback/closed → mở session mới để
+            # ĐẢM BẢO frontend ko mãi mãi thấy "Em đang nghĩ..."
+            import traceback
+            tb = traceback.format_exc()[-1500:]
             try:
-                await _push_message(db, session_id, "error", f"Chat turn failed: {e}")
-                await db.execute(text("UPDATE cto_sessions SET status = 'ready' WHERE id = :id"),
-                                  {"id": session_id})
-                await db.commit()
-            except Exception:
-                pass
+                async with SessionLocal() as rec_db:
+                    await _push_message(rec_db, session_id, "error",
+                                         f"Chat turn failed: {type(e).__name__}: {e}")
+                    await _push_message(rec_db, session_id, "assistant",
+                                         "Em gặp lỗi xử lý. Sếp thử gõ lại hoặc bấm 'Cuộc trò chuyện mới'. "
+                                         f"(Lỗi: {type(e).__name__})")
+                    await rec_db.execute(text("UPDATE cto_sessions SET status = 'ready' WHERE id = :id"),
+                                          {"id": session_id})
+                    await rec_db.commit()
+                log.error("[cto.chat] recovery wrote error+assistant fallback for session=%s, tb=%s",
+                           session_id, tb)
+            except Exception as rec_err:
+                log.exception("[cto.chat] RECOVERY ALSO FAILED session=%s err=%s orig=%s tb=%s",
+                               session_id, rec_err, e, tb)
 
 
 @router.post("/chat", response_model=ChatOut, status_code=202)
@@ -519,8 +551,9 @@ async def cto_chat(
         session_id = str(row["id"])
         await db.commit()
 
-    # Background tool-use loop
-    asyncio.create_task(_bg_chat_turn(session_id, ws, me.email, payload.message))
+    # Background tool-use loop — hold strong reference!
+    log.info("[cto.chat] queue session=%s ws=%s msg_len=%d", session_id, ws, len(payload.message))
+    _spawn_bg(_bg_chat_turn(session_id, ws, me.email, payload.message))
 
     return ChatOut(
         session_id=session_id,
