@@ -2133,6 +2133,9 @@ select {
         <button onclick="openEdgeRuntime()" class="btn btn-md" style="background:linear-gradient(135deg,rgba(168,85,247,0.12),rgba(34,211,238,0.12));color:var(--crown,#a855f7);border:1px solid var(--crown,#a855f7);display:inline-flex;align-items:center;gap:6px;" title="Sandboxed microVM cho AI agent — Computer Use, Playwright, Python sandbox">
           <span>📦</span> <span>Edge Runtime</span>
         </button>
+        <button class="btn btn-md" onclick="setView('registry')" style="background:linear-gradient(135deg,rgba(34,211,238,0.12),rgba(125,104,255,0.12));color:var(--aurora,#22d3ee);border:1px solid var(--aurora,#22d3ee);display:inline-flex;align-items:center;gap:6px;" title="Zeni Container Registry — push image private, thay Docker Hub Pro">
+          <span>📦</span> <span>Registry</span>
+        </button>
         <button class="btn btn-md" onclick="setView('cto')" style="background:linear-gradient(135deg,rgba(125,104,255,0.18),rgba(168,85,247,0.18));color:var(--indigo,#7d68ff);border:1px solid var(--indigo,#7d68ff);display:inline-flex;align-items:center;gap:6px;" title="CTO Assistant — paste URL/image, em deploy hộ">
           <span>🤖</span> <span>CTO Assistant</span>
         </button>
@@ -3199,6 +3202,7 @@ document.addEventListener('keydown', e => {
       case 'members': renderMembers(container); break;
       case 'settings': renderSettings(container); break;
       case 'cto': renderCTOAssistant(container); break;
+      case 'registry': renderRegistry(container); break;
       default: container.appendChild(el('div', { text: 'Unknown view' }));
     }
     return container;
@@ -3302,6 +3306,155 @@ document.addEventListener('keydown', e => {
     } catch (e) {
       ctoAppendLog('error', `Network error: ${e.message}`);
       btn.disabled = false; btn.textContent = '🚀 Deploy';
+    }
+  }
+
+  /* ═══════════════════════════════════════════════
+     ZENI CONTAINER REGISTRY · per-workspace AR repo
+     Thay Docker Hub Pro — push image vào us-central1-docker.pkg.dev/zeni-cloud-core/{ws}/
+     ═══════════════════════════════════════════════ */
+  async function renderRegistry(container) {
+    container.innerHTML = '';
+    const wrap = el('div', { style: { padding: '20px 28px', maxWidth: '1280px', margin: '0 auto' } });
+    wrap.appendChild(el('h2', { style: { fontSize: '24px', color: 'var(--ink-50)', marginBottom: '8px' },
+                                  text: '📦 Zeni Container Registry' }));
+    wrap.appendChild(el('p', { style: { fontSize: '14px', color: 'var(--ink-300)', marginBottom: '20px', lineHeight: '1.6' },
+                                text: 'Per-workspace Docker registry — thay Docker Hub Pro ($15/seat). Pull tốc độ <200ms vào Cloud Run (same region). Phí: 5GB miễn phí, $0.10/GB sau.' }));
+
+    const infoCard = el('div', { id: 'reg-info', style: { background: 'var(--bg-card,#14142a)',
+            border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', marginBottom: '16px' } });
+    infoCard.appendChild(el('div', { text: 'Đang tải thông tin registry...', style: { color: 'var(--ink-400)' } }));
+    wrap.appendChild(infoCard);
+    container.appendChild(wrap);
+
+    try {
+      const r = await fetch('/api/v1/registry/info?ws=' + encodeURIComponent(state.currentWs), {
+        headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') }
+      });
+      const j = await r.json();
+      infoCard.innerHTML = '';
+
+      if (!j.provisioned) {
+        infoCard.appendChild(el('div', { style: { fontSize: '15px', color: 'var(--gold-l,#facc15)', marginBottom: '14px' },
+                                          text: '⚠ Registry chưa được provision cho workspace này.' }));
+        infoCard.appendChild(el('p', { style: { fontSize: '14px', color: 'var(--ink-300)', marginBottom: '14px', lineHeight: '1.6' },
+                                        text: 'Click "Provision Registry" để Zeni tự tạo: Artifact Registry repo + Service Account + IAM binding + auto-whitelist. Mất ~5 giây.' }));
+        const btn = el('button', { style: { padding: '12px 24px',
+            background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+            color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', fontSize: '15px' },
+            text: '🚀 Provision Registry' });
+        btn.onclick = async () => {
+          btn.disabled = true; btn.textContent = '⏳ Đang tạo...';
+          const pr = await fetch('/api/v1/registry/provision?ws=' + encodeURIComponent(state.currentWs), {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') }
+          });
+          const pj = await pr.json();
+          if (pr.ok) {
+            toast('✓ Registry provisioned — refresh để xem credentials', 'ok');
+            setView('registry');
+          } else {
+            toast('✗ Provision failed: ' + (pj.detail || pr.status), 'err');
+            btn.disabled = false; btn.textContent = '🚀 Provision Registry';
+          }
+        };
+        infoCard.appendChild(btn);
+        return;
+      }
+
+      // Provisioned — show details
+      infoCard.appendChild(el('div', { style: { display: 'grid', gridTemplateColumns: '160px 1fr', gap: '12px 20px', fontSize: '14px', marginBottom: '20px' } }, [
+        el('div', { style: { color: 'var(--ink-400)' }, text: 'Registry URL:' }),
+        el('code', { style: { color: 'var(--aurora,#22d3ee)', fontFamily: 'monospace', fontSize: '14px', wordBreak: 'break-all' }, text: j.registry_url }),
+        el('div', { style: { color: 'var(--ink-400)' }, text: 'Service Account:' }),
+        el('code', { style: { color: 'var(--ink-100)', fontFamily: 'monospace', fontSize: '13px', wordBreak: 'break-all' }, text: j.pusher_sa }),
+        el('div', { style: { color: 'var(--ink-400)' }, text: 'Số images:' }),
+        el('div', { style: { color: 'var(--ink-50)' }, text: (j.image_count || 0) + ' image · ' + ((j.repo_size_bytes||0)/1024/1024).toFixed(2) + ' MB' }),
+      ]));
+
+      // 4-step guide
+      infoCard.appendChild(el('h3', { style: { fontSize: '16px', color: 'var(--ink-50)', marginTop: '16px', marginBottom: '12px' },
+                                        text: '🛠 4 bước push image lên Zeni Registry' }));
+
+      const stepStyle = { padding: '14px 18px', background: 'var(--bg-base)', border: '1px solid var(--border)',
+                           borderRadius: '8px', marginBottom: '10px', fontSize: '14px', lineHeight: '1.7' };
+
+      infoCard.appendChild(el('div', { style: stepStyle }, [
+        el('div', { style: { fontWeight: '600', color: 'var(--gold-l,#facc15)', marginBottom: '6px' }, text: 'Bước 1 · Generate push credentials' }),
+        el('div', { style: { color: 'var(--ink-300)' }, text: 'Click button bên dưới để Zeni tạo Service Account key (file key.json):' }),
+        (() => {
+          const keyBtn = el('button', { style: { marginTop: '10px', padding: '10px 18px',
+              background: 'rgba(125,104,255,0.15)', color: 'var(--indigo,#7d68ff)',
+              border: '1px solid var(--indigo,#7d68ff)', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' },
+              text: '🔑 Generate key.json' });
+          keyBtn.onclick = async () => {
+            keyBtn.disabled = true; keyBtn.textContent = '⏳ Generating...';
+            const kr = await fetch('/api/v1/registry/key?ws=' + encodeURIComponent(state.currentWs), {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') }
+            });
+            const kj = await kr.json();
+            if (!kr.ok) {
+              toast('Lỗi: ' + (kj.detail || kr.status), 'err');
+              keyBtn.disabled = false; keyBtn.textContent = '🔑 Generate key.json';
+              return;
+            }
+            // Trigger download
+            const blob = new Blob([JSON.stringify(kj.key_json, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'zeni-registry-key.json'; a.click();
+            URL.revokeObjectURL(url);
+            toast('✓ Đã tải key.json — lưu giữ kỹ (không hết hạn)', 'ok');
+            keyBtn.disabled = false; keyBtn.textContent = '🔑 Generate key.json (again)';
+          };
+          return keyBtn;
+        })(),
+      ]));
+
+      infoCard.appendChild(el('div', { style: stepStyle }, [
+        el('div', { style: { fontWeight: '600', color: 'var(--gold-l,#facc15)', marginBottom: '6px' }, text: 'Bước 2 · Docker login' }),
+        el('pre', { style: { background: 'var(--bg-card,#0a0a18)', padding: '12px', borderRadius: '6px',
+                             color: 'var(--aurora,#22d3ee)', fontFamily: 'monospace', fontSize: '13px',
+                             overflow: 'auto', margin: 0 },
+                    text: 'cat zeni-registry-key.json | docker login -u _json_key --password-stdin ' + j.registry_url.split('/')[0] }),
+      ]));
+
+      infoCard.appendChild(el('div', { style: stepStyle }, [
+        el('div', { style: { fontWeight: '600', color: 'var(--gold-l,#facc15)', marginBottom: '6px' }, text: 'Bước 3 · Tag image' }),
+        el('pre', { style: { background: 'var(--bg-card,#0a0a18)', padding: '12px', borderRadius: '6px',
+                             color: 'var(--aurora,#22d3ee)', fontFamily: 'monospace', fontSize: '13px',
+                             overflow: 'auto', margin: 0 },
+                    text: 'docker tag your-image ' + j.registry_url + '/your-app:v1' }),
+      ]));
+
+      infoCard.appendChild(el('div', { style: stepStyle }, [
+        el('div', { style: { fontWeight: '600', color: 'var(--gold-l,#facc15)', marginBottom: '6px' }, text: 'Bước 4 · Push' }),
+        el('pre', { style: { background: 'var(--bg-card,#0a0a18)', padding: '12px', borderRadius: '6px',
+                             color: 'var(--aurora,#22d3ee)', fontFamily: 'monospace', fontSize: '13px',
+                             overflow: 'auto', margin: 0 },
+                    text: 'docker push ' + j.registry_url + '/your-app:v1' }),
+        el('div', { style: { color: 'var(--ink-300)', marginTop: '8px', fontSize: '13px' },
+                    text: '→ Sau đó deploy qua CTO Assistant với input rút gọn: "your-app:v1" (Zeni tự thêm prefix workspace)' }),
+      ]));
+
+      // Image list
+      if (j.images && j.images.length) {
+        infoCard.appendChild(el('h3', { style: { fontSize: '16px', color: 'var(--ink-50)', marginTop: '20px', marginBottom: '10px' },
+                                          text: '📋 Images đã push' }));
+        const list = el('div', { style: { display: 'flex', flexDirection: 'column', gap: '6px' } });
+        j.images.forEach(img => {
+          list.appendChild(el('div', { style: { padding: '10px 14px', background: 'var(--bg-base)',
+                  border: '1px solid var(--border)', borderRadius: '6px', fontSize: '13px', fontFamily: 'monospace' } }, [
+            el('span', { style: { color: 'var(--aurora,#22d3ee)' }, text: img.name }),
+            el('span', { style: { color: 'var(--ink-400)', marginLeft: '12px' }, text: 'cập nhật: ' + (img.update_time || '—') }),
+          ]));
+        });
+        infoCard.appendChild(list);
+      }
+    } catch (e) {
+      infoCard.innerHTML = '';
+      infoCard.appendChild(el('div', { style: { color: '#fb7185' }, text: 'Lỗi tải registry: ' + e.message }));
     }
   }
 
