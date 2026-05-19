@@ -2074,7 +2074,7 @@ select {
         <div class="nav-item" data-view="cto" style="--layer-color: var(--gold);">
           <span class="nav-icon">💬</span> <span>AI Support Chat</span>
         </div>
-        <div class="nav-item" id="nav-cto-console" data-view="cto" style="--layer-color: var(--gold);">
+        <div class="nav-item" id="nav-cto-console" data-view="cto-admin" style="--layer-color: var(--gold);">
           <span class="nav-icon">⚒️</span> <span>CTO Console</span>
         </div>
       </div>
@@ -3202,6 +3202,7 @@ document.addEventListener('keydown', e => {
       case 'members': renderMembers(container); break;
       case 'settings': renderSettings(container); break;
       case 'cto': renderCTOAssistant(container); break;
+      case 'cto-admin': renderCTOAdmin(container); break;
       case 'registry': renderRegistry(container); break;
       default: container.appendChild(el('div', { text: 'Unknown view' }));
     }
@@ -3590,6 +3591,135 @@ document.addEventListener('keydown', e => {
         }
       } catch (e) { /* ignore polling errors, will retry */ }
     }, 1500);
+  }
+
+  /* ═══════════════════════════════════════════════
+     CTO Console · Admin dashboard (Owner-only)
+     4 panels: Revisions · Cost · Audit · Sessions
+     Reuse existing endpoints — không cần backend mới
+     ═══════════════════════════════════════════════ */
+  async function renderCTOAdmin(container) {
+    container.innerHTML = '';
+    const wrap = el('div', { style: { padding: '20px 28px', maxWidth: '1280px', margin: '0 auto' } });
+
+    wrap.appendChild(el('div', { style: { display: 'flex', alignItems: 'baseline', gap: '14px', marginBottom: '6px' } }, [
+      el('h2', { style: { fontSize: '24px', color: 'var(--ink-50)', margin: 0 }, text: '⚒ CTO Console' }),
+      el('span', { style: { fontSize: '14px', color: 'var(--ink-400)' },
+                    text: '— admin dashboard: revisions · cost · audit · sessions' })
+    ]));
+    wrap.appendChild(el('p', { style: { fontSize: '14px', color: 'var(--ink-300)', marginBottom: '20px' },
+                                text: 'Workspace: ' + (state.currentWs || '—') }));
+
+    const gridStyle = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' };
+    const cardStyle = {
+      background: 'var(--bg-card,#14142a)', border: '1px solid var(--border)',
+      borderRadius: '12px', padding: '18px 20px', minHeight: '260px',
+      display: 'flex', flexDirection: 'column'
+    };
+
+    const grid = el('div', { style: gridStyle });
+
+    // Card 1: Cost / Quota
+    const c1 = el('div', { style: cardStyle });
+    c1.appendChild(el('h3', { style: { fontSize: '16px', color: 'var(--gold-l,#facc15)', marginTop: 0, marginBottom: '12px' }, text: '💰 Chi phí AI tháng này' }));
+    const c1body = el('div', { style: { flex: '1', fontSize: '14px', color: 'var(--ink-300)' }, text: 'Đang tải...' });
+    c1.appendChild(c1body);
+    grid.appendChild(c1);
+
+    // Card 2: Recent CTO chat sessions
+    const c2 = el('div', { style: cardStyle });
+    c2.appendChild(el('h3', { style: { fontSize: '16px', color: 'var(--aurora,#22d3ee)', marginTop: 0, marginBottom: '12px' }, text: '💬 CTO Chat Sessions (gần nhất)' }));
+    const c2body = el('div', { style: { flex: '1', fontSize: '13px', color: 'var(--ink-300)' }, text: 'Đang tải...' });
+    c2.appendChild(c2body);
+    grid.appendChild(c2);
+
+    wrap.appendChild(grid);
+
+    // Card 3: Audit log (full width)
+    const c3 = el('div', { style: { ...cardStyle, minHeight: '320px' } });
+    c3.appendChild(el('h3', { style: { fontSize: '16px', color: 'var(--indigo,#7d68ff)', marginTop: 0, marginBottom: '12px' }, text: '📋 Audit log (50 dòng mới nhất)' }));
+    const c3body = el('div', { style: { flex: '1', fontSize: '12px', fontFamily: 'monospace', color: 'var(--ink-300)', overflowY: 'auto', maxHeight: '320px' }, text: 'Đang tải...' });
+    c3.appendChild(c3body);
+    wrap.appendChild(c3);
+
+    container.appendChild(wrap);
+
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+    const ws = state.currentWs;
+
+    // Load Card 1: Cost
+    try {
+      const r = await fetch('/api/v1/router/quota?ws=' + encodeURIComponent(ws), { headers: auth });
+      const j = await r.json();
+      c1body.innerHTML = '';
+      const usd = (j.current_usage_usd || 0).toFixed(4);
+      const limit = (j.monthly_quota_usd || 0).toFixed(2);
+      const pct = (j.percent_used || 0).toFixed(1);
+      const remain = (j.remaining_usd || 0).toFixed(2);
+      const barColor = pct > 80 ? '#fb7185' : (pct > 50 ? 'var(--gold-l,#facc15)' : 'var(--aurora,#22d3ee)');
+      c1body.appendChild(el('div', { style: { fontSize: '32px', color: 'var(--ink-50)', fontWeight: '700' }, text: '$' + usd }));
+      c1body.appendChild(el('div', { style: { fontSize: '13px', color: 'var(--ink-400)', marginTop: '4px' }, text: 'trong tổng quota $' + limit + ' / tháng' }));
+      // Progress bar
+      const bar = el('div', { style: { marginTop: '14px', background: 'var(--bg-base)', height: '8px', borderRadius: '4px', overflow: 'hidden' } });
+      bar.appendChild(el('div', { style: { width: Math.min(100, pct) + '%', background: barColor, height: '100%' } }));
+      c1body.appendChild(bar);
+      c1body.appendChild(el('div', { style: { fontSize: '13px', color: 'var(--ink-300)', marginTop: '8px' }, text: pct + '% đã dùng · còn $' + remain }));
+      c1body.appendChild(el('div', { style: { fontSize: '12px', color: 'var(--ink-400)', marginTop: '12px' }, text: 'Source: /api/v1/router/quota (Gemini 2.5 + Sonnet 4.6 routing)' }));
+    } catch (e) {
+      c1body.innerHTML = '';
+      c1body.appendChild(el('div', { style: { color: '#fb7185' }, text: 'Lỗi tải quota: ' + e.message }));
+    }
+
+    // Load Card 2: CTO sessions
+    try {
+      const r = await fetch('/api/v1/cto/sessions?ws=' + encodeURIComponent(ws), { headers: auth });
+      const sessions = await r.json();
+      c2body.innerHTML = '';
+      if (!Array.isArray(sessions) || sessions.length === 0) {
+        c2body.appendChild(el('div', { style: { color: 'var(--ink-400)' }, text: 'Chưa có session nào.' }));
+      } else {
+        sessions.slice(0, 8).forEach(s => {
+          const statusColors = { ready: 'var(--aurora,#22d3ee)', thinking: 'var(--gold-l,#facc15)',
+                                  success: 'var(--aurora,#22d3ee)', failed: '#fb7185',
+                                  deploying: 'var(--indigo,#7d68ff)', analyzing: 'var(--ink-300)' };
+          const row = el('div', { style: { padding: '8px 0', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', gap: '10px' } });
+          row.appendChild(el('div', { style: { flex: '1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '13px', color: 'var(--ink-200)' },
+                                       text: (s.detected_input_type === 'chat' ? '💬 ' : '🚀 ') + (s.session_id || '').slice(0, 8) + '… · ' + (s.messages?.[0]?.text || '(empty)').slice(0, 60) }));
+          row.appendChild(el('span', { style: { color: statusColors[s.status] || 'var(--ink-400)', fontSize: '12px', fontWeight: '600' }, text: s.status }));
+          c2body.appendChild(row);
+        });
+      }
+    } catch (e) {
+      c2body.innerHTML = '';
+      c2body.appendChild(el('div', { style: { color: '#fb7185' }, text: 'Lỗi tải sessions: ' + e.message }));
+    }
+
+    // Load Card 3: Audit log
+    try {
+      const r = await fetch('/api/v1/audit?ws=' + encodeURIComponent(ws) + '&limit=50', { headers: auth });
+      const audit = await r.json();
+      c3body.innerHTML = '';
+      const items = audit.items || audit || [];
+      if (!Array.isArray(items) || items.length === 0) {
+        c3body.appendChild(el('div', { style: { color: 'var(--ink-400)' }, text: 'Chưa có audit entry nào.' }));
+      } else {
+        items.slice(0, 50).forEach(a => {
+          const sevColors = { ok: 'var(--aurora,#22d3ee)', info: 'var(--ink-300)', warn: 'var(--gold-l,#facc15)', error: '#fb7185' };
+          const ts = (a.timestamp || a.created_at || '').replace('T', ' ').slice(0, 19);
+          const line = el('div', { style: { padding: '4px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, [
+            el('span', { style: { color: 'var(--ink-400)' }, text: ts + '  ' }),
+            el('span', { style: { color: sevColors[a.severity] || 'var(--ink-300)' }, text: '[' + (a.severity || 'info') + '] ' }),
+            el('span', { style: { color: 'var(--ink-200)' }, text: (a.actor || '?') + '  ' }),
+            el('span', { style: { color: 'var(--aurora,#22d3ee)' }, text: a.action + '  ' }),
+            el('span', { style: { color: 'var(--ink-400)' }, text: '→ ' + (a.target || '—') })
+          ]);
+          c3body.appendChild(line);
+        });
+      }
+    } catch (e) {
+      c3body.innerHTML = '';
+      c3body.appendChild(el('div', { style: { color: '#fb7185' }, text: 'Lỗi tải audit: ' + e.message }));
+    }
   }
 
   function getProjects() {
