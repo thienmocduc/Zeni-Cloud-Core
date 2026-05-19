@@ -70,8 +70,9 @@ _IMAGE_RE = re.compile(
 )
 
 
-def detect_input_type(text: str) -> tuple[str, dict[str, Any]]:
-    """Return (input_type, parsed_meta)."""
+def detect_input_type(text: str, workspace_id: str | None = None) -> tuple[str, dict[str, Any]]:
+    """Return (input_type, parsed_meta). If text is short form (no host) like
+    'your-app:v1', auto-prefix với Zeni Container Registry của workspace."""
     t = text.strip()
 
     # GitHub URL
@@ -80,11 +81,17 @@ def detect_input_type(text: str) -> tuple[str, dict[str, Any]]:
         owner, repo, branch = m.groups()
         return ("github", {"owner": owner, "repo": repo.rstrip(".git"), "branch": branch or "main"})
 
-    # Image URL (docker.io, gcr.io, ghcr.io, *.pkg.dev, etc.)
+    # Image URL with host (docker.io, gcr.io, ghcr.io, *.pkg.dev, etc.)
     if "/" in t and not t.startswith("http"):
         m = _IMAGE_RE.match(t)
         if m:
             return ("image", {"image_url": t})
+
+    # Short form `your-app:v1` (no slash, no host) → auto-prefix Zeni Registry
+    if ":" in t and "/" not in t and " " not in t and workspace_id:
+        slug = re.sub(r"[^a-z0-9-]", "-", workspace_id.lower()).strip("-")[:30] or "ws"
+        full = f"us-central1-docker.pkg.dev/zeni-cloud-core/{slug}/{t}"
+        return ("image", {"image_url": full, "auto_prefixed": True, "original": t})
 
     # Otherwise — natural language description (Phase 2)
     return ("description", {"text": t})
@@ -272,7 +279,7 @@ async def cto_deploy(
 
     await _ensure_table(db)
 
-    input_type, parsed = detect_input_type(payload.input_text)
+    input_type, parsed = detect_input_type(payload.input_text, workspace_id=ws)
 
     # Auto-derive project name
     if not payload.project_name:

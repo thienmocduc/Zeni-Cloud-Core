@@ -343,6 +343,8 @@ app.include_router(quick_deploy.router,           prefix=API_PREFIX)  # Quick De
 app.include_router(design.router,                 prefix=API_PREFIX)  # Design Agents: 6 KTS AI (kiến trúc + nội thất + kết cấu + MEP + BOQ + QA)
 app.include_router(mail_hosting.router,           prefix=API_PREFIX)  # L7 Mail Hosting · per-domain mailboxes (Phase 1 skeleton)
 app.include_router(cto_agent.router,              prefix=API_PREFIX)  # CTO Chat Assistant · AI-driven deploy orchestrator (Phase 1 MVP)
+from app.api import registry as zeni_registry
+app.include_router(zeni_registry.router,          prefix=API_PREFIX)  # Zeni Container Registry · per-workspace AR repo (replace Docker Hub Pro)
 
 
 # ─── Frontend SPA mount ──────────────────────────────
