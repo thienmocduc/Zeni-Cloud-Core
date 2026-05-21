@@ -2079,6 +2079,9 @@ select {
         <div class="nav-item" data-view="ai-playground" style="--layer-color: var(--gold);">
           <span class="nav-icon">🧪</span> <span>AI Playground</span>
         </div>
+        <div class="nav-item" data-view="database" style="--layer-color: var(--gold);">
+          <span class="nav-icon">🗄</span> <span>Database</span>
+        </div>
         <div class="nav-item" data-view="cto" style="--layer-color: var(--gold);">
           <span class="nav-icon">💬</span> <span>AI Support Chat</span>
         </div>
@@ -3238,6 +3241,7 @@ document.addEventListener('keydown', e => {
       case 'registry': renderRegistry(container); break;
       case 'api-tokens': renderApiTokens(container); break;
       case 'ai-playground': renderAiPlayground(container); break;
+      case 'database': renderDatabaseManager(container); break;
       default: container.appendChild(el('div', { text: 'Unknown view' }));
     }
     return container;
@@ -4206,6 +4210,327 @@ document.addEventListener('keydown', e => {
     }
     btn.disabled = false; btn.textContent = 'Gửi ▶';
     inp.focus();
+  }
+
+  /* ═══════════════════════════════════════════════
+     DATABASE MANAGER · Postgres + SQL Editor
+     Pattern: Supabase Studio + GCP Cloud SQL Console
+     Wire endpoints: /data/databases, /data/tables, /data/query
+     ═══════════════════════════════════════════════ */
+  let _dbState = { activeTab: 'databases', editorQuery: 'SELECT current_database(), current_user, version();' };
+
+  async function renderDatabaseManager(container) {
+    container.innerHTML = '';
+    const wrap = el('div', { style: { padding: '16px 20px', maxWidth: '1400px', margin: '0 auto' } });
+
+    // Header
+    wrap.appendChild(el('div', { style: { display: 'flex', alignItems: 'baseline', gap: '14px', marginBottom: '6px' } }, [
+      el('h2', { style: { fontSize: '24px', color: 'var(--ink-50)', margin: 0 }, text: '🗄 Database Manager' }),
+      el('span', { style: { fontSize: '13px', color: 'var(--ink-400)' },
+                    text: 'Postgres multi-tenant · thay Supabase Studio · audit log mọi query' })
+    ]));
+    wrap.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '18px' },
+                                text: 'Workspace: ' + (state.currentWs || '—') }));
+
+    // Tabs
+    const tabBar = el('div', { style: { display: 'flex', gap: '4px', borderBottom: '1px solid var(--border)',
+      marginBottom: '16px' } });
+    const tabs = [
+      { id: 'databases', label: '📦 Databases', icon: '📦' },
+      { id: 'tables', label: '📋 Tables', icon: '📋' },
+      { id: 'editor', label: '⚡ SQL Editor', icon: '⚡' },
+    ];
+    tabs.forEach(t => {
+      const btn = el('button', { id: 'db-tab-' + t.id, style: dbTabStyle(_dbState.activeTab === t.id),
+        text: t.label });
+      btn.onclick = () => { _dbState.activeTab = t.id; renderDatabaseManager(container); };
+      tabBar.appendChild(btn);
+    });
+    wrap.appendChild(tabBar);
+
+    // Content area
+    const content = el('div', { id: 'db-content' });
+    wrap.appendChild(content);
+    container.appendChild(wrap);
+
+    if (_dbState.activeTab === 'databases') await dbRenderDatabases(content);
+    else if (_dbState.activeTab === 'tables') await dbRenderTables(content);
+    else if (_dbState.activeTab === 'editor') await dbRenderEditor(content);
+  }
+
+  function dbTabStyle(active) {
+    return {
+      padding: '10px 18px',
+      background: active ? 'var(--bg-card,#14142a)' : 'transparent',
+      color: active ? 'var(--ink-50)' : 'var(--ink-400)',
+      border: 'none',
+      borderBottom: active ? '2px solid var(--indigo,#7d68ff)' : '2px solid transparent',
+      cursor: 'pointer', fontSize: '14px', fontWeight: active ? '600' : '500',
+      transition: 'all 0.15s'
+    };
+  }
+
+  async function dbRenderDatabases(c) {
+    c.innerHTML = '';
+    const card = el('div', { style: dbCard() });
+    card.appendChild(el('div', { style: { padding: '14px 18px', borderBottom: '1px solid var(--border)' } }, [
+      el('div', { style: { color: 'var(--ink-400)', fontSize: '13px' }, text: 'Đang tải databases...' })
+    ]));
+    c.appendChild(card);
+
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+    try {
+      const r = await fetch('/api/v1/data/databases?ws=' + encodeURIComponent(state.currentWs), { headers: auth });
+      const j = await r.json();
+      card.innerHTML = '';
+      const dbs = Array.isArray(j) ? j : (j.databases || j.items || []);
+      if (dbs.length === 0) {
+        const empty = el('div', { style: { padding: '40px 20px', textAlign: 'center', color: 'var(--ink-400)' } });
+        empty.appendChild(el('div', { style: { fontSize: '40px', marginBottom: '10px' }, text: '📦' }));
+        empty.appendChild(el('div', { style: { fontSize: '15px', color: 'var(--ink-200)', marginBottom: '6px' },
+                                       text: 'Chưa có database nào' }));
+        empty.appendChild(el('div', { style: { fontSize: '13px', color: 'var(--ink-400)' },
+                                       text: 'Database multi-tenant tự động cấp khi workspace tạo project đầu tiên' }));
+        card.appendChild(empty);
+      } else {
+        // Header row
+        const headerRow = el('div', { style: { display: 'grid',
+          gridTemplateColumns: '2fr 1fr 1fr 1fr 100px', gap: '14px',
+          padding: '12px 18px', borderBottom: '1px solid var(--border)',
+          fontSize: '11px', color: 'var(--ink-400)', fontWeight: '700', textTransform: 'uppercase' } });
+        ['Name', 'Size', 'Tables', 'Created', 'Status'].forEach(t => headerRow.appendChild(el('div', { text: t })));
+        card.appendChild(headerRow);
+
+        dbs.forEach(d => {
+          const row = el('div', { style: { display: 'grid',
+            gridTemplateColumns: '2fr 1fr 1fr 1fr 100px', gap: '14px',
+            padding: '14px 18px', borderBottom: '1px solid var(--border)',
+            fontSize: '13px', alignItems: 'center' } });
+          row.appendChild(el('div', {} , [
+            el('div', { style: { color: 'var(--ink-100)', fontWeight: '500' }, text: d.name || d.database || '(unnamed)' }),
+            el('div', { style: { fontSize: '11px', color: 'var(--ink-400)', fontFamily: 'monospace', marginTop: '2px' },
+                         text: d.engine || 'postgres-16' }),
+          ]));
+          row.appendChild(el('div', { style: { color: 'var(--ink-300)' },
+                                       text: dbFormatSize(d.size_bytes || d.size || 0) }));
+          row.appendChild(el('div', { style: { color: 'var(--ink-300)' },
+                                       text: (d.table_count || d.tables || 0).toLocaleString() }));
+          row.appendChild(el('div', { style: { color: 'var(--ink-300)', fontSize: '12px' },
+                                       text: (d.created_at || '—').toString().replace('T',' ').slice(0,16) }));
+          const stat = d.status || 'active';
+          const sc = stat === 'active' ? 'var(--aurora,#22d3ee)' : 'var(--gold-l,#facc15)';
+          row.appendChild(el('span', { style: { color: sc, fontSize: '11px',
+            padding: '4px 10px', background: 'rgba(34,211,238,0.08)', borderRadius: '6px',
+            border: '1px solid ' + sc, display: 'inline-block', width: 'fit-content', textTransform: 'uppercase' },
+            text: stat }));
+          card.appendChild(row);
+        });
+      }
+    } catch (e) {
+      card.innerHTML = '';
+      card.appendChild(el('div', { style: { padding: '20px', color: '#fb7185' }, text: 'Lỗi: ' + e.message }));
+    }
+  }
+
+  async function dbRenderTables(c) {
+    c.innerHTML = '';
+    const card = el('div', { style: dbCard() });
+    card.appendChild(el('div', { style: { padding: '14px 18px', borderBottom: '1px solid var(--border)' } }, [
+      el('div', { style: { color: 'var(--ink-400)', fontSize: '13px' }, text: 'Đang tải tables...' })
+    ]));
+    c.appendChild(card);
+
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+    try {
+      const r = await fetch('/api/v1/data/tables?ws=' + encodeURIComponent(state.currentWs), { headers: auth });
+      const j = await r.json();
+      card.innerHTML = '';
+      const tables = Array.isArray(j) ? j : (j.tables || j.items || []);
+      if (tables.length === 0) {
+        const empty = el('div', { style: { padding: '40px 20px', textAlign: 'center', color: 'var(--ink-400)' } });
+        empty.appendChild(el('div', { style: { fontSize: '40px', marginBottom: '10px' }, text: '📋' }));
+        empty.appendChild(el('div', { style: { fontSize: '15px', color: 'var(--ink-200)' }, text: 'Workspace chưa có table' }));
+        card.appendChild(empty);
+        return;
+      }
+
+      const headerRow = el('div', { style: { display: 'grid',
+        gridTemplateColumns: '2fr 1fr 1fr 100px 1.5fr', gap: '14px',
+        padding: '12px 18px', borderBottom: '1px solid var(--border)',
+        fontSize: '11px', color: 'var(--ink-400)', fontWeight: '700', textTransform: 'uppercase' } });
+      ['Table', 'Schema', 'Rows', 'Size', 'Description'].forEach(t => headerRow.appendChild(el('div', { text: t })));
+      card.appendChild(headerRow);
+
+      tables.forEach(t => {
+        const row = el('div', { style: { display: 'grid',
+          gridTemplateColumns: '2fr 1fr 1fr 100px 1.5fr', gap: '14px',
+          padding: '12px 18px', borderBottom: '1px solid var(--border)',
+          fontSize: '13px', alignItems: 'center', cursor: 'pointer', transition: 'background 0.1s' } });
+        row.onmouseenter = () => row.style.background = 'rgba(125,104,255,0.04)';
+        row.onmouseleave = () => row.style.background = 'transparent';
+        row.onclick = () => {
+          _dbState.activeTab = 'editor';
+          _dbState.editorQuery = `SELECT * FROM ${t.schema || 'public'}.${t.name || t.table_name} LIMIT 50;`;
+          renderDatabaseManager(c.parentElement.parentElement);
+        };
+        row.appendChild(el('div', { style: { color: 'var(--aurora,#22d3ee)', fontFamily: 'monospace', fontWeight: '500' },
+                                     text: t.name || t.table_name || '(unnamed)' }));
+        row.appendChild(el('div', { style: { color: 'var(--ink-300)', fontFamily: 'monospace', fontSize: '12px' },
+                                     text: t.schema || 'public' }));
+        row.appendChild(el('div', { style: { color: 'var(--ink-200)' },
+                                     text: (t.row_count || t.n_live_tup || 0).toLocaleString() }));
+        row.appendChild(el('div', { style: { color: 'var(--ink-300)', fontSize: '12px' },
+                                     text: dbFormatSize(t.size_bytes || 0) }));
+        row.appendChild(el('div', { style: { color: 'var(--ink-400)', fontSize: '12px',
+                                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+                                     text: t.description || t.comment || '—' }));
+        card.appendChild(row);
+      });
+    } catch (e) {
+      card.innerHTML = '';
+      card.appendChild(el('div', { style: { padding: '20px', color: '#fb7185' }, text: 'Lỗi: ' + e.message }));
+    }
+  }
+
+  async function dbRenderEditor(c) {
+    c.innerHTML = '';
+    const grid = el('div', { style: { display: 'grid', gridTemplateColumns: '1fr', gap: '14px' } });
+
+    // Query editor
+    const editor = el('div', { style: dbCard() });
+    editor.appendChild(el('div', { style: { padding: '12px 18px', borderBottom: '1px solid var(--border)',
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center' } }, [
+      el('div', { style: { fontSize: '13px', color: 'var(--ink-300)', fontWeight: '600' }, text: '⚡ SQL Query' }),
+      el('div', { style: { fontSize: '11px', color: 'var(--ink-400)' }, text: 'Ctrl+Enter để chạy' })
+    ]));
+    const ta = el('textarea', { id: 'db-sql-input', value: _dbState.editorQuery,
+      style: { width: '100%', minHeight: '160px', padding: '14px 18px', background: 'var(--bg-base)',
+        color: 'var(--aurora,#22d3ee)', border: 'none', resize: 'vertical',
+        fontFamily: 'ui-monospace, "Cascadia Code", Menlo, monospace', fontSize: '13px',
+        outline: 'none', boxSizing: 'border-box', lineHeight: '1.6' } });
+    ta.onkeydown = (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); dbRunQuery(); } };
+    ta.oninput = () => { _dbState.editorQuery = ta.value; };
+    editor.appendChild(ta);
+    const editorFooter = el('div', { style: { padding: '10px 18px', borderTop: '1px solid var(--border)',
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-card,#14142a)' } });
+    editorFooter.appendChild(el('div', { style: { fontSize: '11px', color: 'var(--gold-l,#facc15)' },
+      text: '⚠ Query chạy với quyền workspace · audit log ghi mọi câu lệnh · max 5000 rows' }));
+    const runBtn = el('button', { id: 'db-run-btn', style: { padding: '8px 22px',
+      background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+      color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer',
+      fontWeight: '600', fontSize: '13px' }, text: '▶ Run query' });
+    runBtn.onclick = dbRunQuery;
+    editorFooter.appendChild(runBtn);
+    editor.appendChild(editorFooter);
+    grid.appendChild(editor);
+
+    // Result panel
+    const result = el('div', { id: 'db-result', style: dbCard() });
+    result.appendChild(el('div', { style: { padding: '20px', color: 'var(--ink-400)', fontSize: '13px', textAlign: 'center' },
+      text: 'Chưa có kết quả. Click "▶ Run query" để chạy.' }));
+    grid.appendChild(result);
+
+    c.appendChild(grid);
+  }
+
+  async function dbRunQuery() {
+    const ta = byId('db-sql-input'); const btn = byId('db-run-btn'); const out = byId('db-result');
+    if (!ta || !out) return;
+    const q = ta.value.trim();
+    if (!q) { toast('Nhập query trước', 'err'); return; }
+    btn.disabled = true; btn.textContent = '…running';
+    out.innerHTML = '';
+    out.appendChild(el('div', { style: { padding: '20px', color: 'var(--ink-400)', fontSize: '13px' }, text: '⏳ Đang chạy query...' }));
+
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || ''),
+                   'Content-Type': 'application/json' };
+    const t0 = Date.now();
+    try {
+      // Determine qtype + target heuristic: lệnh DML/DDL hay SELECT
+      const lower = q.toLowerCase().trimStart();
+      const isSelect = lower.startsWith('select') || lower.startsWith('with') || lower.startsWith('explain');
+      const r = await fetch('/api/v1/data/query?ws=' + encodeURIComponent(state.currentWs), {
+        method: 'POST', headers: auth,
+        body: JSON.stringify({ qtype: isSelect ? 'select' : 'execute', target: 'workspace_db', query: q })
+      });
+      const j = await r.json();
+      const latency = Date.now() - t0;
+      out.innerHTML = '';
+
+      if (!r.ok) {
+        out.appendChild(el('div', { style: { padding: '16px 20px', color: '#fb7185', fontFamily: 'monospace', fontSize: '12px',
+          whiteSpace: 'pre-wrap' }, text: '✗ HTTP ' + r.status + '\n\n' + (j.detail || JSON.stringify(j, null, 2)) }));
+        btn.disabled = false; btn.textContent = '▶ Run query'; return;
+      }
+
+      const rows = j.rows || j.results || [];
+      const cols = j.columns || (rows[0] ? Object.keys(rows[0]) : []);
+
+      // Result header
+      out.appendChild(el('div', { style: { padding: '10px 18px', borderBottom: '1px solid var(--border)',
+        display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--ink-400)' } }, [
+        el('div', { text: '✓ ' + rows.length + ' rows · ' + cols.length + ' columns' }),
+        el('div', { text: latency + 'ms · audit logged' })
+      ]));
+
+      if (rows.length === 0) {
+        out.appendChild(el('div', { style: { padding: '40px 20px', textAlign: 'center', color: 'var(--ink-400)' },
+          text: 'Query OK — 0 rows returned' }));
+        btn.disabled = false; btn.textContent = '▶ Run query'; return;
+      }
+
+      // Result grid
+      const tableWrap = el('div', { style: { overflowX: 'auto', maxHeight: '500px' } });
+      const tbl = el('table', { style: { width: '100%', borderCollapse: 'collapse', fontSize: '12px',
+        fontFamily: 'ui-monospace, monospace' } });
+      const thead = el('thead');
+      const trh = el('tr');
+      cols.forEach(c => {
+        trh.appendChild(el('th', { style: { padding: '8px 12px', textAlign: 'left',
+          background: 'var(--bg-base)', borderBottom: '2px solid var(--border-strong)',
+          color: 'var(--gold-l,#facc15)', fontWeight: '700', position: 'sticky', top: '0' }, text: c }));
+      });
+      thead.appendChild(trh); tbl.appendChild(thead);
+      const tbody = el('tbody');
+      rows.slice(0, 1000).forEach((r, idx) => {
+        const tr = el('tr', { style: { background: idx % 2 === 0 ? 'transparent' : 'rgba(125,104,255,0.03)' } });
+        cols.forEach(c => {
+          let val = r[c];
+          if (val === null) val = 'NULL';
+          else if (typeof val === 'object') val = JSON.stringify(val);
+          else val = String(val);
+          tr.appendChild(el('td', { style: { padding: '6px 12px', borderBottom: '1px solid var(--border)',
+            color: val === 'NULL' ? 'var(--ink-400)' : 'var(--ink-200)',
+            maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }, text: val }));
+        });
+        tbody.appendChild(tr);
+      });
+      tbl.appendChild(tbody);
+      tableWrap.appendChild(tbl);
+      out.appendChild(tableWrap);
+
+      if (rows.length > 1000) {
+        out.appendChild(el('div', { style: { padding: '8px 18px', fontSize: '11px', color: 'var(--gold-l,#facc15)',
+          background: 'rgba(253,230,138,0.05)' },
+          text: 'Hiển thị 1000 / ' + rows.length + ' rows. Add LIMIT để lấy nhỏ hơn.' }));
+      }
+    } catch (e) {
+      out.innerHTML = '';
+      out.appendChild(el('div', { style: { padding: '16px 20px', color: '#fb7185' }, text: '✗ ' + e.message }));
+    }
+    btn.disabled = false; btn.textContent = '▶ Run query';
+  }
+
+  function dbCard() {
+    return { background: 'var(--bg-card,#14142a)', border: '1px solid var(--border)',
+             borderRadius: '12px', overflow: 'hidden' };
+  }
+  function dbFormatSize(b) {
+    if (!b || b === 0) return '0';
+    const u = ['B','KB','MB','GB','TB'];
+    let i = 0; let v = b;
+    while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+    return v.toFixed(1) + ' ' + u[i];
   }
 
   function ctoStartPoll() {
