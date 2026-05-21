@@ -15,7 +15,7 @@ import re
 import time
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -178,13 +178,13 @@ async def create_database(
     return DatabaseOut.model_validate(new_db)
 
 
-@router.delete("/databases/{db_id}", status_code=204)
+@router.delete("/databases/{db_id}")
 async def delete_database(
     ws: str,
     db_id: str,
     me: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> None:
+) -> Response:
     """Soft-delete a logical database row. Real schema NOT dropped automatically."""
     await require_workspace_access(ws, me)
     if me.role in ("Viewer", "Developer"):
@@ -212,6 +212,7 @@ async def delete_database(
         target=f"{kind}/{name}", severity="warn",
     )
     await db.commit()
+    return Response(status_code=204)
 
 
 @router.get("/tables/{table_name}/schema")
