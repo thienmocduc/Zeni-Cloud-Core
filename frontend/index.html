@@ -4872,7 +4872,7 @@ document.addEventListener('keydown', e => {
       background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
       color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
       fontWeight: '600', fontSize: '14px' }, text: '+ Thêm secret' });
-    addBtn.onclick = () => toast('Modal thêm secret — coming in next iteration', 'info');
+    addBtn.onclick = () => openCreateSecretModal();
     header.appendChild(addBtn);
     wrap.appendChild(header);
 
@@ -4908,10 +4908,12 @@ document.addEventListener('keydown', e => {
         const reveal = el('button', { style: { padding: '6px 12px', background: 'rgba(125,104,255,0.1)',
           color: 'var(--indigo,#7d68ff)', border: '1px solid var(--indigo,#7d68ff)',
           borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }, text: '👁 Reveal' });
+        reveal.onclick = () => secretReveal(s.id || s.secret_id);
         actions.appendChild(reveal);
         const rotate = el('button', { style: { padding: '6px 12px', background: 'rgba(253,230,138,0.08)',
           color: 'var(--gold-l,#facc15)', border: '1px solid var(--gold-l,#facc15)',
           borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }, text: '↻ Rotate' });
+        rotate.onclick = () => secretRotate(s.id || s.secret_id);
         actions.appendChild(rotate);
         row.appendChild(actions);
         card.appendChild(row);
@@ -5088,7 +5090,7 @@ document.addEventListener('keydown', e => {
             background: 'rgba(125,104,255,0.12)', color: 'var(--indigo,#7d68ff)',
             border: '1px solid var(--indigo,#7d68ff)', borderRadius: '6px',
             cursor: 'pointer', fontSize: '12px', fontWeight: '600' }, text: '+ Install' });
-          installBtn.onclick = () => toast('Modal config connector ' + item.kind + ' — coming next iteration', 'info');
+          installBtn.onclick = () => openInstallConnectorModal(item);
           card.appendChild(installBtn);
           catalogGrid.appendChild(card);
         });
@@ -5114,7 +5116,7 @@ document.addEventListener('keydown', e => {
       background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
       color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
       fontWeight: '600', fontSize: '14px' }, text: '+ Tạo cron mới' });
-    addBtn.onclick = () => toast('Modal tạo cron — coming next iteration', 'info');
+    addBtn.onclick = () => openCreateCronModal();
     header.appendChild(addBtn);
     c.appendChild(header);
 
@@ -5322,7 +5324,7 @@ document.addEventListener('keydown', e => {
       background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
       color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
       fontWeight: '600', fontSize: '14px' }, text: '+ Tạo campaign' });
-    newBtn.onclick = () => toast('Modal tạo campaign — next iteration', 'info');
+    newBtn.onclick = () => openCreateCampaignModal();
     header.appendChild(newBtn);
     c.appendChild(header);
 
@@ -5462,7 +5464,7 @@ document.addEventListener('keydown', e => {
       background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
       color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
       fontWeight: '600', fontSize: '14px' }, text: '+ Tạo voice agent' });
-    newBtn.onclick = () => toast('Voice agent builder — next iteration', 'info');
+    newBtn.onclick = () => openCreateVoiceAgentModal();
     header.appendChild(newBtn);
     c.appendChild(header);
 
@@ -6124,7 +6126,7 @@ document.addEventListener('keydown', e => {
       background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
       color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
       fontWeight: '600', fontSize: '14px' }, text: '+ Tạo alert rule' });
-    newBtn.onclick = () => toast('Alert builder modal — next iteration', 'info');
+    newBtn.onclick = () => openCreateAlertModal();
     header.appendChild(newBtn);
     c.appendChild(header);
 
@@ -6589,6 +6591,469 @@ document.addEventListener('keydown', e => {
       return s;
     }
     return '';
+  }
+
+  /* ═══════════════════════════════════════════════
+     MODAL HELPERS · reusable form modal pattern
+     ═══════════════════════════════════════════════ */
+  function modalOpen(title, contentEl, opts = {}) {
+    const overlay = el('div', { class: 'modal-overlay-zeni', style: { position: 'fixed', inset: '0',
+      background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', display: 'flex',
+      alignItems: 'center', justifyContent: 'center', zIndex: '99999' } });
+    const modal = el('div', { style: { background: 'var(--bg-card,#14142a)',
+      border: '1px solid var(--border-strong)', borderRadius: '14px', padding: '24px 28px',
+      width: (opts.width || '540px'), maxWidth: '92vw', maxHeight: '90vh',
+      overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' } });
+    modal.appendChild(el('h3', { style: { fontSize: '18px', color: 'var(--ink-50)', margin: '0 0 14px' },
+                                  text: title }));
+    modal.appendChild(contentEl);
+    overlay.appendChild(modal);
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  function modalLabel(text) {
+    return el('label', { style: { fontSize: '11px', color: 'var(--ink-300)', marginBottom: '5px',
+      display: 'block', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px' }, text });
+  }
+  function modalInput(opts = {}) {
+    return el('input', { ...opts, style: { width: '100%', padding: '10px 12px',
+      background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: '8px',
+      color: 'var(--ink-50)', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box',
+      marginBottom: '12px' } });
+  }
+  function modalSelect(opts = {}) {
+    const s = el('select', { ...opts, style: { width: '100%', padding: '10px 12px',
+      background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: '8px',
+      color: 'var(--ink-50)', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box',
+      marginBottom: '12px' } });
+    return s;
+  }
+  function modalTextarea(opts = {}) {
+    return el('textarea', { ...opts, style: { width: '100%', padding: '10px 12px',
+      background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: '8px',
+      color: 'var(--ink-50)', fontSize: '13px', fontFamily: 'ui-monospace, monospace',
+      boxSizing: 'border-box', marginBottom: '12px', resize: 'vertical', minHeight: '80px' } });
+  }
+  function modalButtonRow(submitText, submitFn, cancelText = 'Hủy') {
+    const row = el('div', { style: { display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' } });
+    const cancel = el('button', { style: { padding: '10px 18px', background: 'transparent',
+      color: 'var(--ink-300)', border: '1px solid var(--border)', borderRadius: '8px',
+      cursor: 'pointer', fontSize: '14px' }, text: cancelText });
+    cancel.onclick = () => { document.querySelector('.modal-overlay-zeni')?.remove(); };
+    row.appendChild(cancel);
+    const submit = el('button', { class: 'modal-submit-btn-zeni',
+      style: { padding: '10px 22px',
+      background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+      color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer',
+      fontWeight: '600', fontSize: '14px' }, text: submitText });
+    submit.onclick = submitFn;
+    row.appendChild(submit);
+    return row;
+  }
+  function modalBusy(busy) {
+    const btn = document.querySelector('.modal-submit-btn-zeni');
+    if (!btn) return;
+    btn.disabled = !!busy;
+    if (busy) { btn.dataset.origText = btn.textContent; btn.textContent = '…đang xử lý'; }
+    else if (btn.dataset.origText) btn.textContent = btn.dataset.origText;
+  }
+  function modalClose() { document.querySelector('.modal-overlay-zeni')?.remove(); }
+
+  /* ─── #1 Identity Secret Create ──────────────── */
+  function openCreateSecretModal() {
+    const body = el('div');
+    body.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '14px' },
+      text: 'Secret được encrypt với KMS workspace. Audit log mọi access.' }));
+    body.appendChild(modalLabel('Tên secret *'));
+    const nameInp = modalInput({ id: 'sec-name', placeholder: 'vd: STRIPE_KEY, SENDGRID_API, JWT_SECRET' });
+    body.appendChild(nameInp);
+    body.appendChild(modalLabel('Giá trị (encrypted khi save) *'));
+    const valTa = modalTextarea({ id: 'sec-value', placeholder: 'Paste raw value secret' });
+    body.appendChild(valTa);
+    body.appendChild(modalLabel('Environment (production / staging / dev)'));
+    const envSel = modalSelect({ id: 'sec-env' });
+    ['production', 'staging', 'dev'].forEach(e => envSel.appendChild(el('option', { value: e, text: e })));
+    body.appendChild(envSel);
+    body.appendChild(modalButtonRow('🗝 Tạo secret', async () => {
+      const name = nameInp.value.trim(); const value = valTa.value.trim();
+      if (!name || !value) { toast('Cần điền name + value', 'err'); return; }
+      modalBusy(true);
+      const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || ''),
+                     'Content-Type': 'application/json' };
+      try {
+        const r = await fetch('/api/v1/identity/secrets?ws=' + encodeURIComponent(state.currentWs), {
+          method: 'POST', headers: auth,
+          body: JSON.stringify({ name, value, env: envSel.value })
+        });
+        const j = await r.json();
+        if (!r.ok) { toast('Lỗi: ' + (j.detail || r.status), 'err'); modalBusy(false); return; }
+        toast('✓ Secret đã tạo', 'ok');
+        modalClose(); idRenderSecrets(byId('id-content'));
+      } catch (e) { toast('Network: ' + e.message, 'err'); modalBusy(false); }
+    }));
+    modalOpen('🗝 Thêm Secret', body);
+    setTimeout(() => nameInp.focus(), 50);
+  }
+
+  /* ─── #2 Automation Connector Install ───────── */
+  function openInstallConnectorModal(item) {
+    const body = el('div');
+    body.appendChild(el('div', { style: { display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' } }, [
+      el('div', { style: { fontSize: '40px' }, text: autoIcon(item.kind || item.id) }),
+      el('div', {}, [
+        el('div', { style: { fontSize: '15px', color: 'var(--ink-50)', fontWeight: '600' },
+          text: item.name || item.kind }),
+        el('div', { style: { fontSize: '12px', color: 'var(--ink-400)', marginTop: '2px' },
+          text: item.description || item.summary || '—' }),
+      ])
+    ]));
+
+    // Config fields depend on connector type
+    const cfgFields = configFieldsForConnector(item.kind || item.id);
+    const inputs = {};
+    cfgFields.forEach(f => {
+      body.appendChild(modalLabel(f.label + (f.required ? ' *' : '')));
+      const inp = modalInput({ placeholder: f.placeholder || '', type: f.type || 'text' });
+      inputs[f.key] = inp;
+      body.appendChild(inp);
+    });
+
+    body.appendChild(modalButtonRow('🔌 Install', async () => {
+      const config = {};
+      for (const f of cfgFields) {
+        const v = inputs[f.key].value.trim();
+        if (f.required && !v) { toast('Cần điền ' + f.label, 'err'); return; }
+        if (v) config[f.key] = v;
+      }
+      modalBusy(true);
+      const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || ''),
+                     'Content-Type': 'application/json' };
+      try {
+        const r = await fetch('/api/v1/automation/connectors?ws=' + encodeURIComponent(state.currentWs), {
+          method: 'POST', headers: auth,
+          body: JSON.stringify({ type: item.kind || item.id, config })
+        });
+        const j = await r.json();
+        if (!r.ok) { toast('Lỗi: ' + (j.detail || r.status), 'err'); modalBusy(false); return; }
+        toast('✓ Connector installed', 'ok');
+        modalClose(); autoRenderConnectors(byId('auto-content'));
+      } catch (e) { toast('Network: ' + e.message, 'err'); modalBusy(false); }
+    }));
+    modalOpen('🔌 Install ' + (item.name || item.kind), body);
+  }
+
+  function configFieldsForConnector(kind) {
+    const k = (kind || '').toLowerCase();
+    const map = {
+      slack: [
+        { key: 'webhook_url', label: 'Slack Webhook URL', required: true, placeholder: 'https://hooks.slack.com/services/...' },
+        { key: 'channel', label: 'Default channel', placeholder: '#general' },
+      ],
+      discord: [
+        { key: 'webhook_url', label: 'Discord Webhook URL', required: true },
+      ],
+      zalo: [{ key: 'access_token', label: 'Zalo OA Access Token', required: true }],
+      zalo_oa: [{ key: 'access_token', label: 'Zalo OA Access Token', required: true }],
+      vnpay: [
+        { key: 'tmn_code', label: 'TMN Code', required: true },
+        { key: 'secret_key', label: 'Hash Secret', required: true },
+      ],
+      sendgrid: [{ key: 'api_key', label: 'SendGrid API Key', required: true }],
+      twilio: [
+        { key: 'account_sid', label: 'Account SID', required: true },
+        { key: 'auth_token', label: 'Auth Token', required: true },
+        { key: 'from_number', label: 'From Phone', placeholder: '+1...' },
+      ],
+      telegram: [
+        { key: 'bot_token', label: 'Bot Token', required: true },
+        { key: 'chat_id', label: 'Default Chat ID', placeholder: '@channel hoặc chat ID' },
+      ],
+      github: [{ key: 'pat_token', label: 'GitHub PAT', required: true }],
+      webhook: [
+        { key: 'url', label: 'Webhook URL', required: true },
+        { key: 'secret', label: 'HMAC Secret (optional)' },
+      ],
+    };
+    return map[k] || [
+      { key: 'url', label: 'Endpoint URL', required: true },
+      { key: 'api_key', label: 'API Key (nếu có)' },
+    ];
+  }
+
+  /* ─── #3 Automation Cron Create ──────────────── */
+  function openCreateCronModal() {
+    const body = el('div');
+    body.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '14px' },
+      text: 'Cron schedule format: M H DoM Mon DoW (vd: "*/5 * * * *" = mỗi 5 phút)' }));
+    body.appendChild(modalLabel('Tên cron *'));
+    const nameInp = modalInput({ placeholder: 'vd: nightly-backup, hourly-sync' });
+    body.appendChild(nameInp);
+    body.appendChild(modalLabel('Schedule *'));
+    const schedRow = el('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' } });
+    [
+      { lbl: 'Mỗi 5 phút', val: '*/5 * * * *' },
+      { lbl: 'Mỗi giờ', val: '7 * * * *' },
+      { lbl: '8:00 sáng', val: '0 8 * * *' },
+      { lbl: 'Hằng đêm 2:00', val: '0 2 * * *' },
+      { lbl: 'T2 9:00', val: '0 9 * * 1' },
+    ].forEach(p => {
+      const chip = el('button', { style: { padding: '5px 11px', fontSize: '11px',
+        background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: '12px',
+        color: 'var(--aurora,#22d3ee)', cursor: 'pointer' }, text: p.lbl });
+      chip.onclick = (e) => { e.preventDefault(); schedInp.value = p.val; };
+      schedRow.appendChild(chip);
+    });
+    body.appendChild(schedRow);
+    const schedInp = modalInput({ placeholder: '*/5 * * * *', style: { fontFamily: 'monospace' } });
+    body.appendChild(schedInp);
+    body.appendChild(modalLabel('Target URL *'));
+    const urlInp = modalInput({ placeholder: 'https://your-service.run.app/api/cron-job' });
+    body.appendChild(urlInp);
+    body.appendChild(modalLabel('HTTP Method'));
+    const methodSel = modalSelect();
+    ['POST', 'GET', 'PUT', 'DELETE'].forEach(m => methodSel.appendChild(el('option', { value: m, text: m })));
+    body.appendChild(methodSel);
+    body.appendChild(modalLabel('Timezone'));
+    const tzSel = modalSelect();
+    ['Asia/Ho_Chi_Minh', 'UTC', 'Asia/Singapore', 'Asia/Tokyo'].forEach(t =>
+      tzSel.appendChild(el('option', { value: t, text: t })));
+    body.appendChild(tzSel);
+    body.appendChild(modalLabel('Description (optional)'));
+    const descInp = modalInput({ placeholder: 'Backup database hourly...' });
+    body.appendChild(descInp);
+
+    body.appendChild(modalButtonRow('⏰ Tạo cron', async () => {
+      const name = nameInp.value.trim();
+      const sched = schedInp.value.trim();
+      const url = urlInp.value.trim();
+      if (!name || !sched || !url) { toast('Cần điền name + schedule + URL', 'err'); return; }
+      modalBusy(true);
+      const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || ''),
+                     'Content-Type': 'application/json' };
+      try {
+        const r = await fetch('/api/v1/automation/crons?ws=' + encodeURIComponent(state.currentWs), {
+          method: 'POST', headers: auth,
+          body: JSON.stringify({ name, schedule: sched, target_url: url,
+            method: methodSel.value, timezone: tzSel.value, description: descInp.value.trim() || null })
+        });
+        const j = await r.json();
+        if (!r.ok) { toast('Lỗi: ' + (j.detail || r.status), 'err'); modalBusy(false); return; }
+        toast('✓ Cron tạo OK', 'ok');
+        modalClose(); autoRenderCrons(byId('auto-content'));
+      } catch (e) { toast('Network: ' + e.message, 'err'); modalBusy(false); }
+    }));
+    modalOpen('⏰ Tạo Scheduled Task', body, { width: '560px' });
+    setTimeout(() => nameInp.focus(), 50);
+  }
+
+  /* ─── #4 Mail Campaign Create ────────────────── */
+  function openCreateCampaignModal() {
+    const body = el('div');
+    body.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '14px' },
+      text: 'Soạn email campaign. Test trước khi gửi mass.' }));
+    body.appendChild(modalLabel('Tên campaign *'));
+    const nameInp = modalInput({ placeholder: 'vd: Q3 product launch' });
+    body.appendChild(nameInp);
+    body.appendChild(modalLabel('Subject *'));
+    const subjectInp = modalInput({ placeholder: 'vd: 🎉 Zeni Cloud v2 vừa ra mắt!' });
+    body.appendChild(subjectInp);
+    const row = el('div', { style: { display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px' } });
+    const fromEmailWrap = el('div'); fromEmailWrap.appendChild(modalLabel('From Email *'));
+    const fromEmail = modalInput({ placeholder: 'noreply@yourdomain.com', type: 'email' });
+    fromEmailWrap.appendChild(fromEmail);
+    row.appendChild(fromEmailWrap);
+    const fromNameWrap = el('div'); fromNameWrap.appendChild(modalLabel('From Name'));
+    const fromName = modalInput({ placeholder: 'Zeni Cloud' });
+    fromNameWrap.appendChild(fromName);
+    row.appendChild(fromNameWrap);
+    body.appendChild(row);
+    body.appendChild(modalLabel('Body HTML *'));
+    const bodyHtml = modalTextarea({ placeholder: '<h1>Hello {{name}}</h1><p>...</p>', style: { minHeight: '160px' } });
+    body.appendChild(bodyHtml);
+    body.appendChild(modalLabel('Reply-to (optional)'));
+    const replyTo = modalInput({ placeholder: 'support@yourdomain.com', type: 'email' });
+    body.appendChild(replyTo);
+    body.appendChild(modalLabel('Send strategy'));
+    const schedSel = modalSelect();
+    [
+      { v: 'draft', t: '💾 Save as draft (gửi sau)' },
+      { v: 'now', t: '⚡ Gửi ngay sau khi tạo' },
+      { v: 'scheduled', t: '📅 Schedule (chọn giờ)' },
+    ].forEach(o => schedSel.appendChild(el('option', { value: o.v, text: o.t })));
+    body.appendChild(schedSel);
+
+    body.appendChild(modalButtonRow('📨 Tạo campaign', async () => {
+      const name = nameInp.value.trim(); const subj = subjectInp.value.trim();
+      const fe = fromEmail.value.trim(); const html = bodyHtml.value.trim();
+      if (!name || !subj || !fe || !html) { toast('Cần name + subject + from email + body', 'err'); return; }
+      modalBusy(true);
+      const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || ''),
+                     'Content-Type': 'application/json' };
+      try {
+        const r = await fetch('/api/v1/mail/campaigns?ws=' + encodeURIComponent(state.currentWs), {
+          method: 'POST', headers: auth,
+          body: JSON.stringify({ ws: state.currentWs, name, subject: subj,
+            from_email: fe, from_name: fromName.value.trim() || null,
+            reply_to: replyTo.value.trim() || null, body_html: html,
+            schedule_type: schedSel.value })
+        });
+        const j = await r.json();
+        if (!r.ok) { toast('Lỗi: ' + (j.detail || r.status), 'err'); modalBusy(false); return; }
+        toast('✓ Campaign tạo OK', 'ok');
+        modalClose(); msgRenderMail(byId('msg-content'));
+      } catch (e) { toast('Network: ' + e.message, 'err'); modalBusy(false); }
+    }));
+    modalOpen('📨 Tạo Email Campaign', body, { width: '620px' });
+    setTimeout(() => nameInp.focus(), 50);
+  }
+
+  /* ─── #5 Voice Agent Create ──────────────────── */
+  function openCreateVoiceAgentModal() {
+    const body = el('div');
+    body.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '14px' },
+      text: 'Voice agent xử lý cuộc gọi đến — IVR/queue/skills routing.' }));
+    body.appendChild(modalLabel('User email *'));
+    const userInp = modalInput({ placeholder: 'agent1@yourdomain.com', type: 'email' });
+    body.appendChild(userInp);
+    body.appendChild(modalLabel('Extension'));
+    const extInp = modalInput({ placeholder: '1001', type: 'text' });
+    body.appendChild(extInp);
+    body.appendChild(modalLabel('Skills (comma-separated)'));
+    const skillsInp = modalInput({ placeholder: 'sales, vietnamese, billing' });
+    body.appendChild(skillsInp);
+    body.appendChild(modalLabel('Queue IDs (comma-separated, optional)'));
+    const queueInp = modalInput({ placeholder: 'q-sales, q-support' });
+    body.appendChild(queueInp);
+
+    body.appendChild(modalButtonRow('🎙 Tạo voice agent', async () => {
+      const email = userInp.value.trim();
+      if (!email) { toast('Cần user email', 'err'); return; }
+      modalBusy(true);
+      const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || ''),
+                     'Content-Type': 'application/json' };
+      try {
+        const r = await fetch('/api/v1/voice/agents?ws=' + encodeURIComponent(state.currentWs), {
+          method: 'POST', headers: auth,
+          body: JSON.stringify({ user_email: email, extension: extInp.value.trim() || null,
+            skills: skillsInp.value.trim() ? skillsInp.value.split(',').map(s => s.trim()).filter(Boolean) : null,
+            queue_ids: queueInp.value.trim() ? queueInp.value.split(',').map(s => s.trim()).filter(Boolean) : null })
+        });
+        const j = await r.json();
+        if (!r.ok) { toast('Lỗi: ' + (j.detail || r.status), 'err'); modalBusy(false); return; }
+        toast('✓ Voice agent tạo OK', 'ok');
+        modalClose(); msgRenderVoice(byId('msg-content'));
+      } catch (e) { toast('Network: ' + e.message, 'err'); modalBusy(false); }
+    }));
+    modalOpen('🎙 Tạo Voice Agent', body);
+    setTimeout(() => userInp.focus(), 50);
+  }
+
+  /* ─── #6 Observability Alert Rule ────────────── */
+  function openCreateAlertModal() {
+    const body = el('div');
+    body.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '14px' },
+      text: 'Trigger email/webhook khi metric vượt threshold trong N phút.' }));
+    body.appendChild(modalLabel('Tên rule *'));
+    const nameInp = modalInput({ placeholder: 'vd: High error rate alert' });
+    body.appendChild(nameInp);
+    body.appendChild(modalLabel('Metric *'));
+    const metSel = modalSelect();
+    [
+      { v: 'cpu_usage', t: 'CPU usage (%)' },
+      { v: 'memory_usage', t: 'Memory usage (%)' },
+      { v: 'request_rate', t: 'Request rate (req/min)' },
+      { v: 'error_rate', t: 'Error rate (%)' },
+      { v: 'p95_latency', t: 'p95 latency (ms)' },
+      { v: 'p99_latency', t: 'p99 latency (ms)' },
+    ].forEach(o => metSel.appendChild(el('option', { value: o.v, text: o.t })));
+    body.appendChild(metSel);
+    const row = el('div', { style: { display: 'grid', gridTemplateColumns: '120px 1fr', gap: '10px' } });
+    const opWrap = el('div'); opWrap.appendChild(modalLabel('Operator'));
+    const opSel = modalSelect();
+    [['>', '>'], ['<', '<'], ['>=', '≥'], ['<=', '≤'], ['==', '=']].forEach(o =>
+      opSel.appendChild(el('option', { value: o[0], text: o[1] })));
+    opWrap.appendChild(opSel);
+    row.appendChild(opWrap);
+    const threshWrap = el('div'); threshWrap.appendChild(modalLabel('Threshold *'));
+    const threshInp = modalInput({ placeholder: 'vd: 80', type: 'number' });
+    threshWrap.appendChild(threshInp);
+    row.appendChild(threshWrap);
+    body.appendChild(row);
+    body.appendChild(modalLabel('Duration (phút) — phải duy trì điều kiện ít nhất bao lâu'));
+    const durInp = modalInput({ placeholder: '5', type: 'number', value: '5' });
+    body.appendChild(durInp);
+    body.appendChild(modalLabel('Notify email (comma-separated)'));
+    const notifyInp = modalInput({ placeholder: 'sre@example.com, oncall@example.com', type: 'text' });
+    body.appendChild(notifyInp);
+
+    body.appendChild(modalButtonRow('🚨 Tạo alert rule', async () => {
+      const name = nameInp.value.trim();
+      const thresh = parseFloat(threshInp.value);
+      if (!name || isNaN(thresh)) { toast('Cần name + threshold số', 'err'); return; }
+      modalBusy(true);
+      const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || ''),
+                     'Content-Type': 'application/json' };
+      try {
+        const r = await fetch('/api/v1/observability/alerts?ws=' + encodeURIComponent(state.currentWs), {
+          method: 'POST', headers: auth,
+          body: JSON.stringify({ workspace_id: state.currentWs, name,
+            metric_name: metSel.value, operator: opSel.value, threshold: thresh,
+            duration_min: parseInt(durInp.value || '5', 10),
+            notify_emails: notifyInp.value.trim() ? notifyInp.value.split(',').map(s => s.trim()).filter(Boolean) : null })
+        });
+        const j = await r.json();
+        if (!r.ok) { toast('Lỗi: ' + (j.detail || r.status), 'err'); modalBusy(false); return; }
+        toast('✓ Alert rule tạo OK', 'ok');
+        modalClose(); obsRenderAlerts(byId('obs-content'));
+      } catch (e) { toast('Network: ' + e.message, 'err'); modalBusy(false); }
+    }));
+    modalOpen('🚨 Tạo Alert Rule', body, { width: '560px' });
+    setTimeout(() => nameInp.focus(), 50);
+  }
+
+  /* ─── Identity Secret Reveal/Rotate handlers ────── */
+  async function secretReveal(secretId) {
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+    try {
+      const r = await fetch('/api/v1/identity/secrets/' + secretId + '/reveal?ws=' + encodeURIComponent(state.currentWs), { headers: auth });
+      const j = await r.json();
+      if (!r.ok) { toast('Lỗi reveal: ' + (j.detail || r.status), 'err'); return; }
+      const body = el('div');
+      body.appendChild(el('div', { style: { fontSize: '13px', color: '#fb7185', marginBottom: '14px' },
+        text: '⚠ Secret hiện ra dưới đây. Đừng share screenshot. Audit log đã ghi lại reveal action.' }));
+      const codeBox = el('div', { style: { background: 'var(--bg-base)', padding: '14px 16px',
+        borderRadius: '8px', fontFamily: 'monospace', fontSize: '13px',
+        color: 'var(--aurora,#22d3ee)', wordBreak: 'break-all', userSelect: 'all',
+        maxHeight: '160px', overflowY: 'auto', marginBottom: '12px' }, text: j.value || j.secret || '' });
+      body.appendChild(codeBox);
+      const copyBtn = el('button', { style: { padding: '8px 16px', background: 'rgba(125,104,255,0.15)',
+        color: 'var(--indigo,#7d68ff)', border: '1px solid var(--indigo,#7d68ff)',
+        borderRadius: '8px', cursor: 'pointer', fontSize: '13px' }, text: '📋 Copy' });
+      copyBtn.onclick = () => {
+        navigator.clipboard.writeText(j.value || j.secret || '');
+        copyBtn.textContent = '✓ Copied';
+        setTimeout(() => copyBtn.textContent = '📋 Copy', 2000);
+      };
+      body.appendChild(copyBtn);
+      const closeBtn = el('button', { style: { marginLeft: '8px', padding: '8px 16px', background: 'var(--gold-l,#facc15)',
+        color: '#000', border: 'none', borderRadius: '8px', cursor: 'pointer',
+        fontSize: '13px', fontWeight: '600' }, text: 'Đóng' });
+      closeBtn.onclick = () => modalClose();
+      body.appendChild(closeBtn);
+      modalOpen('🗝 Reveal Secret', body, { width: '560px' });
+    } catch (e) { toast('Network: ' + e.message, 'err'); }
+  }
+  async function secretRotate(secretId) {
+    if (!confirm('Rotate secret này? Apps đang dùng value cũ sẽ fail cho đến khi update.')) return;
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+    try {
+      const r = await fetch('/api/v1/identity/secrets/' + secretId + '/rotate?ws=' + encodeURIComponent(state.currentWs), {
+        method: 'POST', headers: auth });
+      if (r.ok) { toast('✓ Secret rotated', 'ok'); idRenderSecrets(byId('id-content')); }
+      else { const j = await r.json(); toast('Lỗi: ' + (j.detail || r.status), 'err'); }
+    } catch (e) { toast('Network: ' + e.message, 'err'); }
   }
 
   function ctoStartPoll() {
