@@ -2076,6 +2076,9 @@ select {
         <div class="nav-item" data-view="api-tokens" style="--layer-color: var(--gold);">
           <span class="nav-icon">🔑</span> <span>API Tokens</span>
         </div>
+        <div class="nav-item" data-view="ai-playground" style="--layer-color: var(--gold);">
+          <span class="nav-icon">🧪</span> <span>AI Playground</span>
+        </div>
         <div class="nav-item" data-view="cto" style="--layer-color: var(--gold);">
           <span class="nav-icon">💬</span> <span>AI Support Chat</span>
         </div>
@@ -3234,6 +3237,7 @@ document.addEventListener('keydown', e => {
       case 'cto-admin': renderCTOAdmin(container); break;
       case 'registry': renderRegistry(container); break;
       case 'api-tokens': renderApiTokens(container); break;
+      case 'ai-playground': renderAiPlayground(container); break;
       default: container.appendChild(el('div', { text: 'Unknown view' }));
     }
     return container;
@@ -3851,6 +3855,357 @@ document.addEventListener('keydown', e => {
 
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
+  }
+
+  /* ═══════════════════════════════════════════════
+     AI PLAYGROUND · model picker + chat + cost
+     Pattern: OpenAI Playground + Anthropic Console
+     Wire endpoints: /router/complete, /router/models, /router/quota
+     ═══════════════════════════════════════════════ */
+  let _aiPgState = {
+    model: 'gemini-2.5-flash',
+    temperature: 0.7,
+    maxTokens: 2048,
+    system: '',
+    history: [],
+    streaming: false,
+    totalCost: 0,
+    totalInputTok: 0,
+    totalOutputTok: 0,
+  };
+
+  async function renderAiPlayground(container) {
+    container.innerHTML = '';
+    _aiPgState.history = [];
+    _aiPgState.totalCost = 0;
+    _aiPgState.totalInputTok = 0;
+    _aiPgState.totalOutputTok = 0;
+
+    const wrap = el('div', { style: { padding: '16px 20px', maxWidth: '1600px', margin: '0 auto',
+      display: 'flex', flexDirection: 'column', height: 'calc(100vh - 110px)' } });
+
+    // Header
+    wrap.appendChild(el('div', { style: { display: 'flex', alignItems: 'baseline', gap: '14px',
+      marginBottom: '12px', flexShrink: '0' } }, [
+      el('h2', { style: { fontSize: '22px', color: 'var(--ink-50)', margin: 0 }, text: '🧪 AI Playground' }),
+      el('span', { style: { fontSize: '13px', color: 'var(--ink-400)' },
+                    text: 'Thử Zeni Router · 9 model · Gemini + Claude + DeepSeek · cost realtime' })
+    ]));
+
+    // 3-column grid
+    const grid = el('div', { style: { display: 'grid', gridTemplateColumns: '280px 1fr 280px',
+      gap: '14px', flex: '1', minHeight: 0 } });
+
+    // === Col 1: Model Settings ===
+    const settings = el('div', { style: { background: 'var(--bg-card,#14142a)',
+      border: '1px solid var(--border)', borderRadius: '12px', padding: '16px',
+      overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' } });
+    settings.appendChild(el('div', { style: { fontSize: '11px', color: 'var(--ink-400)',
+      textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }, text: 'Model settings' }));
+
+    // Model picker
+    settings.appendChild(el('label', { style: pgLabel(), text: 'Model' }));
+    const modelSel = el('select', { id: 'pg-model', style: pgInput() });
+    modelSel.appendChild(el('option', { value: '', text: 'Đang tải models...' }));
+    modelSel.onchange = () => { _aiPgState.model = modelSel.value; };
+    settings.appendChild(modelSel);
+
+    // Temperature
+    settings.appendChild(el('label', { style: pgLabel(), text: 'Temperature' }));
+    const tempRow = el('div', { style: { display: 'flex', alignItems: 'center', gap: '10px' } });
+    const tempSlider = el('input', { type: 'range', min: '0', max: '2', step: '0.1', value: '0.7',
+      style: { flex: '1', accentColor: 'var(--indigo,#7d68ff)' } });
+    const tempVal = el('span', { style: { fontSize: '13px', color: 'var(--aurora,#22d3ee)',
+      fontFamily: 'monospace', width: '36px', textAlign: 'right' }, text: '0.7' });
+    tempSlider.oninput = () => { tempVal.textContent = tempSlider.value; _aiPgState.temperature = parseFloat(tempSlider.value); };
+    tempRow.appendChild(tempSlider); tempRow.appendChild(tempVal);
+    settings.appendChild(tempRow);
+
+    // Max tokens
+    settings.appendChild(el('label', { style: pgLabel(), text: 'Max tokens' }));
+    const maxTokInp = el('input', { type: 'number', value: '2048', min: '64', max: '32000', step: '256',
+      style: pgInput() });
+    maxTokInp.oninput = () => { _aiPgState.maxTokens = parseInt(maxTokInp.value, 10) || 2048; };
+    settings.appendChild(maxTokInp);
+
+    // System prompt
+    settings.appendChild(el('label', { style: pgLabel(), text: 'System prompt (optional)' }));
+    const sysTa = el('textarea', { placeholder: 'vd: Bạn là chuyên gia kiến trúc Việt Nam...',
+      style: { ...pgInput(), minHeight: '80px', resize: 'vertical', fontFamily: 'inherit' } });
+    sysTa.oninput = () => { _aiPgState.system = sysTa.value; };
+    settings.appendChild(sysTa);
+
+    // Reset
+    const resetBtn = el('button', { style: { marginTop: 'auto', padding: '10px',
+      background: 'transparent', color: '#fb7185', border: '1px solid rgba(251,113,133,0.3)',
+      borderRadius: '8px', cursor: 'pointer', fontSize: '13px' }, text: '↻ Reset chat' });
+    resetBtn.onclick = () => {
+      _aiPgState.history = []; _aiPgState.totalCost = 0;
+      _aiPgState.totalInputTok = 0; _aiPgState.totalOutputTok = 0;
+      const log = byId('pg-chat-log'); if (log) log.innerHTML = '';
+      pgRenderEmpty();
+      pgUpdateStats();
+    };
+    settings.appendChild(resetBtn);
+
+    grid.appendChild(settings);
+
+    // === Col 2: Chat ===
+    const chat = el('div', { style: { background: 'var(--bg-card,#14142a)',
+      border: '1px solid var(--border)', borderRadius: '12px', display: 'flex',
+      flexDirection: 'column', minHeight: 0 } });
+    const log = el('div', { id: 'pg-chat-log', style: { flex: '1', overflowY: 'auto',
+      padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: '14px' } });
+    chat.appendChild(log);
+
+    // Input row
+    const inputRow = el('div', { style: { borderTop: '1px solid var(--border)', padding: '12px 14px',
+      display: 'flex', gap: '10px', alignItems: 'flex-end' } });
+    const inp = el('textarea', { id: 'pg-input',
+      placeholder: 'Nhập câu hỏi... (Enter để gửi, Shift+Enter newline)',
+      style: { flex: '1', padding: '10px 14px', background: 'var(--bg-base)',
+        border: '1px solid var(--border)', borderRadius: '10px', color: 'var(--ink-50)',
+        fontFamily: 'inherit', fontSize: '14px', resize: 'none', minHeight: '44px',
+        maxHeight: '160px', lineHeight: '1.5', outline: 'none' } });
+    inp.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); pgSubmit(); } };
+    inp.oninput = () => { inp.style.height = '44px'; inp.style.height = Math.min(160, inp.scrollHeight) + 'px'; };
+    inputRow.appendChild(inp);
+    const sendBtn = el('button', { id: 'pg-send-btn', style: { padding: '12px 22px',
+      background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+      color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
+      fontWeight: '600', fontSize: '14px', minHeight: '44px' }, text: 'Gửi ▶' });
+    sendBtn.onclick = pgSubmit;
+    inputRow.appendChild(sendBtn);
+    chat.appendChild(inputRow);
+
+    grid.appendChild(chat);
+
+    // === Col 3: Stats ===
+    const stats = el('div', { style: { background: 'var(--bg-card,#14142a)',
+      border: '1px solid var(--border)', borderRadius: '12px', padding: '16px',
+      overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' } });
+    stats.appendChild(el('div', { style: { fontSize: '11px', color: 'var(--ink-400)',
+      textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }, text: 'Stats (this session)' }));
+    stats.appendChild(el('div', { id: 'pg-stats-body' }));
+    stats.appendChild(el('div', { style: { fontSize: '11px', color: 'var(--ink-400)',
+      textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px', marginTop: '8px' },
+      text: 'Monthly quota' }));
+    stats.appendChild(el('div', { id: 'pg-quota-body' }));
+    stats.appendChild(el('div', { style: { fontSize: '11px', color: 'var(--ink-400)',
+      textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px', marginTop: '8px' },
+      text: 'Last routing decision' }));
+    stats.appendChild(el('div', { id: 'pg-routing-body', style: { fontSize: '12px', color: 'var(--ink-300)', lineHeight: '1.6' },
+      text: '(Chưa có lệnh chạy)' }));
+
+    grid.appendChild(stats);
+    wrap.appendChild(grid);
+    container.appendChild(wrap);
+
+    pgRenderEmpty();
+    pgUpdateStats();
+    await pgLoadModels();
+    await pgLoadQuota();
+  }
+
+  function pgLabel() {
+    return { fontSize: '11px', color: 'var(--ink-300)', fontWeight: '600',
+             textTransform: 'uppercase', letterSpacing: '0.5px' };
+  }
+  function pgInput() {
+    return { width: '100%', padding: '8px 10px', background: 'var(--bg-base)',
+             border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--ink-50)',
+             fontSize: '13px', boxSizing: 'border-box' };
+  }
+
+  function pgRenderEmpty() {
+    const log = byId('pg-chat-log');
+    if (!log || _aiPgState.history.length > 0) return;
+    log.innerHTML = '';
+    const empty = el('div', { style: { padding: '40px 20px', textAlign: 'center', color: 'var(--ink-400)' } });
+    empty.appendChild(el('div', { style: { fontSize: '40px', marginBottom: '12px' }, text: '🧪' }));
+    empty.appendChild(el('div', { style: { fontSize: '14px', color: 'var(--ink-200)', marginBottom: '12px' },
+                                   text: 'Thử prompt:' }));
+    const samples = [
+      'Giải thích Cloud Run trong 2 câu',
+      'Code Python tính fibonacci đệ quy',
+      'Mô tả phong cách Indochine Vietnam',
+      'So sánh Gemini 2.5 Pro vs Claude Sonnet 4.6'
+    ];
+    samples.forEach(s => {
+      const chip = el('div', { style: { display: 'inline-block', margin: '4px 6px',
+        padding: '6px 12px', background: 'var(--bg-base)', border: '1px solid var(--border)',
+        borderRadius: '14px', fontSize: '12px', color: 'var(--aurora,#22d3ee)', cursor: 'pointer' },
+        text: s });
+      chip.onclick = () => { const i = byId('pg-input'); if (i) { i.value = s; i.focus(); } };
+      empty.appendChild(chip);
+    });
+    log.appendChild(empty);
+  }
+
+  async function pgLoadModels() {
+    const sel = byId('pg-model'); if (!sel) return;
+    try {
+      const r = await fetch('/api/v1/router/models');
+      const j = await r.json();
+      const models = j.models || [];
+      sel.innerHTML = '';
+      // Group by tier
+      const tiers = {};
+      models.forEach(m => {
+        const t = m.tier || 'unknown';
+        tiers[t] = tiers[t] || [];
+        tiers[t].push(m);
+      });
+      Object.keys(tiers).sort().forEach(t => {
+        const grp = el('optgroup', { label: 'Tier ' + t.toUpperCase() });
+        tiers[t].forEach(m => {
+          const lbl = `${m.display_name || m.id} — $${m.input_price_per_mtok}/M in · $${m.output_price_per_mtok}/M out`;
+          const o = el('option', { value: m.id, text: lbl });
+          if (m.id === _aiPgState.model) o.selected = true;
+          grp.appendChild(o);
+        });
+        sel.appendChild(grp);
+      });
+      if (!sel.value && models.length) { sel.value = models[0].id; _aiPgState.model = models[0].id; }
+    } catch (e) {
+      sel.innerHTML = '<option value="">Lỗi tải models</option>';
+    }
+  }
+
+  async function pgLoadQuota() {
+    const body = byId('pg-quota-body'); if (!body) return;
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+    try {
+      const r = await fetch('/api/v1/router/quota?ws=' + encodeURIComponent(state.currentWs), { headers: auth });
+      const j = await r.json();
+      body.innerHTML = '';
+      const usd = (j.current_usage_usd || 0).toFixed(4);
+      const lim = (j.monthly_quota_usd || 0).toFixed(2);
+      const pct = j.percent_used || 0;
+      const color = pct > 80 ? '#fb7185' : (pct > 50 ? 'var(--gold-l,#facc15)' : 'var(--aurora,#22d3ee)');
+      body.appendChild(el('div', { style: { fontSize: '13px', color: 'var(--ink-100)' },
+                                    text: '$' + usd + ' / $' + lim }));
+      const bar = el('div', { style: { marginTop: '6px', background: 'var(--bg-base)', height: '6px',
+        borderRadius: '3px', overflow: 'hidden' } });
+      bar.appendChild(el('div', { style: { width: Math.min(100, pct) + '%', background: color, height: '100%' } }));
+      body.appendChild(bar);
+      body.appendChild(el('div', { style: { fontSize: '11px', color: 'var(--ink-400)', marginTop: '4px' },
+                                    text: pct.toFixed(1) + '% · ' + (state.currentWs || '—') }));
+    } catch (e) {
+      body.innerHTML = '<div style="font-size:12px;color:var(--ink-400)">Chưa load được quota</div>';
+    }
+  }
+
+  function pgUpdateStats() {
+    const body = byId('pg-stats-body'); if (!body) return;
+    body.innerHTML = '';
+    const turns = Math.floor(_aiPgState.history.length / 2);
+    const fields = [
+      ['Turns', turns],
+      ['Input tokens', _aiPgState.totalInputTok.toLocaleString()],
+      ['Output tokens', _aiPgState.totalOutputTok.toLocaleString()],
+      ['Total tokens', (_aiPgState.totalInputTok + _aiPgState.totalOutputTok).toLocaleString()],
+      ['Cost USD', '$' + _aiPgState.totalCost.toFixed(6)],
+      ['Cost VND', '~₫' + Math.round(_aiPgState.totalCost * 25500).toLocaleString()],
+    ];
+    fields.forEach(([k, v]) => {
+      body.appendChild(el('div', { style: { display: 'flex', justifyContent: 'space-between',
+        padding: '5px 0', borderBottom: '1px solid var(--border)', fontSize: '12px' } }, [
+        el('span', { style: { color: 'var(--ink-400)' }, text: k }),
+        el('span', { style: { color: 'var(--ink-100)', fontFamily: 'monospace' }, text: v.toString() }),
+      ]));
+    });
+  }
+
+  function pgAppendBubble(role, text) {
+    const log = byId('pg-chat-log'); if (!log) return;
+    if (_aiPgState.history.length === 0) log.innerHTML = '';
+    const row = el('div', { style: { display: 'flex',
+      justifyContent: role === 'user' ? 'flex-end' : 'flex-start' } });
+    row.appendChild(el('div', { style: {
+      maxWidth: '80%', padding: '11px 15px', fontSize: '14px',
+      lineHeight: '1.6', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+      borderRadius: role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+      background: role === 'user'
+        ? 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))'
+        : 'var(--bg-base)',
+      color: role === 'user' ? '#fff' : 'var(--ink-50)',
+      border: role === 'user' ? 'none' : '1px solid var(--border)',
+    }, text }));
+    log.appendChild(row);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  async function pgSubmit() {
+    const inp = byId('pg-input'); const btn = byId('pg-send-btn');
+    if (!inp || !btn) return;
+    const v = inp.value.trim(); if (!v) { inp.focus(); return; }
+
+    pgAppendBubble('user', v);
+    _aiPgState.history.push({ role: 'user', content: v });
+    inp.value = ''; inp.style.height = '44px';
+    btn.disabled = true; btn.textContent = '…';
+
+    // Build messages
+    const messages = [];
+    if (_aiPgState.system.trim()) messages.push({ role: 'system', content: _aiPgState.system });
+    messages.push(..._aiPgState.history);
+
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || ''),
+                   'Content-Type': 'application/json' };
+    try {
+      const t0 = Date.now();
+      const r = await fetch('/api/v1/router/complete?ws=' + encodeURIComponent(state.currentWs), {
+        method: 'POST', headers: auth,
+        body: JSON.stringify({
+          messages, explicit_model: _aiPgState.model || null,
+          temperature: _aiPgState.temperature, max_tokens: _aiPgState.maxTokens,
+        })
+      });
+      const j = await r.json();
+      const latency = Date.now() - t0;
+      if (!r.ok) {
+        pgAppendBubble('assistant', '⚠ Lỗi ' + r.status + ': ' + (j.detail || JSON.stringify(j)));
+        btn.disabled = false; btn.textContent = 'Gửi ▶'; return;
+      }
+      const text = j.text || '(empty response)';
+      _aiPgState.history.push({ role: 'assistant', content: text });
+      pgAppendBubble('assistant', text);
+
+      // Update stats
+      const usage = j.usage || {};
+      _aiPgState.totalInputTok += (usage.input_tokens || 0);
+      _aiPgState.totalOutputTok += (usage.output_tokens || 0);
+      _aiPgState.totalCost += (j.routing?.actual_cost_usd || 0);
+      pgUpdateStats();
+
+      // Routing
+      const rt = j.routing || {};
+      const rbody = byId('pg-routing-body');
+      if (rbody) {
+        rbody.innerHTML = '';
+        const fields = [
+          ['Primary model', rt.primary_model || '—'],
+          ['Served by', rt.served_by || '—'],
+          ['Reason', rt.decision_reason || '—'],
+          ['Failover count', rt.failover_count ?? 0],
+          ['Cost (this turn)', '$' + (rt.actual_cost_usd || 0).toFixed(6)],
+          ['Latency', latency + 'ms'],
+          ['Cache hit', j.cache_hit ? '✓ Yes' : 'No'],
+        ];
+        fields.forEach(([k, v]) => {
+          rbody.appendChild(el('div', { style: { display: 'flex', justifyContent: 'space-between', padding: '3px 0' } }, [
+            el('span', { style: { color: 'var(--ink-400)' }, text: k }),
+            el('span', { style: { color: 'var(--ink-100)', fontFamily: 'monospace', fontSize: '11px' }, text: v.toString() }),
+          ]));
+        });
+      }
+      pgLoadQuota();
+    } catch (e) {
+      pgAppendBubble('assistant', '⚠ Network error: ' + e.message);
+    }
+    btn.disabled = false; btn.textContent = 'Gửi ▶';
+    inp.focus();
   }
 
   function ctoStartPoll() {
