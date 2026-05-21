@@ -2091,6 +2091,9 @@ select {
         <div class="nav-item" data-view="messaging" style="--layer-color: var(--gold);">
           <span class="nav-icon">📧</span> <span>Messaging</span>
         </div>
+        <div class="nav-item" data-view="web3" style="--layer-color: var(--gold);">
+          <span class="nav-icon">🪙</span> <span>Web3 & Wallet</span>
+        </div>
         <div class="nav-item" data-view="cto" style="--layer-color: var(--gold);">
           <span class="nav-icon">💬</span> <span>AI Support Chat</span>
         </div>
@@ -3254,6 +3257,7 @@ document.addEventListener('keydown', e => {
       case 'identity': renderIdentityManager(container); break;
       case 'automation': renderAutomation(container); break;
       case 'messaging': renderMessaging(container); break;
+      case 'web3': renderWeb3Wallet(container); break;
       default: container.appendChild(el('div', { text: 'Unknown view' }));
     }
     return container;
@@ -5535,6 +5539,341 @@ document.addEventListener('keydown', e => {
     } catch (e) {
       card.innerHTML = '<div style="padding:20px;color:#fb7185">Lỗi: ' + e.message + '</div>';
     }
+  }
+
+  /* ═══════════════════════════════════════════════
+     WEB3 & WALLET · L6 Web3 Bridge
+     Pattern: MetaMask Portfolio + Alchemy Dashboard
+     ═══════════════════════════════════════════════ */
+  let _w3State = { activeTab: 'wallet' };
+
+  async function renderWeb3Wallet(container) {
+    container.innerHTML = '';
+    const wrap = el('div', { style: { padding: '16px 20px', maxWidth: '1400px', margin: '0 auto' } });
+
+    wrap.appendChild(el('div', { style: { display: 'flex', alignItems: 'baseline', gap: '14px', marginBottom: '6px' } }, [
+      el('h2', { style: { fontSize: '24px', color: 'var(--ink-50)', margin: 0 }, text: '🪙 Web3 & Wallet' }),
+      el('span', { style: { fontSize: '13px', color: 'var(--ink-400)' },
+                    text: 'Wallet VND credit · Zeni Token Polygon · Zeni Pay VietQR' })
+    ]));
+    wrap.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '18px' },
+                                text: 'Workspace: ' + (state.currentWs || '—') }));
+
+    const tabBar = el('div', { style: { display: 'flex', gap: '4px', borderBottom: '1px solid var(--border)', marginBottom: '16px' } });
+    const tabs = [
+      { id: 'wallet', label: '💰 Wallet (VND)' },
+      { id: 'web3', label: '🪙 Web3 / $ZENI' },
+      { id: 'zenipay', label: '🏦 Zeni Pay (VietQR)' },
+    ];
+    tabs.forEach(t => {
+      const btn = el('button', { style: dbTabStyle(_w3State.activeTab === t.id), text: t.label });
+      btn.onclick = () => { _w3State.activeTab = t.id; renderWeb3Wallet(container); };
+      tabBar.appendChild(btn);
+    });
+    wrap.appendChild(tabBar);
+
+    const content = el('div', { id: 'w3-content' });
+    wrap.appendChild(content);
+    container.appendChild(wrap);
+
+    if (_w3State.activeTab === 'wallet') await w3RenderWallet(content);
+    else if (_w3State.activeTab === 'web3') await w3RenderOnchain(content);
+    else if (_w3State.activeTab === 'zenipay') await w3RenderZeniPay(content);
+  }
+
+  async function w3RenderWallet(c) {
+    c.innerHTML = '';
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+
+    // Balance hero card
+    const heroCard = el('div', { style: { ...dbCard(), padding: '24px 28px',
+      background: 'linear-gradient(135deg, rgba(125,104,255,0.12), rgba(168,85,247,0.08)), var(--bg-card,#14142a)',
+      marginBottom: '16px' } });
+    heroCard.appendChild(el('div', { style: { fontSize: '11px', color: 'var(--ink-400)',
+      textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '600', marginBottom: '6px' },
+      text: 'SỐ DƯ VÍ — ' + (state.currentWs || '—') }));
+    const balDiv = el('div', { id: 'w3-balance', style: { fontSize: '36px', color: 'var(--ink-50)', fontWeight: '700' },
+      text: 'Đang tải...' });
+    heroCard.appendChild(balDiv);
+    heroCard.appendChild(el('div', { id: 'w3-balance-sub', style: { fontSize: '13px', color: 'var(--ink-300)', marginTop: '6px' },
+      text: 'Đang tải usage gần đây...' }));
+    const topupBtn = el('button', { style: { marginTop: '16px', padding: '12px 24px',
+      background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+      color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
+      fontWeight: '600', fontSize: '14px' }, text: '+ Nạp tiền (VietQR)' });
+    topupBtn.onclick = () => { _w3State.activeTab = 'zenipay'; renderWeb3Wallet(c.parentElement.parentElement); };
+    heroCard.appendChild(topupBtn);
+    c.appendChild(heroCard);
+
+    // Transactions
+    const txHeader = el('h3', { style: { fontSize: '15px', color: 'var(--ink-100)', marginTop: '8px', marginBottom: '10px' },
+      text: '📜 Giao dịch gần đây' });
+    c.appendChild(txHeader);
+    const txCard = el('div', { id: 'w3-txs', style: dbCard() });
+    txCard.appendChild(el('div', { style: { padding: '14px 18px', color: 'var(--ink-400)', fontSize: '13px' },
+                                    text: 'Đang tải...' }));
+    c.appendChild(txCard);
+
+    // Load balance
+    try {
+      const r = await fetch('/api/v1/wallet/balance?ws=' + encodeURIComponent(state.currentWs), { headers: auth });
+      const j = await r.json();
+      const bal = j.balance_vnd || j.balance || 0;
+      balDiv.textContent = '₫' + (bal).toLocaleString('vi-VN');
+      const sub = byId('w3-balance-sub');
+      if (sub) sub.textContent = 'Đã chi tháng này: ₫' + ((j.spent_this_month || 0)).toLocaleString('vi-VN')
+        + ' · Holds: ₫' + ((j.holds || 0)).toLocaleString('vi-VN');
+    } catch (e) {
+      balDiv.textContent = '— (lỗi tải)';
+    }
+
+    // Load transactions
+    try {
+      const r = await fetch('/api/v1/wallet/transactions?ws=' + encodeURIComponent(state.currentWs) + '&limit=20', { headers: auth });
+      const j = await r.json();
+      txCard.innerHTML = '';
+      const txs = Array.isArray(j) ? j : (j.transactions || j.items || []);
+      if (txs.length === 0) {
+        txCard.appendChild(el('div', { style: { padding: '40px 20px', textAlign: 'center', color: 'var(--ink-400)' },
+                                        text: 'Chưa có giao dịch nào' }));
+      } else {
+        const hdr = el('div', { style: { display: 'grid',
+          gridTemplateColumns: '1.2fr 2fr 1fr 1fr', gap: '14px',
+          padding: '12px 18px', borderBottom: '1px solid var(--border)',
+          fontSize: '11px', color: 'var(--ink-400)', fontWeight: '700', textTransform: 'uppercase' } });
+        ['Thời gian', 'Mô tả', 'Số tiền', 'Số dư sau'].forEach(t => hdr.appendChild(el('div', { text: t })));
+        txCard.appendChild(hdr);
+        txs.forEach(t => {
+          const row = el('div', { style: { display: 'grid',
+            gridTemplateColumns: '1.2fr 2fr 1fr 1fr', gap: '14px',
+            padding: '12px 18px', borderBottom: '1px solid var(--border)',
+            fontSize: '13px', alignItems: 'center' } });
+          row.appendChild(el('div', { style: { color: 'var(--ink-300)', fontSize: '12px' },
+                                       text: (t.created_at || '—').toString().replace('T',' ').slice(0,16) }));
+          row.appendChild(el('div', {}, [
+            el('div', { style: { color: 'var(--ink-100)' }, text: t.description || t.action || '—' }),
+            el('div', { style: { fontSize: '11px', color: 'var(--ink-400)', marginTop: '2px' },
+                         text: t.kind || t.type || '—' }),
+          ]));
+          const amt = t.amount_vnd || t.amount || 0;
+          const isCredit = amt > 0;
+          row.appendChild(el('div', { style: { color: isCredit ? 'var(--aurora,#22d3ee)' : '#fb7185',
+            fontWeight: '600', fontFamily: 'monospace' },
+            text: (isCredit ? '+' : '') + '₫' + Math.abs(amt).toLocaleString('vi-VN') }));
+          row.appendChild(el('div', { style: { color: 'var(--ink-300)', fontFamily: 'monospace' },
+                                       text: '₫' + (t.balance_after || 0).toLocaleString('vi-VN') }));
+          txCard.appendChild(row);
+        });
+      }
+    } catch (e) {
+      txCard.innerHTML = '<div style="padding:20px;color:#fb7185">Lỗi: ' + e.message + '</div>';
+    }
+  }
+
+  async function w3RenderOnchain(c) {
+    c.innerHTML = '';
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+
+    // Stack overview
+    const stack = el('div', { style: { ...dbCard(), padding: '20px 24px', marginBottom: '14px' } });
+    stack.appendChild(el('h3', { style: { fontSize: '15px', color: 'var(--ink-100)', margin: '0 0 12px' },
+                                  text: '🔗 Zeni Stack — Polygon Mainnet' }));
+    const stackBody = el('div', { id: 'w3-stack-body',
+      style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', fontSize: '12px' } });
+    stack.appendChild(stackBody);
+    c.appendChild(stack);
+
+    try {
+      const r = await fetch('/api/v1/web3/zeni-stack', { headers: auth });
+      const j = r.ok ? await r.json() : {};
+      stackBody.innerHTML = '';
+      const items = [
+        { lbl: '$ZENI Token', addr: j.zeni_token || '0x2d0Ec889F3889F0a364b82039db9F8Bef78f5EC1' },
+        { lbl: 'AffiliateCommission', addr: j.affiliate || '0x1d5963FcCfC548275293e51f0F6C7aC482E0b714' },
+        { lbl: 'ZeniBadge (SBT)', addr: j.badge || '0xB157c83beEeA7c7ebDB2CEa305135e3deCAeD79D' },
+      ];
+      items.forEach(it => {
+        const card = el('div', { style: { background: 'var(--bg-base)', padding: '12px 14px', borderRadius: '8px',
+          border: '1px solid var(--border)' } });
+        card.appendChild(el('div', { style: { fontSize: '11px', color: 'var(--ink-400)', marginBottom: '4px',
+          textTransform: 'uppercase', fontWeight: '600' }, text: it.lbl }));
+        const addrEl = el('div', { style: { color: 'var(--aurora,#22d3ee)', fontFamily: 'monospace', fontSize: '11px',
+          wordBreak: 'break-all', cursor: 'pointer', userSelect: 'all' }, text: it.addr });
+        addrEl.onclick = () => { navigator.clipboard.writeText(it.addr); toast('✓ Copied', 'ok'); };
+        card.appendChild(addrEl);
+        stackBody.appendChild(card);
+      });
+    } catch (e) { stackBody.innerHTML = '<div style="color:var(--ink-400);font-size:12px">Stack unavailable</div>'; }
+
+    // Chains
+    const chainsCard = el('div', { style: { ...dbCard(), padding: '16px 20px', marginBottom: '14px' } });
+    chainsCard.appendChild(el('h3', { style: { fontSize: '14px', color: 'var(--ink-100)', margin: '0 0 10px' },
+                                        text: '⛓ Supported chains' }));
+    const chainsRow = el('div', { id: 'w3-chains', style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } });
+    chainsCard.appendChild(chainsRow);
+    c.appendChild(chainsCard);
+
+    try {
+      const r = await fetch('/api/v1/web3/chains', { headers: auth });
+      const j = await r.json();
+      chainsRow.innerHTML = '';
+      const chains = Array.isArray(j) ? j : (j.chains || []);
+      chains.forEach(ch => {
+        const chip = el('div', { style: { padding: '6px 14px',
+          background: ch.enabled !== false ? 'rgba(34,211,238,0.08)' : 'var(--bg-base)',
+          color: ch.enabled !== false ? 'var(--aurora,#22d3ee)' : 'var(--ink-400)',
+          border: '1px solid ' + (ch.enabled !== false ? 'var(--aurora,#22d3ee)' : 'var(--border)'),
+          borderRadius: '14px', fontSize: '12px' },
+          text: (ch.name || ch.id) + ' · ' + (ch.chain_id || '?') });
+        chainsRow.appendChild(chip);
+      });
+    } catch (e) {}
+
+    // Contracts list
+    const contractsHeader = el('h3', { style: { fontSize: '15px', color: 'var(--ink-100)', marginTop: '6px', marginBottom: '10px' },
+      text: '📜 Smart Contracts đã đăng ký' });
+    c.appendChild(contractsHeader);
+    const contractsCard = el('div', { id: 'w3-contracts', style: dbCard() });
+    contractsCard.appendChild(el('div', { style: { padding: '14px 18px', color: 'var(--ink-400)', fontSize: '13px' },
+                                            text: 'Đang tải contracts...' }));
+    c.appendChild(contractsCard);
+
+    try {
+      const r = await fetch('/api/v1/web3/contracts?ws=' + encodeURIComponent(state.currentWs), { headers: auth });
+      const j = await r.json();
+      contractsCard.innerHTML = '';
+      const items = Array.isArray(j) ? j : (j.contracts || j.items || []);
+      if (items.length === 0) {
+        const empty = el('div', { style: { padding: '40px 20px', textAlign: 'center', color: 'var(--ink-400)' } });
+        empty.appendChild(el('div', { style: { fontSize: '40px', marginBottom: '10px' }, text: '📜' }));
+        empty.appendChild(el('div', { style: { fontSize: '15px', color: 'var(--ink-200)' },
+                                       text: 'Chưa đăng ký contract nào' }));
+        contractsCard.appendChild(empty);
+      } else {
+        items.forEach(co => {
+          const row = el('div', { style: { padding: '14px 18px', borderBottom: '1px solid var(--border)' } });
+          row.appendChild(el('div', { style: { color: 'var(--ink-100)', fontWeight: '500' }, text: co.name || '—' }));
+          row.appendChild(el('div', { style: { fontSize: '11px', color: 'var(--aurora,#22d3ee)',
+            fontFamily: 'monospace', marginTop: '4px' }, text: co.chain + ' · ' + co.address }));
+          contractsCard.appendChild(row);
+        });
+      }
+    } catch (e) {
+      contractsCard.innerHTML = '<div style="padding:20px;color:#fb7185">Lỗi: ' + e.message + '</div>';
+    }
+  }
+
+  async function w3RenderZeniPay(c) {
+    c.innerHTML = '';
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+
+    const intro = el('div', { style: { ...dbCard(), padding: '18px 22px', marginBottom: '14px' } });
+    intro.appendChild(el('div', { style: { fontSize: '13px', color: 'var(--ink-300)', lineHeight: '1.7' } }, [
+      el('span', { text: '🏦 Zeni Pay = VietQR universal cho mọi ngân hàng VN. Khách quét QR → chuyển khoản → tự động cộng credit. ' }),
+      el('span', { style: { color: 'var(--gold-l,#facc15)' }, text: 'Phí: 0% (free, dùng ngân hàng chính chủ).' })
+    ]));
+    c.appendChild(intro);
+
+    // Topup form
+    const topupCard = el('div', { style: { ...dbCard(), padding: '20px 24px', marginBottom: '14px' } });
+    topupCard.appendChild(el('h3', { style: { fontSize: '15px', color: 'var(--ink-100)', margin: '0 0 12px' },
+                                       text: '💸 Tạo intent nạp tiền' }));
+    const amtRow = el('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' } });
+    [100000, 500000, 1000000, 5000000, 10000000].forEach(v => {
+      const chip = el('button', { style: { padding: '8px 16px', background: 'var(--bg-base)',
+        color: 'var(--ink-100)', border: '1px solid var(--border)', borderRadius: '20px',
+        cursor: 'pointer', fontSize: '13px', fontWeight: '500' },
+        text: '₫' + v.toLocaleString('vi-VN') });
+      chip.onclick = () => { byId('w3-topup-amount').value = v; };
+      amtRow.appendChild(chip);
+    });
+    topupCard.appendChild(amtRow);
+    const inpRow = el('div', { style: { display: 'flex', gap: '10px' } });
+    const amtInp = el('input', { id: 'w3-topup-amount', type: 'number', placeholder: 'Số tiền VND',
+      min: '10000', step: '10000',
+      style: { flex: '1', padding: '12px 14px', background: 'var(--bg-base)',
+        border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--ink-50)',
+        fontSize: '15px', fontFamily: 'monospace' } });
+    inpRow.appendChild(amtInp);
+    const goBtn = el('button', { style: { padding: '12px 24px',
+      background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+      color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer',
+      fontWeight: '600', fontSize: '14px' }, text: '→ Lấy VietQR' });
+    goBtn.onclick = async () => {
+      const v = parseInt(amtInp.value, 10);
+      if (!v || v < 10000) { toast('Min ₫10,000', 'err'); return; }
+      goBtn.disabled = true; goBtn.textContent = 'Đang tạo intent...';
+      try {
+        const r = await fetch('/api/v1/zeni-pay/intent?ws=' + encodeURIComponent(state.currentWs), {
+          method: 'POST', headers: { ...auth, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount_vnd: v, purpose: 'topup' })
+        });
+        const j = await r.json();
+        if (!r.ok) { toast('Lỗi: ' + (j.detail || r.status), 'err'); goBtn.disabled = false; goBtn.textContent = '→ Lấy VietQR'; return; }
+        showQRIntent(j);
+      } catch (e) { toast('Network: ' + e.message, 'err'); }
+      goBtn.disabled = false; goBtn.textContent = '→ Lấy VietQR';
+    };
+    inpRow.appendChild(goBtn);
+    topupCard.appendChild(inpRow);
+    c.appendChild(topupCard);
+
+    // Bank accounts
+    const banksHeader = el('h3', { style: { fontSize: '15px', color: 'var(--ink-100)', marginTop: '6px', marginBottom: '10px' },
+      text: '🏦 Tài khoản nhận' });
+    c.appendChild(banksHeader);
+    const banksCard = el('div', { id: 'w3-banks', style: dbCard() });
+    banksCard.appendChild(el('div', { style: { padding: '14px 18px', color: 'var(--ink-400)', fontSize: '13px' },
+                                       text: 'Đang tải...' }));
+    c.appendChild(banksCard);
+
+    try {
+      const r = await fetch('/api/v1/zeni-pay/bank-accounts', { headers: auth });
+      const j = await r.json();
+      banksCard.innerHTML = '';
+      const banks = Array.isArray(j) ? j : (j.accounts || j.items || []);
+      if (banks.length === 0) {
+        banksCard.appendChild(el('div', { style: { padding: '20px', color: 'var(--ink-400)', fontSize: '13px', textAlign: 'center' },
+                                            text: 'Chưa có bank account nào setup (Admin only)' }));
+      } else {
+        banks.forEach(b => {
+          const row = el('div', { style: { padding: '12px 18px', borderBottom: '1px solid var(--border)' } });
+          row.appendChild(el('div', { style: { color: 'var(--ink-100)', fontWeight: '500' },
+                                       text: (b.bank_name || b.bank_code) + ' · ' + (b.account_holder || '—') }));
+          row.appendChild(el('div', { style: { fontSize: '12px', color: 'var(--aurora,#22d3ee)',
+            fontFamily: 'monospace', marginTop: '2px' }, text: 'STK: ' + (b.account_number || '—') }));
+          banksCard.appendChild(row);
+        });
+      }
+    } catch (e) {
+      banksCard.innerHTML = '<div style="padding:16px;color:#fb7185">Lỗi: ' + e.message + '</div>';
+    }
+  }
+
+  function showQRIntent(j) {
+    const overlay = el('div', { style: { position: 'fixed', inset: '0',
+      background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', display: 'flex',
+      alignItems: 'center', justifyContent: 'center', zIndex: '99999' } });
+    const modal = el('div', { style: { background: 'var(--bg-card,#14142a)',
+      border: '2px solid var(--gold-l,#facc15)', borderRadius: '14px', padding: '24px 28px',
+      width: '420px', maxWidth: '90vw', textAlign: 'center' } });
+    modal.appendChild(el('h3', { style: { fontSize: '18px', color: 'var(--gold-l,#facc15)', margin: '0 0 14px' },
+                                  text: '📲 Quét VietQR' }));
+    if (j.qr_image_url || j.qr_url) {
+      modal.appendChild(el('img', { src: j.qr_image_url || j.qr_url,
+        style: { width: '260px', height: '260px', background: '#fff', padding: '10px', borderRadius: '8px' } }));
+    }
+    modal.appendChild(el('div', { style: { marginTop: '14px', fontFamily: 'monospace', fontSize: '13px', color: 'var(--ink-200)' },
+                                   text: 'Code: ' + (j.intent_code || j.code || '—') }));
+    modal.appendChild(el('div', { style: { fontSize: '12px', color: 'var(--ink-400)', marginTop: '8px' },
+                                   text: 'Hết hạn sau 15 phút · auto-confirm khi bank webhook fire' }));
+    const ok = el('button', { style: { marginTop: '14px', padding: '10px 22px',
+      background: 'var(--gold-l,#facc15)', color: '#000', border: 'none',
+      borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }, text: 'Đóng' });
+    ok.onclick = () => overlay.remove();
+    modal.appendChild(ok);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
   }
 
   function ctoStartPoll() {
