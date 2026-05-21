@@ -2082,6 +2082,9 @@ select {
         <div class="nav-item" data-view="database" style="--layer-color: var(--gold);">
           <span class="nav-icon">🗄</span> <span>Database</span>
         </div>
+        <div class="nav-item" data-view="identity" style="--layer-color: var(--gold);">
+          <span class="nav-icon">🛡</span> <span>Identity</span>
+        </div>
         <div class="nav-item" data-view="cto" style="--layer-color: var(--gold);">
           <span class="nav-icon">💬</span> <span>AI Support Chat</span>
         </div>
@@ -3242,6 +3245,7 @@ document.addEventListener('keydown', e => {
       case 'api-tokens': renderApiTokens(container); break;
       case 'ai-playground': renderAiPlayground(container); break;
       case 'database': renderDatabaseManager(container); break;
+      case 'identity': renderIdentityManager(container); break;
       default: container.appendChild(el('div', { text: 'Unknown view' }));
     }
     return container;
@@ -4531,6 +4535,408 @@ document.addEventListener('keydown', e => {
     let i = 0; let v = b;
     while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
     return v.toFixed(1) + ' ' + u[i];
+  }
+
+  /* ═══════════════════════════════════════════════
+     IDENTITY MANAGER · OAuth + MFA + Secrets + Certs
+     Pattern: Auth0 Dashboard + Clerk + AWS Secrets Manager
+     ═══════════════════════════════════════════════ */
+  let _idState = { activeTab: 'oauth' };
+
+  async function renderIdentityManager(container) {
+    container.innerHTML = '';
+    const wrap = el('div', { style: { padding: '16px 20px', maxWidth: '1400px', margin: '0 auto' } });
+
+    wrap.appendChild(el('div', { style: { display: 'flex', alignItems: 'baseline', gap: '14px', marginBottom: '6px' } }, [
+      el('h2', { style: { fontSize: '24px', color: 'var(--ink-50)', margin: 0 }, text: '🛡 Identity & Security' }),
+      el('span', { style: { fontSize: '13px', color: 'var(--ink-400)' },
+                    text: 'L5 Identity · OAuth/SSO · MFA · Secret Vault · Push certs' })
+    ]));
+    wrap.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '18px' },
+                                text: 'Workspace: ' + (state.currentWs || '—') }));
+
+    const tabBar = el('div', { style: { display: 'flex', gap: '4px', borderBottom: '1px solid var(--border)',
+      marginBottom: '16px' } });
+    const tabs = [
+      { id: 'oauth', label: '🔐 OAuth Providers' },
+      { id: 'mfa', label: '🔒 MFA (2FA)' },
+      { id: 'secrets', label: '🗝 Secrets Vault' },
+      { id: 'certs', label: '📱 Mobile Certs' },
+    ];
+    tabs.forEach(t => {
+      const btn = el('button', { style: dbTabStyle(_idState.activeTab === t.id), text: t.label });
+      btn.onclick = () => { _idState.activeTab = t.id; renderIdentityManager(container); };
+      tabBar.appendChild(btn);
+    });
+    wrap.appendChild(tabBar);
+
+    const content = el('div', { id: 'id-content' });
+    wrap.appendChild(content);
+    container.appendChild(wrap);
+
+    if (_idState.activeTab === 'oauth') await idRenderOAuth(content);
+    else if (_idState.activeTab === 'mfa') await idRenderMfa(content);
+    else if (_idState.activeTab === 'secrets') await idRenderSecrets(content);
+    else if (_idState.activeTab === 'certs') await idRenderCerts(content);
+  }
+
+  async function idRenderOAuth(c) {
+    c.innerHTML = '';
+    const wrap = el('div', { style: { display: 'grid', gridTemplateColumns: '1fr', gap: '14px' } });
+
+    // Header + add button
+    const header = el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } });
+    header.appendChild(el('div', { style: { color: 'var(--ink-300)', fontSize: '13px' },
+                                    text: 'OAuth providers cho phép user login bằng Google/GitHub/Microsoft/Facebook' }));
+    const addBtn = el('button', { style: { padding: '10px 18px',
+      background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+      color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
+      fontWeight: '600', fontSize: '14px' }, text: '+ Thêm OAuth provider' });
+    addBtn.onclick = () => openAddOAuthModal();
+    header.appendChild(addBtn);
+    wrap.appendChild(header);
+
+    // List card
+    const card = el('div', { id: 'id-oauth-list', style: dbCard() });
+    card.appendChild(el('div', { style: { padding: '14px 18px', color: 'var(--ink-400)', fontSize: '13px' },
+                                  text: 'Đang tải providers...' }));
+    wrap.appendChild(card);
+    c.appendChild(wrap);
+
+    await idLoadProviders();
+  }
+
+  async function idLoadProviders() {
+    const card = byId('id-oauth-list'); if (!card) return;
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+    try {
+      const r = await fetch('/api/v1/identity/oauth-providers?ws=' + encodeURIComponent(state.currentWs), { headers: auth });
+      const j = await r.json();
+      card.innerHTML = '';
+      const providers = Array.isArray(j) ? j : (j.providers || j.items || []);
+
+      if (providers.length === 0) {
+        const empty = el('div', { style: { padding: '40px 20px', textAlign: 'center', color: 'var(--ink-400)' } });
+        empty.appendChild(el('div', { style: { fontSize: '40px', marginBottom: '10px' }, text: '🔐' }));
+        empty.appendChild(el('div', { style: { fontSize: '15px', color: 'var(--ink-200)', marginBottom: '6px' },
+                                       text: 'Chưa có OAuth provider nào' }));
+        empty.appendChild(el('div', { style: { fontSize: '13px', color: 'var(--ink-400)' },
+                                       text: 'Bấm "+ Thêm OAuth provider" để khách login bằng Google/GitHub/Microsoft' }));
+        card.appendChild(empty);
+        return;
+      }
+
+      const headerRow = el('div', { style: { display: 'grid',
+        gridTemplateColumns: '60px 2fr 1.5fr 1fr 100px 80px', gap: '14px',
+        padding: '12px 18px', borderBottom: '1px solid var(--border)',
+        fontSize: '11px', color: 'var(--ink-400)', fontWeight: '700', textTransform: 'uppercase' } });
+      ['', 'Provider', 'Client ID', 'Created', 'Status', 'Action'].forEach(t => headerRow.appendChild(el('div', { text: t })));
+      card.appendChild(headerRow);
+
+      providers.forEach(p => {
+        const row = el('div', { style: { display: 'grid',
+          gridTemplateColumns: '60px 2fr 1.5fr 1fr 100px 80px', gap: '14px',
+          padding: '14px 18px', borderBottom: '1px solid var(--border)',
+          fontSize: '13px', alignItems: 'center' } });
+        const icons = { google: '🌐', github: '🐙', microsoft: '🪟', facebook: '📘',
+          apple: '🍎', linkedin: '💼', twitter: '🐦', discord: '🎮' };
+        row.appendChild(el('div', { style: { fontSize: '22px' }, text: icons[p.provider] || icons[p.kind] || '🔗' }));
+        row.appendChild(el('div', {}, [
+          el('div', { style: { color: 'var(--ink-100)', fontWeight: '500', textTransform: 'capitalize' },
+                       text: p.provider || p.kind || p.name || 'unknown' }),
+          el('div', { style: { fontSize: '11px', color: 'var(--ink-400)', marginTop: '2px' },
+                       text: p.display_name || '—' }),
+        ]));
+        const cid = p.client_id || '';
+        row.appendChild(el('div', { style: { color: 'var(--ink-300)', fontFamily: 'monospace', fontSize: '12px',
+                                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+                                     text: cid.slice(0, 8) + '…' + cid.slice(-6) }));
+        row.appendChild(el('div', { style: { color: 'var(--ink-300)', fontSize: '12px' },
+                                     text: (p.created_at || '—').toString().replace('T',' ').slice(0,16) }));
+        const enabled = p.enabled !== false;
+        const sc = enabled ? 'var(--aurora,#22d3ee)' : '#fb7185';
+        row.appendChild(el('span', { style: { color: sc, fontSize: '11px',
+          padding: '4px 10px', background: 'rgba(34,211,238,0.08)', borderRadius: '6px',
+          border: '1px solid ' + sc, display: 'inline-block', width: 'fit-content' },
+          text: enabled ? 'ENABLED' : 'DISABLED' }));
+        const delBtn = el('button', { style: { padding: '5px 10px',
+          background: 'rgba(251,113,133,0.1)', color: '#fb7185',
+          border: '1px solid rgba(251,113,133,0.3)', borderRadius: '6px',
+          cursor: 'pointer', fontSize: '11px' }, text: 'Xóa' });
+        delBtn.onclick = async () => {
+          if (!confirm('Xóa OAuth provider này? Users đang dùng SSO này sẽ không login được nữa.')) return;
+          const a = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+          const dr = await fetch('/api/v1/identity/oauth-providers/' + p.id + '?ws=' + encodeURIComponent(state.currentWs),
+            { method: 'DELETE', headers: a });
+          if (dr.ok) { toast('✓ Xóa provider OK', 'ok'); idLoadProviders(); }
+          else { toast('✗ Xóa fail', 'err'); }
+        };
+        row.appendChild(delBtn);
+        card.appendChild(row);
+      });
+    } catch (e) {
+      card.innerHTML = '<div style="padding:20px;color:#fb7185">Lỗi: ' + e.message + '</div>';
+    }
+  }
+
+  async function openAddOAuthModal() {
+    const overlay = el('div', { style: { position: 'fixed', inset: '0',
+      background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex',
+      alignItems: 'center', justifyContent: 'center', zIndex: '99999' } });
+    const modal = el('div', { style: { background: 'var(--bg-card,#14142a)',
+      border: '1px solid var(--border-strong)', borderRadius: '14px', padding: '24px 28px',
+      width: '540px', maxWidth: '90vw' } });
+    modal.appendChild(el('h3', { style: { fontSize: '18px', color: 'var(--ink-50)', margin: '0 0 6px' },
+                                  text: '🔐 Thêm OAuth Provider' }));
+    modal.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '14px', lineHeight: '1.5' },
+                                 text: 'Cho phép users login bằng tài khoản Google/GitHub/etc' }));
+
+    const inputStyle = { width: '100%', padding: '10px 12px', background: 'var(--bg-base)',
+      border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--ink-50)',
+      fontSize: '14px', boxSizing: 'border-box', fontFamily: 'inherit' };
+    const labelStyle = { fontSize: '11px', color: 'var(--ink-300)', marginBottom: '5px',
+      display: 'block', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px' };
+
+    modal.appendChild(el('label', { style: labelStyle, text: 'Provider' }));
+    const provSel = el('select', { id: 'id-prov', style: { ...inputStyle, marginBottom: '12px' } });
+    [
+      { v: 'google', t: '🌐 Google' }, { v: 'github', t: '🐙 GitHub' },
+      { v: 'microsoft', t: '🪟 Microsoft Azure AD' }, { v: 'facebook', t: '📘 Facebook' },
+      { v: 'apple', t: '🍎 Apple Sign In' }, { v: 'linkedin', t: '💼 LinkedIn' },
+    ].forEach(o => provSel.appendChild(el('option', { value: o.v, text: o.t })));
+    modal.appendChild(provSel);
+
+    modal.appendChild(el('label', { style: labelStyle, text: 'Client ID' }));
+    const cidInp = el('input', { id: 'id-cid', placeholder: 'vd: 1234567890-abc.apps.googleusercontent.com',
+      style: { ...inputStyle, marginBottom: '12px' } });
+    modal.appendChild(cidInp);
+
+    modal.appendChild(el('label', { style: labelStyle, text: 'Client Secret' }));
+    const csecInp = el('input', { id: 'id-csec', type: 'password', placeholder: 'Lấy từ Google/GitHub OAuth dashboard',
+      style: { ...inputStyle, marginBottom: '12px' } });
+    modal.appendChild(csecInp);
+
+    modal.appendChild(el('label', { style: labelStyle, text: 'Redirect URI (paste vào dashboard provider)' }));
+    const redirectUri = location.origin + '/api/v1/auth/oauth/' + provSel.value + '/callback';
+    const ruriBox = el('div', { style: { ...inputStyle, marginBottom: '14px',
+      fontFamily: 'monospace', fontSize: '12px', color: 'var(--aurora,#22d3ee)',
+      cursor: 'pointer', userSelect: 'all' }, text: redirectUri });
+    provSel.onchange = () => {
+      ruriBox.textContent = location.origin + '/api/v1/auth/oauth/' + provSel.value + '/callback';
+    };
+    ruriBox.onclick = () => {
+      navigator.clipboard.writeText(ruriBox.textContent);
+      toast('✓ Copied redirect URI', 'ok');
+    };
+    modal.appendChild(ruriBox);
+
+    const btnRow = el('div', { style: { display: 'flex', gap: '10px', justifyContent: 'flex-end' } });
+    const cancel = el('button', { style: { padding: '10px 18px', background: 'transparent',
+      color: 'var(--ink-300)', border: '1px solid var(--border)', borderRadius: '8px',
+      cursor: 'pointer', fontSize: '14px' }, text: 'Hủy' });
+    cancel.onclick = () => overlay.remove();
+    btnRow.appendChild(cancel);
+    const create = el('button', { style: { padding: '10px 22px',
+      background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+      color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer',
+      fontWeight: '600', fontSize: '14px' }, text: 'Tạo provider' });
+    create.onclick = async () => {
+      create.disabled = true; create.textContent = 'Đang tạo...';
+      const a = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || ''),
+                  'Content-Type': 'application/json' };
+      const body = { provider: provSel.value, client_id: cidInp.value.trim(),
+                     client_secret: csecInp.value.trim(), enabled: true };
+      try {
+        const r = await fetch('/api/v1/identity/oauth-providers?ws=' + encodeURIComponent(state.currentWs),
+          { method: 'POST', headers: a, body: JSON.stringify(body) });
+        const j = await r.json();
+        if (!r.ok) { toast('Lỗi: ' + (j.detail || r.status), 'err'); create.disabled = false; create.textContent = 'Tạo provider'; return; }
+        overlay.remove();
+        toast('✓ Provider tạo thành công', 'ok');
+        idLoadProviders();
+      } catch (e) {
+        toast('Network: ' + e.message, 'err');
+        create.disabled = false; create.textContent = 'Tạo provider';
+      }
+    };
+    btnRow.appendChild(create);
+    modal.appendChild(btnRow);
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+  }
+
+  async function idRenderMfa(c) {
+    c.innerHTML = '';
+    const card = el('div', { style: dbCard() });
+    card.appendChild(el('div', { style: { padding: '24px 28px' } }, [
+      el('h3', { style: { fontSize: '17px', color: 'var(--ink-50)', margin: '0 0 6px' },
+                  text: '🔒 Multi-Factor Authentication (MFA / 2FA)' }),
+      el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '20px', lineHeight: '1.6' },
+                 text: 'Bật MFA để user login bằng OTP app (Google Authenticator / Authy) ngoài password. Bắt buộc cho Owner role nếu workspace có data sensitive.' }),
+      (() => {
+        const enrollBtn = el('button', { style: { padding: '12px 24px',
+          background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+          color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
+          fontWeight: '600', fontSize: '14px' }, text: '📱 Enroll MFA cho account em' });
+        enrollBtn.onclick = async () => {
+          enrollBtn.disabled = true; enrollBtn.textContent = 'Đang setup...';
+          const a = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || ''),
+                      'Content-Type': 'application/json' };
+          try {
+            const r = await fetch('/api/v1/auth/mfa/setup', { method: 'POST', headers: a });
+            const j = await r.json();
+            if (!r.ok) { toast('Lỗi: ' + (j.detail || r.status), 'err'); enrollBtn.disabled = false; enrollBtn.textContent = '📱 Enroll MFA cho account em'; return; }
+            mfaShowQR(j);
+          } catch (e) { toast('Network: ' + e.message, 'err'); enrollBtn.disabled = false; }
+        };
+        return enrollBtn;
+      })(),
+    ]));
+    c.appendChild(card);
+
+    // Info card
+    const info = el('div', { style: { ...dbCard(), marginTop: '14px' } });
+    info.appendChild(el('div', { style: { padding: '20px 24px' } }, [
+      el('h4', { style: { fontSize: '14px', color: 'var(--gold-l,#facc15)', margin: '0 0 10px' },
+                  text: '⚠ Lưu ý' }),
+      el('ul', { style: { fontSize: '13px', color: 'var(--ink-300)', lineHeight: '1.7', paddingLeft: '18px', margin: 0 } }, [
+        el('li', { text: 'Backup codes lưu kỹ — mất app + code = mất tài khoản' }),
+        el('li', { text: 'MFA bắt buộc khi gọi API DELETE / billing actions / change role' }),
+        el('li', { text: 'Disable MFA cần verify lại password + 6-digit code hiện tại' }),
+      ])
+    ]));
+    c.appendChild(info);
+  }
+
+  function mfaShowQR(j) {
+    const overlay = el('div', { style: { position: 'fixed', inset: '0',
+      background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', display: 'flex',
+      alignItems: 'center', justifyContent: 'center', zIndex: '99999' } });
+    const modal = el('div', { style: { background: 'var(--bg-card,#14142a)',
+      border: '2px solid var(--gold-l,#facc15)', borderRadius: '14px', padding: '24px 28px',
+      width: '480px', maxWidth: '90vw', textAlign: 'center' } });
+    modal.appendChild(el('h3', { style: { fontSize: '18px', color: 'var(--gold-l,#facc15)', margin: '0 0 14px' },
+                                  text: '📱 Scan QR với Google Authenticator' }));
+    if (j.qr_url || j.qr_code) {
+      const img = el('img', { src: j.qr_url || j.qr_code,
+        style: { width: '200px', height: '200px', background: '#fff', padding: '10px', borderRadius: '8px' } });
+      modal.appendChild(img);
+    } else if (j.secret) {
+      modal.appendChild(el('div', { style: { padding: '20px', background: 'var(--bg-base)',
+        fontFamily: 'monospace', fontSize: '14px', color: 'var(--aurora,#22d3ee)',
+        borderRadius: '8px', wordBreak: 'break-all', userSelect: 'all' }, text: j.secret }));
+    }
+    modal.appendChild(el('p', { style: { fontSize: '12px', color: 'var(--ink-300)', marginTop: '14px' },
+                                 text: 'Sau khi scan, nhập 6 digit code đầu tiên để verify (tab tiếp theo)' }));
+    const ok = el('button', { style: { marginTop: '14px', padding: '10px 22px',
+      background: 'var(--gold-l,#facc15)', color: '#000', border: 'none',
+      borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }, text: 'Đã scan' });
+    ok.onclick = () => overlay.remove();
+    modal.appendChild(ok);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+  }
+
+  async function idRenderSecrets(c) {
+    c.innerHTML = '';
+    const wrap = el('div', { style: { display: 'grid', gridTemplateColumns: '1fr', gap: '14px' } });
+    const header = el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } });
+    header.appendChild(el('div', { style: { color: 'var(--ink-300)', fontSize: '13px' },
+                                    text: 'Vault encrypted lưu API keys/passwords. Audit log mọi reveal/rotate.' }));
+    const addBtn = el('button', { style: { padding: '10px 18px',
+      background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+      color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
+      fontWeight: '600', fontSize: '14px' }, text: '+ Thêm secret' });
+    addBtn.onclick = () => toast('Modal thêm secret — coming in next iteration', 'info');
+    header.appendChild(addBtn);
+    wrap.appendChild(header);
+
+    const card = el('div', { id: 'id-secrets-list', style: dbCard() });
+    card.appendChild(el('div', { style: { padding: '14px 18px', color: 'var(--ink-400)', fontSize: '13px' },
+                                  text: 'Đang tải secrets...' }));
+    wrap.appendChild(card);
+    c.appendChild(wrap);
+
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+    try {
+      const r = await fetch('/api/v1/identity/secrets?ws=' + encodeURIComponent(state.currentWs), { headers: auth });
+      const j = await r.json();
+      card.innerHTML = '';
+      const secrets = Array.isArray(j) ? j : (j.secrets || j.items || []);
+      if (secrets.length === 0) {
+        const empty = el('div', { style: { padding: '40px 20px', textAlign: 'center', color: 'var(--ink-400)' } });
+        empty.appendChild(el('div', { style: { fontSize: '40px', marginBottom: '10px' }, text: '🗝' }));
+        empty.appendChild(el('div', { style: { fontSize: '15px', color: 'var(--ink-200)' }, text: 'Chưa có secret nào' }));
+        card.appendChild(empty);
+        return;
+      }
+      secrets.forEach(s => {
+        const row = el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '14px 18px', borderBottom: '1px solid var(--border)', fontSize: '13px' } });
+        row.appendChild(el('div', {}, [
+          el('div', { style: { color: 'var(--ink-100)', fontWeight: '500', fontFamily: 'monospace' },
+                       text: s.name || s.key || '(unnamed)' }),
+          el('div', { style: { fontSize: '11px', color: 'var(--ink-400)', marginTop: '2px' },
+                       text: 'Created: ' + (s.created_at || '—').toString().replace('T',' ').slice(0,16) }),
+        ]));
+        const actions = el('div', { style: { display: 'flex', gap: '6px' } });
+        const reveal = el('button', { style: { padding: '6px 12px', background: 'rgba(125,104,255,0.1)',
+          color: 'var(--indigo,#7d68ff)', border: '1px solid var(--indigo,#7d68ff)',
+          borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }, text: '👁 Reveal' });
+        actions.appendChild(reveal);
+        const rotate = el('button', { style: { padding: '6px 12px', background: 'rgba(253,230,138,0.08)',
+          color: 'var(--gold-l,#facc15)', border: '1px solid var(--gold-l,#facc15)',
+          borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }, text: '↻ Rotate' });
+        actions.appendChild(rotate);
+        row.appendChild(actions);
+        card.appendChild(row);
+      });
+    } catch (e) {
+      card.innerHTML = '<div style="padding:20px;color:#fb7185">Lỗi: ' + e.message + '</div>';
+    }
+  }
+
+  async function idRenderCerts(c) {
+    c.innerHTML = '';
+    const card = el('div', { style: dbCard() });
+    card.appendChild(el('div', { style: { padding: '20px 24px' } }, [
+      el('h3', { style: { fontSize: '17px', color: 'var(--ink-50)', margin: '0 0 6px' },
+                  text: '📱 Mobile Push Certificates' }),
+      el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '14px', lineHeight: '1.6' },
+                 text: 'Upload APNs (iOS) / FCM (Android) cert để app mobile nhận push notification từ Zeni.' }),
+    ]));
+    c.appendChild(card);
+
+    const list = el('div', { id: 'id-certs-list', style: { ...dbCard(), marginTop: '14px' } });
+    list.appendChild(el('div', { style: { padding: '14px 18px', color: 'var(--ink-400)', fontSize: '13px' },
+                                  text: 'Đang tải certs...' }));
+    c.appendChild(list);
+
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+    try {
+      const r = await fetch('/api/v1/identity/mobile-certs/?ws=' + encodeURIComponent(state.currentWs), { headers: auth });
+      const j = await r.json();
+      list.innerHTML = '';
+      const certs = Array.isArray(j) ? j : (j.certs || j.items || []);
+      if (certs.length === 0) {
+        const empty = el('div', { style: { padding: '40px 20px', textAlign: 'center', color: 'var(--ink-400)' } });
+        empty.appendChild(el('div', { style: { fontSize: '40px', marginBottom: '10px' }, text: '📱' }));
+        empty.appendChild(el('div', { style: { fontSize: '15px', color: 'var(--ink-200)' }, text: 'Chưa có cert nào' }));
+        list.appendChild(empty);
+        return;
+      }
+      certs.forEach(cert => {
+        const row = el('div', { style: { padding: '14px 18px', borderBottom: '1px solid var(--border)', fontSize: '13px' } });
+        row.appendChild(el('div', { style: { color: 'var(--ink-100)', fontWeight: '500' },
+                                     text: (cert.platform || '?').toUpperCase() + ' · ' + (cert.bundle_id || cert.name || '—') }));
+        row.appendChild(el('div', { style: { fontSize: '11px', color: 'var(--ink-400)', marginTop: '3px' },
+                                     text: 'Expires: ' + (cert.expires_at || '—').toString().replace('T',' ').slice(0,16) }));
+        list.appendChild(row);
+      });
+    } catch (e) {
+      list.innerHTML = '<div style="padding:20px;color:#fb7185">Lỗi: ' + e.message + '</div>';
+    }
   }
 
   function ctoStartPoll() {
