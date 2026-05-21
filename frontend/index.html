@@ -4300,6 +4300,18 @@ document.addEventListener('keydown', e => {
 
   async function dbRenderDatabases(c) {
     c.innerHTML = '';
+    // Header + "Create DB" button
+    const header = el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' } });
+    header.appendChild(el('div', { style: { color: 'var(--ink-300)', fontSize: '13px' },
+      text: 'Multi-tenant Postgres + pgvector + Object storage. Mỗi DB scope theo workspace schema.' }));
+    const addBtn = el('button', { style: { padding: '10px 18px',
+      background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+      color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
+      fontWeight: '600', fontSize: '14px' }, text: '+ Tạo Database' });
+    addBtn.onclick = () => openCreateDatabaseModal();
+    header.appendChild(addBtn);
+    c.appendChild(header);
+
     const card = el('div', { style: dbCard() });
     card.appendChild(el('div', { style: { padding: '14px 18px', borderBottom: '1px solid var(--border)' } }, [
       el('div', { style: { color: 'var(--ink-400)', fontSize: '13px' }, text: 'Đang tải databases...' })
@@ -4409,9 +4421,17 @@ document.addEventListener('keydown', e => {
                                      text: (t.row_count || t.n_live_tup || 0).toLocaleString() }));
         row.appendChild(el('div', { style: { color: 'var(--ink-300)', fontSize: '12px' },
                                      text: dbFormatSize(t.size_bytes || 0) }));
-        row.appendChild(el('div', { style: { color: 'var(--ink-400)', fontSize: '12px',
-                                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-                                     text: t.description || t.comment || '—' }));
+        const descCol = el('div', { style: { color: 'var(--ink-400)', fontSize: '12px',
+                                             display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' } });
+        descCol.appendChild(el('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+                                          text: t.description || t.comment || '—' }));
+        const schemaBtn = el('button', { style: { padding: '4px 10px',
+          background: 'rgba(34,211,238,0.08)', color: 'var(--aurora,#22d3ee)',
+          border: '1px solid var(--aurora,#22d3ee)', borderRadius: '5px',
+          cursor: 'pointer', fontSize: '11px', flexShrink: '0' }, text: '👁 Schema' });
+        schemaBtn.onclick = (e) => { e.stopPropagation(); openSchemaViewer(t.name || t.table_name); };
+        descCol.appendChild(schemaBtn);
+        row.appendChild(descCol);
         card.appendChild(row);
       });
     } catch (e) {
@@ -5320,12 +5340,20 @@ document.addEventListener('keydown', e => {
     // Header + new campaign
     const header = el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' } });
     header.appendChild(el('h3', { style: { fontSize: '15px', color: 'var(--ink-100)', margin: 0 }, text: '📨 Campaigns' }));
+    const headerBtns = el('div', { style: { display: 'flex', gap: '8px' } });
+    const tmplBtn = el('button', { style: { padding: '10px 14px',
+      background: 'rgba(125,104,255,0.1)', color: 'var(--indigo,#7d68ff)',
+      border: '1px solid var(--indigo,#7d68ff)', borderRadius: '10px', cursor: 'pointer',
+      fontWeight: '600', fontSize: '13px' }, text: '📋 Templates' });
+    tmplBtn.onclick = () => openMailTemplatesModal();
+    headerBtns.appendChild(tmplBtn);
     const newBtn = el('button', { style: { padding: '10px 18px',
       background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
       color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
       fontWeight: '600', fontSize: '14px' }, text: '+ Tạo campaign' });
     newBtn.onclick = () => openCreateCampaignModal();
-    header.appendChild(newBtn);
+    headerBtns.appendChild(newBtn);
+    header.appendChild(headerBtns);
     c.appendChild(header);
 
     // Campaigns list
@@ -5460,12 +5488,20 @@ document.addEventListener('keydown', e => {
     // Header
     const header = el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' } });
     header.appendChild(el('h3', { style: { fontSize: '15px', color: 'var(--ink-100)', margin: 0 }, text: '🎙 Voice Agents (IVR)' }));
+    const headerBtns2 = el('div', { style: { display: 'flex', gap: '8px' } });
+    const ivrBtn = el('button', { style: { padding: '10px 14px',
+      background: 'rgba(125,104,255,0.1)', color: 'var(--indigo,#7d68ff)',
+      border: '1px solid var(--indigo,#7d68ff)', borderRadius: '10px', cursor: 'pointer',
+      fontWeight: '600', fontSize: '13px' }, text: '🔀 IVR Flows' });
+    ivrBtn.onclick = () => openIvrFlowsListModal();
+    headerBtns2.appendChild(ivrBtn);
     const newBtn = el('button', { style: { padding: '10px 18px',
       background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
       color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
       fontWeight: '600', fontSize: '14px' }, text: '+ Tạo voice agent' });
     newBtn.onclick = () => openCreateVoiceAgentModal();
-    header.appendChild(newBtn);
+    headerBtns2.appendChild(newBtn);
+    header.appendChild(headerBtns2);
     c.appendChild(header);
 
     const card = el('div', { id: 'voice-agents-list', style: dbCard() });
@@ -5516,6 +5552,7 @@ document.addEventListener('keydown', e => {
       background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
       color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
       fontWeight: '600', fontSize: '14px' }, text: '+ Tạo topic' });
+    newBtn.onclick = () => openCreateTopicModal();
     header.appendChild(newBtn);
     c.appendChild(header);
 
@@ -5547,6 +5584,29 @@ document.addEventListener('keydown', e => {
             el('div', { style: { fontSize: '11px', color: 'var(--ink-400)', marginTop: '2px' },
                          text: 'Subscribers: ' + (tp.subscription_count || 0) + ' · Messages: ' + (tp.message_count || 0) }),
           ]));
+          const actions = el('div', { style: { display: 'flex', gap: '6px' } });
+          const subsBtn = el('button', { style: { padding: '6px 12px', background: 'rgba(125,104,255,0.1)',
+            color: 'var(--indigo,#7d68ff)', border: '1px solid var(--indigo,#7d68ff)',
+            borderRadius: '6px', cursor: 'pointer', fontSize: '11px' }, text: '👁 Subscriptions' });
+          subsBtn.onclick = () => openTopicSubscriptionsModal(tp);
+          actions.appendChild(subsBtn);
+          const pubBtn = el('button', { style: { padding: '6px 12px', background: 'rgba(34,211,238,0.1)',
+            color: 'var(--aurora,#22d3ee)', border: '1px solid var(--aurora,#22d3ee)',
+            borderRadius: '6px', cursor: 'pointer', fontSize: '11px' }, text: '▶ Publish' });
+          pubBtn.onclick = () => openPublishMessageModal(tp);
+          actions.appendChild(pubBtn);
+          const delBtn = el('button', { style: { padding: '6px 10px', background: 'rgba(251,113,133,0.1)',
+            color: '#fb7185', border: '1px solid rgba(251,113,133,0.3)',
+            borderRadius: '6px', cursor: 'pointer', fontSize: '11px' }, text: '🗑' });
+          delBtn.onclick = async () => {
+            if (!confirm('Xóa topic ' + (tp.name || tp.id) + '? Subscribers sẽ disconnected.')) return;
+            const dr = await fetch('/api/v1/messaging/topics/' + (tp.id || tp.name) + '?ws=' + encodeURIComponent(state.currentWs),
+              { method: 'DELETE', headers: auth });
+            if (dr.ok) { toast('✓ Topic xóa', 'ok'); msgRenderPubSub(c); }
+            else { toast('✗ Xóa fail', 'err'); }
+          };
+          actions.appendChild(delBtn);
+          row.appendChild(actions);
           card.appendChild(row);
         });
       }
@@ -7054,6 +7114,956 @@ document.addEventListener('keydown', e => {
       if (r.ok) { toast('✓ Secret rotated', 'ok'); idRenderSecrets(byId('id-content')); }
       else { const j = await r.json(); toast('Lỗi: ' + (j.detail || r.status), 'err'); }
     } catch (e) { toast('Network: ' + e.message, 'err'); }
+  }
+
+  /* ─── T1 Database Create + Schema Viewer ─────── */
+  function openCreateDatabaseModal() {
+    const body = el('div');
+    body.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '14px' },
+      text: 'Database multi-tenant scope theo workspace schema. Postgres / pgvector / Object storage.' }));
+    body.appendChild(modalLabel('Tên database *'));
+    const nameInp = modalInput({ placeholder: 'vd: customers, orders, products (lowercase + _)' });
+    body.appendChild(nameInp);
+    body.appendChild(modalLabel('Kind (loại)'));
+    const kindSel = modalSelect();
+    [
+      { v: 'postgres', t: '🐘 Postgres (relational data)' },
+      { v: 'vector', t: '🔢 pgvector (embeddings cho RAG)' },
+      { v: 'object', t: '📦 Object Storage (files / images)' },
+    ].forEach(o => kindSel.appendChild(el('option', { value: o.v, text: o.t })));
+    body.appendChild(kindSel);
+    const dimWrap = el('div', { style: { display: 'none' } });
+    dimWrap.appendChild(modalLabel('Vector dimension (1-4096) *'));
+    const dimInp = modalInput({ type: 'number', placeholder: '1536 (OpenAI ada-002) / 768 (sentence-bert)', value: '1536' });
+    dimWrap.appendChild(dimInp);
+    body.appendChild(dimWrap);
+    kindSel.onchange = () => { dimWrap.style.display = kindSel.value === 'vector' ? 'block' : 'none'; };
+    body.appendChild(modalLabel('Description (optional)'));
+    const descInp = modalInput({ placeholder: 'Mô tả mục đích...' });
+    body.appendChild(descInp);
+
+    body.appendChild(modalButtonRow('🗄 Tạo database', async () => {
+      const name = nameInp.value.trim();
+      if (!name) { toast('Cần tên database', 'err'); return; }
+      const payload = { name, kind: kindSel.value, description: descInp.value.trim() || null };
+      if (kindSel.value === 'vector') {
+        const d = parseInt(dimInp.value, 10);
+        if (!d || d < 1 || d > 4096) { toast('Vector dim phải 1-4096', 'err'); return; }
+        payload.dim = d;
+      }
+      modalBusy(true);
+      const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || ''),
+                     'Content-Type': 'application/json' };
+      try {
+        const r = await fetch('/api/v1/data/databases?ws=' + encodeURIComponent(state.currentWs), {
+          method: 'POST', headers: auth, body: JSON.stringify(payload)
+        });
+        const j = await r.json();
+        if (!r.ok) { toast('Lỗi: ' + (j.detail || r.status), 'err'); modalBusy(false); return; }
+        toast('✓ Database tạo OK: ' + j.name, 'ok');
+        modalClose(); dbRenderDatabases(byId('db-content'));
+      } catch (e) { toast('Network: ' + e.message, 'err'); modalBusy(false); }
+    }));
+    modalOpen('🗄 Tạo Database', body);
+    setTimeout(() => nameInp.focus(), 50);
+  }
+
+  async function openSchemaViewer(tableName) {
+    const body = el('div');
+    body.appendChild(el('div', { id: 'schema-viewer-body', style: { color: 'var(--ink-400)', fontSize: '13px' },
+      text: 'Đang tải schema...' }));
+    const closeBtn = el('button', { style: { marginTop: '16px', padding: '8px 16px',
+      background: 'var(--gold-l,#facc15)', color: '#000', border: 'none', borderRadius: '8px',
+      cursor: 'pointer', fontSize: '13px', fontWeight: '600' }, text: 'Đóng' });
+    closeBtn.onclick = () => modalClose();
+    body.appendChild(closeBtn);
+    modalOpen('👁 Schema: ' + tableName, body, { width: '720px' });
+
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+    try {
+      const r = await fetch('/api/v1/data/tables/' + encodeURIComponent(tableName) + '/schema?ws='
+        + encodeURIComponent(state.currentWs), { headers: auth });
+      const j = await r.json();
+      const target = byId('schema-viewer-body');
+      target.innerHTML = '';
+      if (!r.ok) {
+        target.appendChild(el('div', { style: { color: '#fb7185' }, text: 'Lỗi: ' + (j.detail || r.status) }));
+        return;
+      }
+
+      // Stats row
+      target.appendChild(el('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '14px' } }, [
+        schemaStatCard('Columns', (j.columns || []).length, 'var(--ink-50)'),
+        schemaStatCard('Indexes', (j.indexes || []).length, 'var(--indigo,#7d68ff)'),
+        schemaStatCard('Live rows', (j.row_count_estimate || 0).toLocaleString(), 'var(--aurora,#22d3ee)'),
+        schemaStatCard('Dead rows', (j.dead_rows || 0).toLocaleString(), 'var(--gold-l,#facc15)'),
+      ]));
+
+      // Schema info
+      target.appendChild(el('div', { style: { fontSize: '12px', color: 'var(--ink-400)', marginBottom: '14px',
+        fontFamily: 'monospace' },
+        text: j.schema + '.' + j.table + ' · last vacuum: ' + (j.last_autovacuum || j.last_vacuum || 'never') }));
+
+      // Columns table
+      target.appendChild(el('h4', { style: { fontSize: '13px', color: 'var(--gold-l,#facc15)', margin: '12px 0 8px',
+        textTransform: 'uppercase', fontWeight: '700' }, text: '📋 Columns' }));
+      const colsTable = el('div', { style: { background: 'var(--bg-base)', borderRadius: '8px', overflow: 'hidden' } });
+      const colsHdr = el('div', { style: { display: 'grid', gridTemplateColumns: '2fr 1.5fr 80px 1.5fr 80px', gap: '10px',
+        padding: '8px 12px', borderBottom: '1px solid var(--border)',
+        fontSize: '11px', color: 'var(--ink-400)', fontWeight: '700' } });
+      ['Column', 'Type', 'Null', 'Default', 'Max'].forEach(t => colsHdr.appendChild(el('div', { text: t })));
+      colsTable.appendChild(colsHdr);
+      (j.columns || []).forEach(c => {
+        const row = el('div', { style: { display: 'grid', gridTemplateColumns: '2fr 1.5fr 80px 1.5fr 80px', gap: '10px',
+          padding: '8px 12px', borderBottom: '1px solid var(--border)', fontSize: '12px',
+          fontFamily: 'monospace' } });
+        row.appendChild(el('div', { style: { color: 'var(--aurora,#22d3ee)' }, text: c.name }));
+        row.appendChild(el('div', { style: { color: 'var(--ink-200)' }, text: c.type }));
+        row.appendChild(el('div', { style: { color: c.nullable ? 'var(--ink-400)' : '#fb7185' },
+                                     text: c.nullable ? 'YES' : 'NO' }));
+        row.appendChild(el('div', { style: { color: 'var(--ink-300)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+                                     text: c.default || '—' }));
+        row.appendChild(el('div', { style: { color: 'var(--ink-300)' }, text: c.max_length ? String(c.max_length) : '—' }));
+        colsTable.appendChild(row);
+      });
+      target.appendChild(colsTable);
+
+      // Indexes
+      if ((j.indexes || []).length > 0) {
+        target.appendChild(el('h4', { style: { fontSize: '13px', color: 'var(--gold-l,#facc15)', margin: '16px 0 8px',
+          textTransform: 'uppercase', fontWeight: '700' }, text: '⚡ Indexes' }));
+        const idxList = el('div', { style: { background: 'var(--bg-base)', borderRadius: '8px', padding: '8px' } });
+        (j.indexes || []).forEach(idx => {
+          idxList.appendChild(el('div', { style: { padding: '6px 8px', fontSize: '11px', fontFamily: 'monospace' } }, [
+            el('div', { style: { color: 'var(--indigo,#7d68ff)', fontWeight: '600' }, text: idx.name }),
+            el('div', { style: { color: 'var(--ink-300)', marginTop: '2px', wordBreak: 'break-all' },
+                         text: idx.definition }),
+          ]));
+        });
+        target.appendChild(idxList);
+      }
+    } catch (e) {
+      const target = byId('schema-viewer-body');
+      target.innerHTML = '<div style="color:#fb7185">Lỗi: ' + e.message + '</div>';
+    }
+  }
+
+  function schemaStatCard(label, val, color) {
+    const c = el('div', { style: { background: 'var(--bg-base)', border: '1px solid var(--border)',
+      borderRadius: '8px', padding: '10px 12px' } });
+    c.appendChild(el('div', { style: { fontSize: '10px', color: 'var(--ink-400)', textTransform: 'uppercase',
+      fontWeight: '600', letterSpacing: '0.5px', marginBottom: '4px' }, text: label }));
+    c.appendChild(el('div', { style: { fontSize: '18px', color, fontWeight: '700' }, text: String(val) }));
+    return c;
+  }
+
+  /* ─── T5 Pub/Sub Topic + Subscription + Publish ── */
+  function openCreateTopicModal() {
+    const body = el('div');
+    body.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '14px' },
+      text: 'Topic publish/subscribe (fanout). Multiple subscribers nhận cùng message.' }));
+    body.appendChild(modalLabel('Tên topic *'));
+    const nameInp = modalInput({ placeholder: 'vd: orders.created, user.signup, payment.completed' });
+    body.appendChild(nameInp);
+    body.appendChild(modalLabel('Description (optional)'));
+    const descInp = modalInput({ placeholder: 'Mô tả event nào fire vào topic này' });
+    body.appendChild(descInp);
+    body.appendChild(modalLabel('Retention (giây) — bao lâu lưu message khi không có subscriber'));
+    const retInp = modalInput({ type: 'number', value: '604800', placeholder: '604800 = 7 ngày' });
+    body.appendChild(retInp);
+    body.appendChild(modalLabel('Schema validation (JSON Schema, optional)'));
+    const schemaTa = modalTextarea({ placeholder: '{"type":"object","required":["order_id"],...}', style: { minHeight: '100px' } });
+    body.appendChild(schemaTa);
+
+    body.appendChild(modalButtonRow('📨 Tạo topic', async () => {
+      const name = nameInp.value.trim();
+      if (!name) { toast('Cần tên topic', 'err'); return; }
+      const payload = { ws: state.currentWs, name,
+        description: descInp.value.trim() || null,
+        retention_seconds: parseInt(retInp.value || '604800', 10) };
+      const sc = schemaTa.value.trim();
+      if (sc) {
+        try { payload.schema = JSON.parse(sc); }
+        catch (e) { toast('Schema không phải JSON hợp lệ', 'err'); return; }
+      }
+      modalBusy(true);
+      const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || ''),
+                     'Content-Type': 'application/json' };
+      try {
+        const r = await fetch('/api/v1/messaging/topics?ws=' + encodeURIComponent(state.currentWs), {
+          method: 'POST', headers: auth, body: JSON.stringify(payload)
+        });
+        const j = await r.json();
+        if (!r.ok) { toast('Lỗi: ' + (j.detail || r.status), 'err'); modalBusy(false); return; }
+        toast('✓ Topic ' + j.name + ' tạo OK', 'ok');
+        modalClose(); msgRenderPubSub(byId('msg-content'));
+      } catch (e) { toast('Network: ' + e.message, 'err'); modalBusy(false); }
+    }));
+    modalOpen('📨 Tạo Pub/Sub Topic', body, { width: '560px' });
+    setTimeout(() => nameInp.focus(), 50);
+  }
+
+  async function openTopicSubscriptionsModal(topic) {
+    const body = el('div');
+    body.appendChild(el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' } }, [
+      el('div', { style: { fontSize: '13px', color: 'var(--ink-300)' },
+        text: 'Topic: ' + (topic.name || topic.id) }),
+      (() => {
+        const b = el('button', { style: { padding: '8px 14px',
+          background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+          color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer',
+          fontWeight: '600', fontSize: '12px' }, text: '+ Subscription mới' });
+        b.onclick = () => openCreateSubscriptionModal(topic);
+        return b;
+      })()
+    ]));
+    const list = el('div', { id: 'subs-list', style: { background: 'var(--bg-base)', borderRadius: '8px',
+      maxHeight: '400px', overflowY: 'auto' } });
+    list.appendChild(el('div', { style: { padding: '14px', color: 'var(--ink-400)', fontSize: '13px' },
+      text: 'Đang tải subscriptions...' }));
+    body.appendChild(list);
+    const closeBtn = el('button', { style: { marginTop: '16px', padding: '8px 16px',
+      background: 'var(--gold-l,#facc15)', color: '#000', border: 'none', borderRadius: '8px',
+      cursor: 'pointer', fontSize: '13px', fontWeight: '600' }, text: 'Đóng' });
+    closeBtn.onclick = () => modalClose();
+    body.appendChild(closeBtn);
+    modalOpen('👁 Subscriptions: ' + (topic.name || topic.id), body, { width: '680px' });
+
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+    try {
+      const r = await fetch('/api/v1/messaging/topics/' + (topic.id || topic.name) + '/subscriptions?ws=' + encodeURIComponent(state.currentWs),
+        { headers: auth });
+      const j = await r.json();
+      list.innerHTML = '';
+      const subs = Array.isArray(j) ? j : (j.subscriptions || j.items || []);
+      if (subs.length === 0) {
+        list.appendChild(el('div', { style: { padding: '24px', textAlign: 'center', color: 'var(--ink-400)' } }, [
+          el('div', { style: { fontSize: '28px', marginBottom: '6px' }, text: '🔔' }),
+          el('div', { style: { fontSize: '13px' }, text: 'Chưa có subscription' }),
+        ]));
+        return;
+      }
+      subs.forEach(s => {
+        const row = el('div', { style: { padding: '12px 16px', borderBottom: '1px solid var(--border)',
+          fontSize: '13px' } });
+        row.appendChild(el('div', { style: { color: 'var(--ink-100)', fontWeight: '500' }, text: s.name || s.id }));
+        row.appendChild(el('div', { style: { fontSize: '11px', color: 'var(--ink-400)', marginTop: '3px' },
+          text: (s.delivery_type || 'pull') + ' · ' + (s.webhook_url || 'no webhook') + ' · max_retry=' + (s.max_retry_count || 5) }));
+        list.appendChild(row);
+      });
+    } catch (e) {
+      list.innerHTML = '<div style="padding:14px;color:#fb7185">Lỗi: ' + e.message + '</div>';
+    }
+  }
+
+  function openCreateSubscriptionModal(topic) {
+    modalClose();
+    const body = el('div');
+    body.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '14px' },
+      text: 'Subscription nhận messages từ topic ' + (topic.name || topic.id) }));
+    body.appendChild(modalLabel('Tên subscription *'));
+    const nameInp = modalInput({ placeholder: 'vd: order-notifier, audit-logger' });
+    body.appendChild(nameInp);
+    body.appendChild(modalLabel('Delivery type'));
+    const delSel = modalSelect();
+    [
+      { v: 'push', t: '⬆ Push (Zeni gọi webhook khi có message)' },
+      { v: 'pull', t: '⬇ Pull (consumer tự fetch định kỳ)' },
+    ].forEach(o => delSel.appendChild(el('option', { value: o.v, text: o.t })));
+    body.appendChild(delSel);
+    body.appendChild(modalLabel('Webhook URL (chỉ cần khi delivery=push)'));
+    const urlInp = modalInput({ placeholder: 'https://your-service.run.app/api/handle-event' });
+    body.appendChild(urlInp);
+    body.appendChild(modalLabel('Webhook secret (HMAC signature, optional)'));
+    const secInp = modalInput({ type: 'password', placeholder: 'Random secret để verify Zeni gửi' });
+    body.appendChild(secInp);
+    body.appendChild(modalLabel('Filter expression (optional, vd: attribute.type==="urgent")'));
+    const filterInp = modalInput({ placeholder: 'attribute.priority>0' });
+    body.appendChild(filterInp);
+    const row = el('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' } });
+    const rWrap = el('div'); rWrap.appendChild(modalLabel('Max retry'));
+    const rInp = modalInput({ type: 'number', value: '5', min: '0', max: '20' }); rWrap.appendChild(rInp);
+    row.appendChild(rWrap);
+    const aWrap = el('div'); aWrap.appendChild(modalLabel('ACK deadline (giây)'));
+    const aInp = modalInput({ type: 'number', value: '60', min: '10', max: '600' }); aWrap.appendChild(aInp);
+    row.appendChild(aWrap);
+    body.appendChild(row);
+
+    body.appendChild(modalButtonRow('🔔 Tạo subscription', async () => {
+      const name = nameInp.value.trim();
+      if (!name) { toast('Cần tên subscription', 'err'); return; }
+      if (delSel.value === 'push' && !urlInp.value.trim()) { toast('Push subscription cần webhook URL', 'err'); return; }
+      modalBusy(true);
+      const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || ''),
+                     'Content-Type': 'application/json' };
+      try {
+        const r = await fetch('/api/v1/messaging/topics/' + (topic.id || topic.name) + '/subscriptions?ws=' + encodeURIComponent(state.currentWs), {
+          method: 'POST', headers: auth,
+          body: JSON.stringify({ name, delivery_type: delSel.value,
+            webhook_url: urlInp.value.trim() || null,
+            webhook_secret: secInp.value.trim() || null,
+            filter_expression: filterInp.value.trim() || null,
+            max_retry_count: parseInt(rInp.value || '5', 10),
+            ack_deadline_seconds: parseInt(aInp.value || '60', 10),
+            enabled: true })
+        });
+        const j = await r.json();
+        if (!r.ok) { toast('Lỗi: ' + (j.detail || r.status), 'err'); modalBusy(false); return; }
+        toast('✓ Subscription tạo OK', 'ok');
+        modalClose(); openTopicSubscriptionsModal(topic);
+      } catch (e) { toast('Network: ' + e.message, 'err'); modalBusy(false); }
+    }));
+    modalOpen('🔔 Tạo Subscription', body, { width: '560px' });
+  }
+
+  /* ─── T4 Mail Templates list + WYSIWYG editor ────── */
+  async function openMailTemplatesModal() {
+    const body = el('div');
+    body.appendChild(el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' } }, [
+      el('div', { style: { fontSize: '13px', color: 'var(--ink-300)' },
+        text: 'Email templates reusable. Variables {{name}}, {{email}} render runtime.' }),
+      (() => {
+        const b = el('button', { style: { padding: '8px 14px',
+          background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+          color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer',
+          fontWeight: '600', fontSize: '12px' }, text: '+ Tạo template' });
+        b.onclick = () => { modalClose(); openCreateTemplateModal(); };
+        return b;
+      })()
+    ]));
+    const list = el('div', { id: 'mail-tmpl-list', style: { background: 'var(--bg-base)', borderRadius: '8px',
+      maxHeight: '440px', overflowY: 'auto' } });
+    list.appendChild(el('div', { style: { padding: '14px', color: 'var(--ink-400)', fontSize: '13px' },
+      text: 'Đang tải templates...' }));
+    body.appendChild(list);
+    const closeBtn = el('button', { style: { marginTop: '14px', padding: '8px 16px',
+      background: 'var(--gold-l,#facc15)', color: '#000', border: 'none', borderRadius: '8px',
+      cursor: 'pointer', fontSize: '13px', fontWeight: '600' }, text: 'Đóng' });
+    closeBtn.onclick = () => modalClose();
+    body.appendChild(closeBtn);
+    modalOpen('📋 Mail Templates', body, { width: '780px' });
+
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+    try {
+      const r = await fetch('/api/v1/mail/templates?ws=' + encodeURIComponent(state.currentWs), { headers: auth });
+      const j = await r.json();
+      list.innerHTML = '';
+      const tpls = Array.isArray(j) ? j : (j.templates || j.items || []);
+      if (tpls.length === 0) {
+        list.appendChild(el('div', { style: { padding: '32px 16px', textAlign: 'center', color: 'var(--ink-400)' } }, [
+          el('div', { style: { fontSize: '32px', marginBottom: '6px' }, text: '📋' }),
+          el('div', { style: { fontSize: '13px' }, text: 'Chưa có template' }),
+        ]));
+        return;
+      }
+      tpls.forEach(t => {
+        const row = el('div', { style: { padding: '12px 16px', borderBottom: '1px solid var(--border)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' } });
+        row.appendChild(el('div', {}, [
+          el('div', { style: { color: 'var(--ink-100)', fontWeight: '500' }, text: t.name || '(unnamed)' }),
+          el('div', { style: { fontSize: '11px', color: 'var(--ink-400)', marginTop: '3px' },
+            text: 'Subject: ' + (t.subject || '—') + ' · Category: ' + (t.category || 'general') }),
+        ]));
+        const actions = el('div', { style: { display: 'flex', gap: '6px' } });
+        const previewBtn = el('button', { style: { padding: '5px 10px', background: 'rgba(34,211,238,0.08)',
+          color: 'var(--aurora,#22d3ee)', border: '1px solid var(--aurora,#22d3ee)',
+          borderRadius: '5px', cursor: 'pointer', fontSize: '11px' }, text: '👁 Preview' });
+        previewBtn.onclick = () => openTemplatePreviewModal(t);
+        actions.appendChild(previewBtn);
+        const editBtn = el('button', { style: { padding: '5px 10px', background: 'rgba(125,104,255,0.08)',
+          color: 'var(--indigo,#7d68ff)', border: '1px solid var(--indigo,#7d68ff)',
+          borderRadius: '5px', cursor: 'pointer', fontSize: '11px' }, text: '✎ Edit' });
+        editBtn.onclick = () => { modalClose(); openCreateTemplateModal(t); };
+        actions.appendChild(editBtn);
+        const delBtn = el('button', { style: { padding: '5px 10px', background: 'rgba(251,113,133,0.08)',
+          color: '#fb7185', border: '1px solid rgba(251,113,133,0.3)',
+          borderRadius: '5px', cursor: 'pointer', fontSize: '11px' }, text: '🗑' });
+        delBtn.onclick = async () => {
+          if (!confirm('Xóa template ' + (t.name || '?') + '?')) return;
+          const dr = await fetch('/api/v1/mail/templates/' + t.id + '?ws=' + encodeURIComponent(state.currentWs),
+            { method: 'DELETE', headers: auth });
+          if (dr.ok) { toast('✓ Xóa template', 'ok'); openMailTemplatesModal(); }
+        };
+        actions.appendChild(delBtn);
+        row.appendChild(actions);
+        list.appendChild(row);
+      });
+    } catch (e) {
+      list.innerHTML = '<div style="padding:14px;color:#fb7185">Lỗi: ' + e.message + '</div>';
+    }
+  }
+
+  function openCreateTemplateModal(existing) {
+    const body = el('div');
+    body.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '12px' },
+      text: 'WYSIWYG editor — chèn biến {{name}}, {{email}}, {{order_id}} render runtime.' }));
+
+    body.appendChild(modalLabel('Template name *'));
+    const nameInp = modalInput({ placeholder: 'vd: welcome-email, order-confirmation', value: existing?.name || '' });
+    body.appendChild(nameInp);
+    body.appendChild(modalLabel('Subject *'));
+    const subjInp = modalInput({ placeholder: 'Welcome {{name}} — Zeni Cloud', value: existing?.subject || '' });
+    body.appendChild(subjInp);
+    body.appendChild(modalLabel('Category'));
+    const catSel = modalSelect();
+    ['general', 'transactional', 'marketing', 'system', 'onboarding'].forEach(c => {
+      const o = el('option', { value: c, text: c });
+      if (existing?.category === c) o.selected = true;
+      catSel.appendChild(o);
+    });
+    body.appendChild(catSel);
+
+    // WYSIWYG toolbar
+    body.appendChild(modalLabel('Email body (HTML rich text)'));
+    const toolbar = el('div', { style: { display: 'flex', gap: '4px', flexWrap: 'wrap',
+      background: 'var(--bg-base)', padding: '6px 8px', borderRadius: '8px 8px 0 0',
+      border: '1px solid var(--border)', borderBottom: 'none' } });
+    const editor = el('div', { contenteditable: 'true', style: {
+      width: '100%', minHeight: '220px', maxHeight: '380px', overflowY: 'auto',
+      padding: '14px', background: 'var(--bg-base)', color: 'var(--ink-50)',
+      border: '1px solid var(--border)', borderRadius: '0 0 8px 8px',
+      fontSize: '14px', lineHeight: '1.6', outline: 'none',
+      fontFamily: 'system-ui, sans-serif' } });
+    editor.innerHTML = existing?.body_html || '<h2>Hello {{name}} 👋</h2><p>Welcome to <strong>Zeni Cloud</strong>!</p><p>Get started: <a href="https://zenicloud.io/app">https://zenicloud.io/app</a></p>';
+
+    const addTbBtn = (label, title, cmd, arg) => {
+      const b = el('button', { type: 'button', style: { padding: '5px 10px',
+        background: 'var(--bg-card,#14142a)', color: 'var(--ink-100)',
+        border: '1px solid var(--border)', borderRadius: '5px', cursor: 'pointer',
+        fontSize: '12px', fontWeight: '600' }, text: label, title });
+      b.onmousedown = (e) => { e.preventDefault(); document.execCommand(cmd, false, arg || null); editor.focus(); };
+      toolbar.appendChild(b);
+    };
+    addTbBtn('B', 'Bold (Ctrl+B)', 'bold');
+    addTbBtn('I', 'Italic', 'italic');
+    addTbBtn('U', 'Underline', 'underline');
+    toolbar.appendChild(el('div', { style: { width: '1px', background: 'var(--border)' } }));
+    addTbBtn('H1', 'Heading 1', 'formatBlock', '<h1>');
+    addTbBtn('H2', 'Heading 2', 'formatBlock', '<h2>');
+    addTbBtn('P', 'Paragraph', 'formatBlock', '<p>');
+    toolbar.appendChild(el('div', { style: { width: '1px', background: 'var(--border)' } }));
+    addTbBtn('•', 'Bullet list', 'insertUnorderedList');
+    addTbBtn('1.', 'Numbered list', 'insertOrderedList');
+    toolbar.appendChild(el('div', { style: { width: '1px', background: 'var(--border)' } }));
+    const linkBtn = el('button', { type: 'button', style: { padding: '5px 10px',
+      background: 'var(--bg-card,#14142a)', color: 'var(--aurora,#22d3ee)',
+      border: '1px solid var(--border)', borderRadius: '5px', cursor: 'pointer',
+      fontSize: '12px' }, text: '🔗 Link', title: 'Insert link' });
+    linkBtn.onmousedown = (e) => {
+      e.preventDefault();
+      const url = prompt('URL:'); if (url) document.execCommand('createLink', false, url);
+      editor.focus();
+    };
+    toolbar.appendChild(linkBtn);
+    const imgBtn = el('button', { type: 'button', style: { padding: '5px 10px',
+      background: 'var(--bg-card,#14142a)', color: 'var(--gold-l,#facc15)',
+      border: '1px solid var(--border)', borderRadius: '5px', cursor: 'pointer',
+      fontSize: '12px' }, text: '🖼 Image', title: 'Insert image URL' });
+    imgBtn.onmousedown = (e) => {
+      e.preventDefault();
+      const url = prompt('Image URL:'); if (url) document.execCommand('insertImage', false, url);
+      editor.focus();
+    };
+    toolbar.appendChild(imgBtn);
+    toolbar.appendChild(el('div', { style: { width: '1px', background: 'var(--border)' } }));
+    // Variable inserter
+    const varSel = el('select', { style: { padding: '5px 8px',
+      background: 'var(--bg-card,#14142a)', color: 'var(--crown,#a855f7)',
+      border: '1px solid var(--crown,#a855f7)', borderRadius: '5px', cursor: 'pointer',
+      fontSize: '12px', fontWeight: '600' } });
+    varSel.appendChild(el('option', { value: '', text: '+ Insert variable' }));
+    ['{{name}}', '{{email}}', '{{first_name}}', '{{order_id}}', '{{amount}}', '{{date}}', '{{company}}', '{{phone}}'].forEach(v =>
+      varSel.appendChild(el('option', { value: v, text: v })));
+    varSel.onchange = () => {
+      if (varSel.value) { document.execCommand('insertText', false, varSel.value); varSel.value = ''; editor.focus(); }
+    };
+    toolbar.appendChild(varSel);
+
+    body.appendChild(toolbar);
+    body.appendChild(editor);
+
+    body.appendChild(modalLabel('Plain text fallback (auto-generate nếu để trống)'));
+    const textTa = modalTextarea({ placeholder: 'Plain text version cho email client không support HTML',
+      value: existing?.body_text || '', style: { minHeight: '60px' } });
+    body.appendChild(textTa);
+
+    body.appendChild(modalButtonRow(existing ? '💾 Lưu thay đổi' : '📋 Tạo template', async () => {
+      const name = nameInp.value.trim();
+      const subj = subjInp.value.trim();
+      const html = editor.innerHTML.trim();
+      if (!name || !subj || !html || html === '<br>') { toast('Cần name + subject + body', 'err'); return; }
+      modalBusy(true);
+      const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || ''),
+                     'Content-Type': 'application/json' };
+      const payload = { ws: state.currentWs, name, subject: subj,
+        body_html: html, body_text: textTa.value.trim() || null,
+        category: catSel.value };
+      try {
+        const url = existing
+          ? '/api/v1/mail/templates/' + existing.id + '?ws=' + encodeURIComponent(state.currentWs)
+          : '/api/v1/mail/templates?ws=' + encodeURIComponent(state.currentWs);
+        const r = await fetch(url, {
+          method: existing ? 'PATCH' : 'POST', headers: auth, body: JSON.stringify(payload)
+        });
+        const j = await r.json();
+        if (!r.ok) { toast('Lỗi: ' + (j.detail || r.status), 'err'); modalBusy(false); return; }
+        toast('✓ Template ' + (existing ? 'cập nhật' : 'tạo') + ' OK', 'ok');
+        modalClose(); openMailTemplatesModal();
+      } catch (e) { toast('Network: ' + e.message, 'err'); modalBusy(false); }
+    }));
+    modalOpen(existing ? '✎ Edit Template' : '📋 Tạo Mail Template', body, { width: '760px' });
+  }
+
+  async function openTemplatePreviewModal(template) {
+    const body = el('div');
+    body.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '10px' },
+      text: 'Preview với sample data — bên backend sẽ render đúng theo data thật khi gửi.' }));
+    body.appendChild(modalLabel('Sample data (JSON)'));
+    const sampleTa = modalTextarea({
+      value: JSON.stringify({ name: 'Cao Tuấn', email: 'tuan@zenicloud.io', first_name: 'Tuấn',
+        order_id: 'ORD-12345', amount: '1.500.000 VND', company: 'Zeni Cloud' }, null, 2),
+      style: { minHeight: '140px', fontFamily: 'monospace', fontSize: '12px' }
+    });
+    body.appendChild(sampleTa);
+    const renderBtn = el('button', { style: { padding: '8px 16px', marginBottom: '12px',
+      background: 'rgba(125,104,255,0.1)', color: 'var(--indigo,#7d68ff)',
+      border: '1px solid var(--indigo,#7d68ff)', borderRadius: '8px',
+      cursor: 'pointer', fontSize: '13px' }, text: '▶ Render preview' });
+    body.appendChild(renderBtn);
+
+    body.appendChild(modalLabel('Subject (rendered)'));
+    const subjOut = el('div', { id: 'tmpl-subj-out', style: { padding: '10px 14px',
+      background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: '6px',
+      color: 'var(--ink-100)', marginBottom: '12px', fontSize: '14px' }, text: '(click Render)' });
+    body.appendChild(subjOut);
+
+    body.appendChild(modalLabel('Body (rendered HTML)'));
+    const bodyOut = el('div', { id: 'tmpl-body-out', style: { padding: '16px',
+      background: '#fff', color: '#000', borderRadius: '8px', minHeight: '200px',
+      maxHeight: '380px', overflowY: 'auto', fontSize: '14px' }, text: '(click Render)' });
+    body.appendChild(bodyOut);
+
+    const closeBtn = el('button', { style: { marginTop: '14px', padding: '8px 16px',
+      background: 'var(--gold-l,#facc15)', color: '#000', border: 'none', borderRadius: '8px',
+      cursor: 'pointer', fontSize: '13px', fontWeight: '600' }, text: 'Đóng' });
+    closeBtn.onclick = () => modalClose();
+    body.appendChild(closeBtn);
+
+    const doRender = async () => {
+      let sample;
+      try { sample = JSON.parse(sampleTa.value); }
+      catch (e) { toast('Sample không phải JSON', 'err'); return; }
+      const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || ''),
+                     'Content-Type': 'application/json' };
+      renderBtn.disabled = true; renderBtn.textContent = '…rendering';
+      try {
+        const r = await fetch('/api/v1/mail/templates/' + template.id + '/preview?ws=' + encodeURIComponent(state.currentWs),
+          { method: 'POST', headers: auth, body: JSON.stringify({ variables: sample }) });
+        const j = await r.json();
+        if (r.ok) {
+          subjOut.textContent = j.subject || template.subject;
+          bodyOut.innerHTML = j.body_html || template.body_html;
+        } else {
+          // Fallback: client-side mustache-like render
+          let subj = template.subject || '';
+          let html = template.body_html || '';
+          Object.entries(sample).forEach(([k, v]) => {
+            const re = new RegExp('\\{\\{\\s*' + k + '\\s*\\}\\}', 'g');
+            subj = subj.replace(re, String(v));
+            html = html.replace(re, String(v));
+          });
+          subjOut.textContent = subj;
+          bodyOut.innerHTML = html;
+        }
+      } catch (e) { toast('Network: ' + e.message, 'err'); }
+      renderBtn.disabled = false; renderBtn.textContent = '▶ Render preview';
+    };
+    renderBtn.onclick = doRender;
+    modalOpen('👁 Preview: ' + (template.name || template.id), body, { width: '720px' });
+    setTimeout(doRender, 100);
+  }
+
+  /* ─── T3 Voice IVR Flow Builder ──────────────── */
+  async function openIvrFlowsListModal() {
+    const body = el('div');
+    body.appendChild(el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' } }, [
+      el('div', { style: { fontSize: '13px', color: 'var(--ink-300)' },
+        text: 'IVR flows route inbound calls: greeting → menu → queue → voicemail.' }),
+      (() => {
+        const b = el('button', { style: { padding: '8px 14px',
+          background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+          color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer',
+          fontWeight: '600', fontSize: '12px' }, text: '+ Tạo flow' });
+        b.onclick = () => { modalClose(); openIvrFlowBuilderModal(); };
+        return b;
+      })()
+    ]));
+    const list = el('div', { id: 'ivr-flows-list', style: { background: 'var(--bg-base)', borderRadius: '8px',
+      maxHeight: '440px', overflowY: 'auto' } });
+    list.appendChild(el('div', { style: { padding: '14px', color: 'var(--ink-400)', fontSize: '13px' },
+      text: 'Đang tải IVR flows...' }));
+    body.appendChild(list);
+    const closeBtn = el('button', { style: { marginTop: '14px', padding: '8px 16px',
+      background: 'var(--gold-l,#facc15)', color: '#000', border: 'none', borderRadius: '8px',
+      cursor: 'pointer', fontSize: '13px', fontWeight: '600' }, text: 'Đóng' });
+    closeBtn.onclick = () => modalClose();
+    body.appendChild(closeBtn);
+    modalOpen('🔀 IVR Flows', body, { width: '720px' });
+
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+    try {
+      const r = await fetch('/api/v1/voice/ivr/flows?ws=' + encodeURIComponent(state.currentWs), { headers: auth });
+      const j = await r.json();
+      list.innerHTML = '';
+      const flows = Array.isArray(j) ? j : (j.flows || j.items || []);
+      if (flows.length === 0) {
+        list.appendChild(el('div', { style: { padding: '32px 16px', textAlign: 'center', color: 'var(--ink-400)' } }, [
+          el('div', { style: { fontSize: '32px', marginBottom: '6px' }, text: '🔀' }),
+          el('div', { style: { fontSize: '13px' }, text: 'Chưa có IVR flow' }),
+        ]));
+        return;
+      }
+      flows.forEach(f => {
+        const row = el('div', { style: { padding: '12px 16px', borderBottom: '1px solid var(--border)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' } });
+        row.appendChild(el('div', {}, [
+          el('div', { style: { color: 'var(--ink-100)', fontWeight: '500' }, text: f.name || '(unnamed)' }),
+          el('div', { style: { fontSize: '11px', color: 'var(--ink-400)', marginTop: '3px' },
+            text: (f.nodes ? f.nodes.length : 0) + ' nodes · ' + (f.is_active ? '🟢 ACTIVE' : '⚫ INACTIVE') + ' · ' + (f.associated_number_id || 'no number') }),
+        ]));
+        const actions = el('div', { style: { display: 'flex', gap: '6px' } });
+        const editBtn = el('button', { style: { padding: '5px 10px', background: 'rgba(125,104,255,0.08)',
+          color: 'var(--indigo,#7d68ff)', border: '1px solid var(--indigo,#7d68ff)',
+          borderRadius: '5px', cursor: 'pointer', fontSize: '11px' }, text: '✎ Edit' });
+        editBtn.onclick = () => { modalClose(); openIvrFlowBuilderModal(f); };
+        actions.appendChild(editBtn);
+        const testBtn = el('button', { style: { padding: '5px 10px', background: 'rgba(34,211,238,0.08)',
+          color: 'var(--aurora,#22d3ee)', border: '1px solid var(--aurora,#22d3ee)',
+          borderRadius: '5px', cursor: 'pointer', fontSize: '11px' }, text: '▶ Test call' });
+        testBtn.onclick = () => openIvrTestModal(f);
+        actions.appendChild(testBtn);
+        const delBtn = el('button', { style: { padding: '5px 10px', background: 'rgba(251,113,133,0.08)',
+          color: '#fb7185', border: '1px solid rgba(251,113,133,0.3)',
+          borderRadius: '5px', cursor: 'pointer', fontSize: '11px' }, text: '🗑' });
+        delBtn.onclick = async () => {
+          if (!confirm('Xóa IVR flow "' + (f.name || '?') + '"? Calls đang routing qua sẽ fail.')) return;
+          const dr = await fetch('/api/v1/voice/ivr/flows/' + f.id + '?ws=' + encodeURIComponent(state.currentWs),
+            { method: 'DELETE', headers: auth });
+          if (dr.ok) { toast('✓ Xóa flow', 'ok'); openIvrFlowsListModal(); }
+        };
+        actions.appendChild(delBtn);
+        row.appendChild(actions);
+        list.appendChild(row);
+      });
+    } catch (e) {
+      list.innerHTML = '<div style="padding:14px;color:#fb7185">Lỗi: ' + e.message + '</div>';
+    }
+  }
+
+  function openIvrFlowBuilderModal(existing) {
+    // State: nodes array, each node = { id, type, config }
+    const nodes = (existing?.nodes || [
+      { id: 'n1', type: 'greeting', config: { message: 'Xin chào, bạn đã gọi đến Zeni Cloud.' } },
+    ]).map((n, i) => ({ ...n, id: n.id || ('n' + (i + 1)) }));
+
+    const body = el('div');
+    body.appendChild(modalLabel('Tên flow *'));
+    const nameInp = modalInput({ placeholder: 'vd: main-line, sales-line', value: existing?.name || '' });
+    body.appendChild(nameInp);
+
+    body.appendChild(modalLabel('Welcome TTS message'));
+    const wmInp = modalInput({ placeholder: 'Câu chào đầu', value: existing?.welcome_message || '' });
+    body.appendChild(wmInp);
+
+    // Node palette
+    body.appendChild(modalLabel('IVR nodes (drag để sort, click để config)'));
+    const palette = el('div', { style: { display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' } });
+    const nodeTypes = [
+      { kind: 'greeting', label: '👋 Greeting', icon: '👋' },
+      { kind: 'menu', label: '🔢 Menu (DTMF)', icon: '🔢' },
+      { kind: 'queue', label: '👥 Queue', icon: '👥' },
+      { kind: 'voicemail', label: '📩 Voicemail', icon: '📩' },
+      { kind: 'transfer', label: '↪ Transfer', icon: '↪' },
+      { kind: 'hangup', label: '⏹ Hangup', icon: '⏹' },
+    ];
+    nodeTypes.forEach(nt => {
+      const b = el('button', { type: 'button', style: { padding: '6px 11px',
+        background: 'var(--bg-base)', color: 'var(--ink-200)', border: '1px solid var(--border)',
+        borderRadius: '14px', cursor: 'pointer', fontSize: '12px' }, text: '+ ' + nt.label });
+      b.onclick = () => {
+        nodes.push({ id: 'n' + (nodes.length + 1) + Date.now().toString(36),
+          type: nt.kind, config: defaultConfigForNode(nt.kind) });
+        renderNodesList();
+      };
+      palette.appendChild(b);
+    });
+    body.appendChild(palette);
+
+    // Nodes vertical flow
+    const nodesContainer = el('div', { id: 'ivr-nodes-container', style: { background: 'var(--bg-base)',
+      borderRadius: '10px', padding: '12px', minHeight: '260px', maxHeight: '380px', overflowY: 'auto' } });
+    body.appendChild(nodesContainer);
+
+    function renderNodesList() {
+      nodesContainer.innerHTML = '';
+      if (nodes.length === 0) {
+        nodesContainer.appendChild(el('div', { style: { padding: '40px', textAlign: 'center', color: 'var(--ink-400)', fontSize: '13px' },
+          text: 'Chưa có node — click "+ Greeting" để thêm node đầu' }));
+        return;
+      }
+      nodes.forEach((n, idx) => {
+        const card = el('div', { style: { background: 'var(--bg-card,#14142a)',
+          border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 12px',
+          marginBottom: '8px', display: 'flex', gap: '10px', alignItems: 'center' } });
+        const ico = nodeTypes.find(t => t.kind === n.type)?.icon || '⬛';
+        card.appendChild(el('div', { style: { fontSize: '20px', flexShrink: '0' }, text: ico }));
+        const info = el('div', { style: { flex: '1', minWidth: 0 } });
+        info.appendChild(el('div', { style: { fontSize: '12px', color: 'var(--ink-400)',
+          textTransform: 'uppercase', fontWeight: '600' }, text: 'Bước ' + (idx + 1) + ' · ' + n.type }));
+        info.appendChild(el('div', { style: { fontSize: '13px', color: 'var(--ink-100)', marginTop: '2px',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+          text: summarizeNode(n) }));
+        card.appendChild(info);
+        const actions = el('div', { style: { display: 'flex', gap: '4px', flexShrink: '0' } });
+        const upBtn = el('button', { type: 'button', style: { padding: '4px 8px', background: 'transparent',
+          color: 'var(--ink-300)', border: '1px solid var(--border)', borderRadius: '4px',
+          cursor: 'pointer', fontSize: '11px' }, text: '↑' });
+        upBtn.disabled = idx === 0; upBtn.onclick = () => { swap(idx, idx - 1); };
+        actions.appendChild(upBtn);
+        const downBtn = el('button', { type: 'button', style: { padding: '4px 8px', background: 'transparent',
+          color: 'var(--ink-300)', border: '1px solid var(--border)', borderRadius: '4px',
+          cursor: 'pointer', fontSize: '11px' }, text: '↓' });
+        downBtn.disabled = idx === nodes.length - 1; downBtn.onclick = () => { swap(idx, idx + 1); };
+        actions.appendChild(downBtn);
+        const cfgBtn = el('button', { type: 'button', style: { padding: '4px 8px', background: 'rgba(125,104,255,0.08)',
+          color: 'var(--indigo,#7d68ff)', border: '1px solid var(--indigo,#7d68ff)',
+          borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }, text: '⚙' });
+        cfgBtn.onclick = () => openNodeConfigModal(n, () => renderNodesList());
+        actions.appendChild(cfgBtn);
+        const xBtn = el('button', { type: 'button', style: { padding: '4px 8px', background: 'rgba(251,113,133,0.08)',
+          color: '#fb7185', border: '1px solid rgba(251,113,133,0.3)',
+          borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }, text: '×' });
+        xBtn.onclick = () => { nodes.splice(idx, 1); renderNodesList(); };
+        actions.appendChild(xBtn);
+        card.appendChild(actions);
+        nodesContainer.appendChild(card);
+
+        // Arrow between nodes
+        if (idx < nodes.length - 1) {
+          nodesContainer.appendChild(el('div', { style: { textAlign: 'center', color: 'var(--ink-400)',
+            fontSize: '14px', margin: '-2px 0' }, text: '↓' }));
+        }
+      });
+    }
+    function swap(a, b) {
+      [nodes[a], nodes[b]] = [nodes[b], nodes[a]];
+      renderNodesList();
+    }
+
+    renderNodesList();
+
+    // Active toggle
+    const activeRow = el('div', { style: { marginTop: '12px', display: 'flex', alignItems: 'center', gap: '10px' } });
+    const activeChk = el('input', { type: 'checkbox', checked: existing ? existing.is_active : true });
+    activeRow.appendChild(activeChk);
+    activeRow.appendChild(el('label', { style: { fontSize: '13px', color: 'var(--ink-200)' },
+      text: 'Activate flow ngay (route inbound calls qua flow này)' }));
+    body.appendChild(activeRow);
+
+    body.appendChild(modalButtonRow(existing ? '💾 Lưu' : '🔀 Tạo flow', async () => {
+      const name = nameInp.value.trim();
+      if (!name) { toast('Cần tên flow', 'err'); return; }
+      if (nodes.length === 0) { toast('Thêm ít nhất 1 node', 'err'); return; }
+      modalBusy(true);
+      const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || ''),
+                     'Content-Type': 'application/json' };
+      const payload = { name, welcome_message: wmInp.value.trim() || null,
+        nodes, is_active: activeChk.checked };
+      try {
+        const url = existing
+          ? '/api/v1/voice/ivr/flows/' + existing.id + '?ws=' + encodeURIComponent(state.currentWs)
+          : '/api/v1/voice/ivr/flows?ws=' + encodeURIComponent(state.currentWs);
+        const r = await fetch(url, {
+          method: existing ? 'PATCH' : 'POST', headers: auth, body: JSON.stringify(payload)
+        });
+        const j = await r.json();
+        if (!r.ok) { toast('Lỗi: ' + (j.detail || r.status), 'err'); modalBusy(false); return; }
+        toast('✓ Flow ' + (existing ? 'cập nhật' : 'tạo') + ' OK', 'ok');
+        modalClose(); openIvrFlowsListModal();
+      } catch (e) { toast('Network: ' + e.message, 'err'); modalBusy(false); }
+    }));
+    modalOpen(existing ? '✎ Edit IVR Flow' : '🔀 Tạo IVR Flow', body, { width: '720px' });
+  }
+
+  function defaultConfigForNode(kind) {
+    const m = {
+      greeting: { message: 'Chào mừng đến với dịch vụ.', voice: 'vi-VN-female-1' },
+      menu: { prompt: 'Bấm 1 để gặp Sales, bấm 2 để Support, bấm 0 để gặp operator.',
+              options: [{ digit: '1', goto: 'queue_sales' }, { digit: '2', goto: 'queue_support' }, { digit: '0', goto: 'voicemail' }],
+              timeout_seconds: 10 },
+      queue: { name: 'queue_general', max_wait_seconds: 180, fallback: 'voicemail' },
+      voicemail: { greeting: 'Hãy để lại lời nhắn sau tiếng bíp.', max_seconds: 120 },
+      transfer: { target: '+84901234567' },
+      hangup: { message: 'Cảm ơn đã gọi. Tạm biệt.' },
+    };
+    return m[kind] || {};
+  }
+
+  function summarizeNode(n) {
+    const c = n.config || {};
+    if (n.type === 'greeting') return c.message || '(no message)';
+    if (n.type === 'menu') return c.prompt ? c.prompt.slice(0, 60) + '...' : (c.options?.length || 0) + ' options';
+    if (n.type === 'queue') return 'Queue: ' + (c.name || 'default') + ' · wait ' + (c.max_wait_seconds || 180) + 's';
+    if (n.type === 'voicemail') return 'Voicemail · max ' + (c.max_seconds || 120) + 's';
+    if (n.type === 'transfer') return 'Transfer → ' + (c.target || '?');
+    if (n.type === 'hangup') return c.message || 'End call';
+    return JSON.stringify(c).slice(0, 60);
+  }
+
+  function openNodeConfigModal(node, onChange) {
+    const body = el('div');
+    const fields = nodeConfigFields(node.type);
+    const inputs = {};
+    fields.forEach(f => {
+      body.appendChild(modalLabel(f.label));
+      const inp = f.multiline
+        ? modalTextarea({ value: (node.config && node.config[f.key]) || f.default || '' })
+        : modalInput({ value: (node.config && node.config[f.key]) || f.default || '',
+            type: f.type || 'text', placeholder: f.placeholder || '' });
+      inputs[f.key] = inp;
+      body.appendChild(inp);
+    });
+    body.appendChild(modalButtonRow('💾 Lưu node', () => {
+      node.config = node.config || {};
+      fields.forEach(f => {
+        let v = inputs[f.key].value;
+        if (f.type === 'number') v = parseInt(v, 10) || 0;
+        node.config[f.key] = v;
+      });
+      modalClose();
+      if (onChange) onChange();
+    }));
+    modalOpen('⚙ Config node: ' + node.type, body);
+  }
+
+  function nodeConfigFields(kind) {
+    const m = {
+      greeting: [
+        { key: 'message', label: 'TTS Message *', multiline: true, placeholder: 'Câu chào' },
+        { key: 'voice', label: 'Giọng đọc (vi-VN-female-1, vi-VN-male-1, ...)', default: 'vi-VN-female-1' },
+      ],
+      menu: [
+        { key: 'prompt', label: 'Câu hỏi DTMF *', multiline: true },
+        { key: 'options', label: 'Options (JSON array)', multiline: true,
+          placeholder: '[{"digit":"1","goto":"queue_sales"}]' },
+        { key: 'timeout_seconds', label: 'Timeout (giây)', type: 'number', default: 10 },
+      ],
+      queue: [
+        { key: 'name', label: 'Queue name *', default: 'queue_general' },
+        { key: 'max_wait_seconds', label: 'Max wait (giây)', type: 'number', default: 180 },
+        { key: 'fallback', label: 'Fallback node (voicemail / hangup)', default: 'voicemail' },
+      ],
+      voicemail: [
+        { key: 'greeting', label: 'Lời chào trước bíp', multiline: true },
+        { key: 'max_seconds', label: 'Max length (giây)', type: 'number', default: 120 },
+      ],
+      transfer: [
+        { key: 'target', label: 'Phone number target *', placeholder: '+84901234567' },
+      ],
+      hangup: [
+        { key: 'message', label: 'Câu kết thúc (optional)', multiline: true },
+      ],
+    };
+    return m[kind] || [];
+  }
+
+  function openIvrTestModal(flow) {
+    const body = el('div');
+    body.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '14px' },
+      text: 'Test simulate inbound call — em sẽ render flow tuần tự + chấp nhận DTMF input.' }));
+    body.appendChild(modalLabel('From number (caller)'));
+    const fromInp = modalInput({ placeholder: '+84909123456', value: '+84909123456' });
+    body.appendChild(fromInp);
+    body.appendChild(modalLabel('Simulated DTMF presses (vd: 1 → goto menu option 1)'));
+    const dtmfInp = modalInput({ placeholder: '1', value: '1' });
+    body.appendChild(dtmfInp);
+    const runBtn = el('button', { style: { padding: '10px 22px', marginBottom: '12px',
+      background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+      color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer',
+      fontWeight: '600', fontSize: '13px' }, text: '▶ Simulate call' });
+    body.appendChild(runBtn);
+    const out = el('div', { style: { background: '#0a0a18', padding: '14px', borderRadius: '8px',
+      fontFamily: 'monospace', fontSize: '12px', color: 'var(--ink-200)', minHeight: '160px',
+      whiteSpace: 'pre-wrap', lineHeight: '1.6' }, text: '(click Simulate)' });
+    body.appendChild(out);
+    runBtn.onclick = async () => {
+      runBtn.disabled = true; runBtn.textContent = '…simulating';
+      out.textContent = '';
+      const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || ''),
+                     'Content-Type': 'application/json' };
+      try {
+        const r = await fetch('/api/v1/voice/ivr/flows/' + flow.id + '/test?ws=' + encodeURIComponent(state.currentWs), {
+          method: 'POST', headers: auth,
+          body: JSON.stringify({ from_number: fromInp.value, dtmf: dtmfInp.value.split('').filter(Boolean) })
+        });
+        const j = await r.json();
+        if (!r.ok) { out.textContent = '✗ ' + (j.detail || r.status); }
+        else {
+          const trace = j.trace || j.steps || [];
+          out.textContent = '> Inbound from ' + fromInp.value + '\n';
+          trace.forEach((step, idx) => {
+            out.textContent += '\n[' + (idx + 1) + '] ' + (step.node_type || step.type || '?') + ': ' + (step.action || step.message || JSON.stringify(step));
+          });
+          out.textContent += '\n\n✓ Call ended after ' + trace.length + ' steps · ' + (j.duration_ms || 0) + 'ms';
+        }
+      } catch (e) { out.textContent = '✗ Network: ' + e.message; }
+      runBtn.disabled = false; runBtn.textContent = '▶ Simulate call';
+    };
+    const closeBtn = el('button', { style: { marginTop: '14px', padding: '8px 16px',
+      background: 'var(--gold-l,#facc15)', color: '#000', border: 'none', borderRadius: '8px',
+      cursor: 'pointer', fontSize: '13px', fontWeight: '600' }, text: 'Đóng' });
+    closeBtn.onclick = () => modalClose();
+    body.appendChild(closeBtn);
+    modalOpen('▶ Test IVR: ' + (flow.name || flow.id), body, { width: '620px' });
+  }
+
+  function openPublishMessageModal(topic) {
+    const body = el('div');
+    body.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '14px' },
+      text: 'Publish JSON message → topic ' + (topic.name || topic.id) + '. All subscribers nhận event.' }));
+    body.appendChild(modalLabel('Payload (JSON) *'));
+    const payTa = modalTextarea({
+      value: JSON.stringify({ order_id: '12345', amount_vnd: 500000, customer_id: 'cust-001' }, null, 2),
+      style: { minHeight: '180px', fontFamily: 'ui-monospace, monospace', fontSize: '12px' }
+    });
+    body.appendChild(payTa);
+    body.appendChild(modalLabel('Attributes (JSON object, optional — dùng cho filter expression)'));
+    const attrTa = modalTextarea({
+      value: JSON.stringify({ priority: 'normal', region: 'vn' }, null, 2),
+      style: { minHeight: '80px', fontFamily: 'ui-monospace, monospace', fontSize: '12px' }
+    });
+    body.appendChild(attrTa);
+
+    body.appendChild(modalButtonRow('▶ Publish', async () => {
+      let payload, attrs;
+      try { payload = JSON.parse(payTa.value); }
+      catch (e) { toast('Payload không phải JSON hợp lệ', 'err'); return; }
+      try { attrs = attrTa.value.trim() ? JSON.parse(attrTa.value) : {}; }
+      catch (e) { toast('Attributes không phải JSON hợp lệ', 'err'); return; }
+      modalBusy(true);
+      const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || ''),
+                     'Content-Type': 'application/json' };
+      try {
+        const r = await fetch('/api/v1/messaging/topics/' + (topic.id || topic.name) + '/publish?ws=' + encodeURIComponent(state.currentWs), {
+          method: 'POST', headers: auth, body: JSON.stringify({ data: payload, attributes: attrs })
+        });
+        const j = await r.json();
+        if (!r.ok) { toast('Lỗi: ' + (j.detail || r.status), 'err'); modalBusy(false); return; }
+        toast('✓ Published. Message ID: ' + (j.message_id || j.id || '?').slice(0, 16), 'ok');
+        modalClose();
+      } catch (e) { toast('Network: ' + e.message, 'err'); modalBusy(false); }
+    }));
+    modalOpen('▶ Publish Message', body, { width: '560px' });
   }
 
   function ctoStartPoll() {
