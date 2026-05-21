@@ -2073,6 +2073,9 @@ select {
         <div class="nav-item" data-view="settings" style="--layer-color: var(--gold);">
           <span class="nav-icon">⚙</span> <span>Settings</span>
         </div>
+        <div class="nav-item" data-view="api-tokens" style="--layer-color: var(--gold);">
+          <span class="nav-icon">🔑</span> <span>API Tokens</span>
+        </div>
         <div class="nav-item" data-view="cto" style="--layer-color: var(--gold);">
           <span class="nav-icon">💬</span> <span>AI Support Chat</span>
         </div>
@@ -3230,6 +3233,7 @@ document.addEventListener('keydown', e => {
       case 'cto': renderCTOAssistant(container); break;
       case 'cto-admin': renderCTOAdmin(container); break;
       case 'registry': renderRegistry(container); break;
+      case 'api-tokens': renderApiTokens(container); break;
       default: container.appendChild(el('div', { text: 'Unknown view' }));
     }
     return container;
@@ -3583,6 +3587,270 @@ document.addEventListener('keydown', e => {
       infoCard.innerHTML = '';
       infoCard.appendChild(el('div', { style: { color: '#fb7185' }, text: 'Lỗi tải registry: ' + e.message }));
     }
+  }
+
+  /* ═══════════════════════════════════════════════
+     API TOKENS · Personal Access Tokens (PAT)
+     Khách tạo token để dùng Zeni Router + AI APIs
+     Pattern: Google Cloud Console + GitHub PAT
+     ═══════════════════════════════════════════════ */
+  async function renderApiTokens(container) {
+    container.innerHTML = '';
+    const wrap = el('div', { style: { padding: '20px 28px', maxWidth: '1280px', margin: '0 auto' } });
+
+    // Header + create button
+    wrap.appendChild(el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' } }, [
+      el('div', { style: { display: 'flex', alignItems: 'baseline', gap: '12px' } }, [
+        el('h2', { style: { fontSize: '24px', color: 'var(--ink-50)', margin: 0 }, text: '🔑 API Tokens' }),
+        el('span', { style: { fontSize: '13px', color: 'var(--ink-400)' },
+                      text: 'Personal Access Token để gọi Zeni Router / AI APIs từ app khách' })
+      ]),
+      (() => {
+        const b = el('button', { style: { padding: '10px 18px',
+            background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+            color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
+            fontWeight: '600', fontSize: '14px', display: 'inline-flex', alignItems: 'center', gap: '8px' },
+            text: '+ Tạo token mới' });
+        b.onclick = () => openCreateTokenModal();
+        return b;
+      })()
+    ]));
+
+    wrap.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '20px', lineHeight: '1.6' },
+                                text: 'Workspace: ' + (state.currentWs || '—') + ' · Token có scope theo workspace, gắn audit log mọi API call. Lộ token? Click "Thu hồi" ngay.' }));
+
+    // Tokens table
+    const tableCard = el('div', { id: 'api-tokens-card', style: {
+      background: 'var(--bg-card,#14142a)', border: '1px solid var(--border)',
+      borderRadius: '12px', padding: '4px', overflow: 'hidden'
+    }});
+    tableCard.appendChild(el('div', { style: { padding: '14px 18px', color: 'var(--ink-400)', fontSize: '13px' },
+                                       text: 'Đang tải danh sách tokens...' }));
+    wrap.appendChild(tableCard);
+    container.appendChild(wrap);
+
+    await refreshApiTokensList();
+  }
+
+  async function refreshApiTokensList() {
+    const card = byId('api-tokens-card');
+    if (!card) return;
+    card.innerHTML = '';
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+
+    try {
+      const r = await fetch('/api/v1/api-tokens?ws=' + encodeURIComponent(state.currentWs), { headers: auth });
+      if (!r.ok) {
+        card.appendChild(el('div', { style: { padding: '20px', color: '#fb7185' },
+                                      text: 'Lỗi tải tokens: HTTP ' + r.status }));
+        return;
+      }
+      const tokens = await r.json();
+      const list = Array.isArray(tokens) ? tokens : (tokens.items || []);
+
+      if (list.length === 0) {
+        // Empty state
+        const empty = el('div', { style: { padding: '40px 20px', textAlign: 'center', color: 'var(--ink-400)' } });
+        empty.appendChild(el('div', { style: { fontSize: '40px', marginBottom: '10px' }, text: '🔐' }));
+        empty.appendChild(el('div', { style: { fontSize: '15px', color: 'var(--ink-200)', marginBottom: '6px' },
+                                       text: 'Chưa có API token nào' }));
+        empty.appendChild(el('div', { style: { fontSize: '13px', color: 'var(--ink-400)' },
+                                       text: 'Tạo token đầu tiên để gọi Zeni APIs từ app của bạn' }));
+        card.appendChild(empty);
+        return;
+      }
+
+      // Header row
+      const headerRow = el('div', { style: { display: 'grid',
+        gridTemplateColumns: '2fr 1.2fr 1.3fr 1.3fr 100px', gap: '14px',
+        padding: '12px 18px', borderBottom: '1px solid var(--border)',
+        fontSize: '12px', color: 'var(--ink-400)', fontWeight: '600', textTransform: 'uppercase' } });
+      ['Token name', 'Scope', 'Created', 'Last used', 'Action'].forEach(t => {
+        headerRow.appendChild(el('div', { text: t }));
+      });
+      card.appendChild(headerRow);
+
+      // Data rows
+      list.forEach(t => {
+        const row = el('div', { style: { display: 'grid',
+          gridTemplateColumns: '2fr 1.2fr 1.3fr 1.3fr 100px', gap: '14px',
+          padding: '14px 18px', borderBottom: '1px solid var(--border)',
+          fontSize: '13px', alignItems: 'center' } });
+        row.appendChild(el('div', { style: { color: 'var(--ink-100)', fontWeight: '500' } }, [
+          el('div', { text: t.name || t.token_name || '(unnamed)' }),
+          el('div', { style: { fontSize: '11px', color: 'var(--ink-400)', fontFamily: 'monospace', marginTop: '3px' },
+                       text: 'zeni_pat_…' + (t.token_prefix || t.id || '').slice(0, 8) })
+        ]));
+        const scopeColor = (t.scopes || '').includes('full') ? 'var(--crown,#a855f7)' :
+                           (t.scopes || '').includes('readonly') ? 'var(--aurora,#22d3ee)' : 'var(--gold-l,#facc15)';
+        row.appendChild(el('span', { style: { color: scopeColor, fontSize: '12px',
+                padding: '4px 10px', background: 'rgba(125,104,255,0.08)', borderRadius: '6px',
+                border: '1px solid ' + scopeColor, display: 'inline-block', width: 'fit-content' },
+                text: t.scopes || 'full' }));
+        row.appendChild(el('div', { style: { color: 'var(--ink-300)', fontSize: '12px' },
+                                     text: (t.created_at || '—').toString().replace('T',' ').slice(0,16) }));
+        row.appendChild(el('div', { style: { color: t.last_used_at ? 'var(--ink-200)' : 'var(--ink-400)', fontSize: '12px' },
+                                     text: t.last_used_at ? t.last_used_at.toString().replace('T',' ').slice(0,16) : 'Chưa dùng' }));
+        const revokeBtn = el('button', { style: { padding: '6px 12px',
+              background: 'rgba(251,113,133,0.1)', color: '#fb7185',
+              border: '1px solid rgba(251,113,133,0.3)', borderRadius: '6px',
+              cursor: 'pointer', fontSize: '12px' }, text: 'Thu hồi' });
+        revokeBtn.onclick = async () => {
+          if (!confirm(`Thu hồi token "${t.name || '(unnamed)'}"? Apps đang dùng token này sẽ fail ngay.`)) return;
+          const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+          const dr = await fetch('/api/v1/api-tokens/' + t.id + '?ws=' + encodeURIComponent(state.currentWs), {
+            method: 'DELETE', headers: auth });
+          if (dr.ok) { toast('✓ Token đã thu hồi', 'ok'); refreshApiTokensList(); }
+          else { toast('✗ Thu hồi fail: HTTP ' + dr.status, 'err'); }
+        };
+        row.appendChild(revokeBtn);
+        card.appendChild(row);
+      });
+    } catch (e) {
+      card.appendChild(el('div', { style: { padding: '20px', color: '#fb7185' },
+                                    text: 'Lỗi: ' + e.message }));
+    }
+  }
+
+  function openCreateTokenModal() {
+    const overlay = el('div', { id: 'tok-create-overlay', style: { position: 'fixed', inset: '0',
+      background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex',
+      alignItems: 'center', justifyContent: 'center', zIndex: '99999' } });
+    const modal = el('div', { style: { background: 'var(--bg-card,#14142a)',
+      border: '1px solid var(--border-strong)', borderRadius: '14px', padding: '24px 28px',
+      width: '480px', maxWidth: '90vw', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' } });
+    modal.appendChild(el('h3', { style: { fontSize: '18px', color: 'var(--ink-50)', margin: '0 0 6px' },
+                                  text: '🔑 Tạo Personal Access Token' }));
+    modal.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '18px', lineHeight: '1.5' },
+                                 text: 'Token chỉ hiển thị 1 lần. Lưu kỹ.' }));
+
+    const labelStyle = { fontSize: '12px', color: 'var(--ink-300)', marginBottom: '5px', display: 'block', fontWeight: '600' };
+    const inputStyle = { width: '100%', padding: '10px 12px', background: 'var(--bg-base)',
+      border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--ink-50)',
+      fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box' };
+
+    modal.appendChild(el('label', { style: labelStyle, text: 'Tên token *' }));
+    const nameInp = el('input', { id: 'tok-name', type: 'text',
+      placeholder: 'vd: production-backend, ci-pipeline, mobile-app',
+      style: { ...inputStyle, marginBottom: '14px' } });
+    modal.appendChild(nameInp);
+
+    modal.appendChild(el('label', { style: labelStyle, text: 'Scope (quyền)' }));
+    const scopeSel = el('select', { id: 'tok-scope', style: { ...inputStyle, marginBottom: '14px' } });
+    [
+      { v: 'full', t: 'full — toàn quyền (router/projects/storage/identity)' },
+      { v: 'ai-only', t: 'ai-only — chỉ AI APIs (router/complete, generate-image)' },
+      { v: 'read-only', t: 'read-only — chỉ đọc (logs, audit, billing)' }
+    ].forEach(o => scopeSel.appendChild(el('option', { value: o.v, text: o.t })));
+    modal.appendChild(scopeSel);
+
+    modal.appendChild(el('label', { style: labelStyle, text: 'Hết hạn sau (ngày)' }));
+    const expSel = el('select', { id: 'tok-exp', style: { ...inputStyle, marginBottom: '20px' } });
+    [
+      { v: 7, t: '7 ngày' }, { v: 30, t: '30 ngày' },
+      { v: 90, t: '90 ngày (Recommended)' }, { v: 365, t: '1 năm' },
+      { v: 0, t: 'Không hết hạn (rủi ro cao)' }
+    ].forEach(o => {
+      const opt = el('option', { value: o.v, text: o.t });
+      if (o.v === 90) opt.selected = true;
+      expSel.appendChild(opt);
+    });
+    modal.appendChild(expSel);
+
+    const btnRow = el('div', { style: { display: 'flex', gap: '10px', justifyContent: 'flex-end' } });
+    const cancelBtn = el('button', { style: { padding: '10px 18px', background: 'transparent',
+      color: 'var(--ink-300)', border: '1px solid var(--border)', borderRadius: '8px',
+      cursor: 'pointer', fontSize: '14px' }, text: 'Hủy' });
+    cancelBtn.onclick = () => overlay.remove();
+    btnRow.appendChild(cancelBtn);
+    const createBtn = el('button', { id: 'tok-create-btn', style: { padding: '10px 22px',
+      background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+      color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer',
+      fontWeight: '600', fontSize: '14px' }, text: 'Tạo token' });
+    createBtn.onclick = createApiToken;
+    btnRow.appendChild(createBtn);
+    modal.appendChild(btnRow);
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    setTimeout(() => nameInp.focus(), 50);
+  }
+
+  async function createApiToken() {
+    const name = byId('tok-name').value.trim();
+    const scopes = byId('tok-scope').value;
+    const expires = parseInt(byId('tok-exp').value, 10);
+    const btn = byId('tok-create-btn');
+    if (!name) { toast('Cần nhập tên token', 'err'); return; }
+
+    btn.disabled = true; btn.textContent = 'Đang tạo...';
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || ''),
+                   'Content-Type': 'application/json' };
+    try {
+      const r = await fetch('/api/v1/api-tokens?ws=' + encodeURIComponent(state.currentWs), {
+        method: 'POST', headers: auth,
+        body: JSON.stringify({ name, scopes, expires_in_days: expires || null })
+      });
+      const j = await r.json();
+      if (!r.ok) {
+        toast('Lỗi tạo token: ' + (j.detail || r.status), 'err');
+        btn.disabled = false; btn.textContent = 'Tạo token';
+        return;
+      }
+      byId('tok-create-overlay').remove();
+      showCreatedToken(j.token || j.access_token || j.value, name);
+      refreshApiTokensList();
+    } catch (e) {
+      toast('Network error: ' + e.message, 'err');
+      btn.disabled = false; btn.textContent = 'Tạo token';
+    }
+  }
+
+  function showCreatedToken(token, name) {
+    const overlay = el('div', { style: { position: 'fixed', inset: '0',
+      background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', display: 'flex',
+      alignItems: 'center', justifyContent: 'center', zIndex: '99999' } });
+    const modal = el('div', { style: { background: 'var(--bg-card,#14142a)',
+      border: '2px solid var(--gold-l,#facc15)', borderRadius: '14px', padding: '24px 28px',
+      width: '600px', maxWidth: '90vw' } });
+    modal.appendChild(el('h3', { style: { fontSize: '18px', color: 'var(--gold-l,#facc15)', margin: '0 0 6px' },
+                                  text: '✓ Token tạo thành công: ' + name }));
+    modal.appendChild(el('div', { style: { fontSize: '13px', color: '#fb7185', fontWeight: '600', marginBottom: '14px' },
+                                   text: '⚠ COPY TOKEN NGAY — Sẽ KHÔNG hiển thị lại!' }));
+    const codeBox = el('div', { style: { background: 'var(--bg-base)', border: '1px solid var(--border-strong)',
+      borderRadius: '8px', padding: '14px', fontFamily: 'monospace', fontSize: '13px',
+      color: 'var(--aurora,#22d3ee)', wordBreak: 'break-all', marginBottom: '12px',
+      maxHeight: '120px', overflowY: 'auto' }, text: token });
+    modal.appendChild(codeBox);
+    const copyBtn = el('button', { style: { padding: '10px 18px', marginRight: '8px',
+      background: 'rgba(125,104,255,0.15)', color: 'var(--indigo,#7d68ff)',
+      border: '1px solid var(--indigo,#7d68ff)', borderRadius: '8px', cursor: 'pointer',
+      fontSize: '13px', fontWeight: '600' }, text: '📋 Copy token' });
+    copyBtn.onclick = () => {
+      navigator.clipboard.writeText(token).then(() => {
+        copyBtn.textContent = '✓ Đã copy';
+        setTimeout(() => { copyBtn.textContent = '📋 Copy token'; }, 2000);
+      });
+    };
+    modal.appendChild(copyBtn);
+
+    // Example usage
+    modal.appendChild(el('h4', { style: { fontSize: '14px', color: 'var(--ink-200)', marginTop: '18px', marginBottom: '6px' },
+                                  text: 'Cách dùng:' }));
+    modal.appendChild(el('pre', { style: { background: 'var(--bg-base)', padding: '12px',
+      borderRadius: '6px', fontFamily: 'monospace', fontSize: '12px', color: 'var(--ink-200)',
+      overflowX: 'auto', margin: 0 },
+      text: `curl https://zenicloud.io/api/v1/router/complete?ws=${state.currentWs} \\\n  -H "Authorization: Bearer ${token.slice(0,16)}..." \\\n  -H "Content-Type: application/json" \\\n  -d '{"messages":[{"role":"user","content":"hi"}]}'` }));
+
+    const closeBtn = el('button', { style: { marginTop: '16px', padding: '10px 22px',
+      background: 'var(--gold-l,#facc15)', color: '#000', border: 'none',
+      borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '14px', float: 'right' },
+      text: 'Tôi đã lưu' });
+    closeBtn.onclick = () => overlay.remove();
+    modal.appendChild(closeBtn);
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
   }
 
   function ctoStartPoll() {
