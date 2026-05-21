@@ -2097,6 +2097,12 @@ select {
         <div class="nav-item" data-view="observability" style="--layer-color: var(--gold);">
           <span class="nav-icon">📊</span> <span>Logs & Metrics</span>
         </div>
+        <div class="nav-item" data-view="subscription" style="--layer-color: var(--gold);">
+          <span class="nav-icon">💎</span> <span>Subscription</span>
+        </div>
+        <div class="nav-item" data-view="api-docs" style="--layer-color: var(--gold);">
+          <span class="nav-icon">📚</span> <span>API Docs</span>
+        </div>
         <div class="nav-item" data-view="cto" style="--layer-color: var(--gold);">
           <span class="nav-icon">💬</span> <span>AI Support Chat</span>
         </div>
@@ -3262,6 +3268,8 @@ document.addEventListener('keydown', e => {
       case 'messaging': renderMessaging(container); break;
       case 'web3': renderWeb3Wallet(container); break;
       case 'observability': renderObservability(container); break;
+      case 'subscription': renderSubscription(container); break;
+      case 'api-docs': renderApiDocs(container); break;
       default: container.appendChild(el('div', { text: 'Unknown view' }));
     }
     return container;
@@ -6159,6 +6167,428 @@ document.addEventListener('keydown', e => {
     } catch (e) {
       card.innerHTML = '<div style="padding:20px;color:#fb7185">Lỗi: ' + e.message + '</div>';
     }
+  }
+
+  /* ═══════════════════════════════════════════════
+     SUBSCRIPTION & PAYMENT METHODS
+     Pattern: Stripe Customer Portal + Vercel Billing
+     ═══════════════════════════════════════════════ */
+  async function renderSubscription(container) {
+    container.innerHTML = '';
+    const wrap = el('div', { style: { padding: '16px 20px', maxWidth: '1200px', margin: '0 auto' } });
+
+    wrap.appendChild(el('div', { style: { display: 'flex', alignItems: 'baseline', gap: '14px', marginBottom: '6px' } }, [
+      el('h2', { style: { fontSize: '24px', color: 'var(--ink-50)', margin: 0 }, text: '💎 Subscription & Payment' }),
+      el('span', { style: { fontSize: '13px', color: 'var(--ink-400)' },
+                    text: 'Plan tier · Payment method · Invoices' })
+    ]));
+    wrap.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '20px' },
+                                text: 'Workspace: ' + (state.currentWs || '—') }));
+
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+
+    // Current plan hero
+    const planCard = el('div', { id: 'sub-plan-card', style: { ...dbCard(), padding: '24px 28px', marginBottom: '14px',
+      background: 'linear-gradient(135deg, rgba(168,85,247,0.10), rgba(125,104,255,0.06)), var(--bg-card,#14142a)' } });
+    planCard.appendChild(el('div', { style: { fontSize: '11px', color: 'var(--ink-400)',
+      textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '600', marginBottom: '6px' }, text: 'Current plan' }));
+    const planBody = el('div', { id: 'sub-plan-body', text: 'Đang tải...' });
+    planCard.appendChild(planBody);
+    wrap.appendChild(planCard);
+
+    try {
+      const r = await fetch('/api/v1/billing/subscription?ws=' + encodeURIComponent(state.currentWs), { headers: auth });
+      const j = r.ok ? await r.json() : {};
+      planBody.innerHTML = '';
+      const tier = (j.tier || j.plan || 'free').toLowerCase();
+      const tierColors = { free: 'var(--ink-300)', starter: 'var(--aurora,#22d3ee)',
+                            pro: 'var(--indigo,#7d68ff)', enterprise: 'var(--crown,#a855f7)' };
+      planBody.appendChild(el('div', { style: { display: 'flex', alignItems: 'baseline', gap: '14px' } }, [
+        el('div', { style: { fontSize: '32px', color: tierColors[tier] || 'var(--ink-50)', fontWeight: '700',
+          textTransform: 'capitalize' }, text: tier }),
+        el('div', { style: { fontSize: '15px', color: 'var(--ink-300)' },
+                     text: '$' + (j.monthly_price_usd || 0) + ' / tháng · ' + (j.users_quota || 'unlimited') + ' users' }),
+      ]));
+      planBody.appendChild(el('div', { style: { fontSize: '13px', color: 'var(--ink-300)', marginTop: '8px' },
+                                        text: 'Renew: ' + (j.next_billing_date || 'Auto monthly') + ' · Wallet balance pay-as-you-go' }));
+      // Upgrade buttons
+      const btnRow = el('div', { style: { marginTop: '16px', display: 'flex', gap: '8px', flexWrap: 'wrap' } });
+      [
+        { tier: 'starter', label: '↑ Starter $20/m', price: 20 },
+        { tier: 'pro', label: '↑ Pro $99/m', price: 99 },
+        { tier: 'enterprise', label: '↑ Enterprise $499/m', price: 499 },
+      ].filter(p => p.tier !== tier).forEach(p => {
+        const b = el('button', { style: { padding: '10px 18px',
+          background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+          color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
+          fontWeight: '600', fontSize: '13px' }, text: p.label });
+        b.onclick = async () => {
+          if (!confirm('Upgrade lên ' + p.tier + ' ($' + p.price + '/m)? Charge sẽ trừ vào wallet balance.')) return;
+          const rr = await fetch('/api/v1/billing/subscribe?ws=' + encodeURIComponent(state.currentWs), {
+            method: 'POST', headers: { ...auth, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tier: p.tier })
+          });
+          if (rr.ok) { toast('✓ Upgrade thành công', 'ok'); renderSubscription(container); }
+          else { const j2 = await rr.json(); toast('Lỗi: ' + (j2.detail || rr.status), 'err'); }
+        };
+        btnRow.appendChild(b);
+      });
+      planBody.appendChild(btnRow);
+    } catch (e) {
+      planBody.innerHTML = '<div style="color:#fb7185">Lỗi load plan: ' + e.message + '</div>';
+    }
+
+    // Tier comparison
+    const compareCard = el('div', { style: { ...dbCard(), padding: '20px 24px', marginBottom: '14px' } });
+    compareCard.appendChild(el('h3', { style: { fontSize: '15px', color: 'var(--ink-100)', margin: '0 0 14px' },
+                                        text: '📊 So sánh tier' }));
+    const compareGrid = el('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' } });
+    [
+      { name: 'Free', price: '$0', features: ['1 project', '10K AI requests/m', '1GB storage', 'Community support'] },
+      { name: 'Starter', price: '$20', features: ['5 projects', '100K AI requests', '20GB storage', 'Email support'], pop: true },
+      { name: 'Pro', price: '$99', features: ['50 projects', '1M AI requests', '500GB storage', 'Priority support'] },
+      { name: 'Enterprise', price: '$499', features: ['Unlimited', '10M AI requests', '5TB storage', '24/7 SLA support'] },
+    ].forEach(t => {
+      const tCard = el('div', { style: { background: 'var(--bg-base)', padding: '16px 14px',
+        borderRadius: '10px', border: '1px solid ' + (t.pop ? 'var(--indigo,#7d68ff)' : 'var(--border)'),
+        position: 'relative' } });
+      if (t.pop) {
+        tCard.appendChild(el('div', { style: { position: 'absolute', top: '-10px', right: '12px',
+          background: 'var(--indigo,#7d68ff)', color: '#fff', padding: '2px 8px', fontSize: '10px',
+          borderRadius: '10px', fontWeight: '600' }, text: 'POPULAR' }));
+      }
+      tCard.appendChild(el('div', { style: { fontSize: '13px', color: 'var(--ink-400)', fontWeight: '600',
+        textTransform: 'uppercase', marginBottom: '4px' }, text: t.name }));
+      tCard.appendChild(el('div', { style: { fontSize: '24px', color: 'var(--ink-50)', fontWeight: '700', marginBottom: '12px' },
+        text: t.price + (t.price !== '$0' ? '/m' : '') }));
+      const ul = el('ul', { style: { listStyle: 'none', padding: 0, margin: 0,
+        fontSize: '12px', color: 'var(--ink-300)', lineHeight: '1.8' } });
+      t.features.forEach(f => {
+        ul.appendChild(el('li', {}, [
+          el('span', { style: { color: 'var(--aurora,#22d3ee)', marginRight: '6px' }, text: '✓' }),
+          el('span', { text: f }),
+        ]));
+      });
+      tCard.appendChild(ul);
+      compareGrid.appendChild(tCard);
+    });
+    compareCard.appendChild(compareGrid);
+    wrap.appendChild(compareCard);
+
+    // Payment methods + VietQR
+    const pmCard = el('div', { style: { ...dbCard(), padding: '20px 24px', marginBottom: '14px' } });
+    pmCard.appendChild(el('h3', { style: { fontSize: '15px', color: 'var(--ink-100)', margin: '0 0 10px' },
+                                   text: '💳 Phương thức thanh toán' }));
+    pmCard.appendChild(el('div', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '14px' },
+                                    text: 'Zeni Cloud chấp nhận VietQR (free), thẻ Visa/MasterCard qua Stripe (phí 2.9% + $0.30), và crypto USDT/USDC trên Polygon.' }));
+    const pmGrid = el('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' } });
+    [
+      { name: 'VietQR', desc: 'Universal mọi ngân hàng VN, phí 0%', icon: '🏦', recommended: true, action: 'web3' },
+      { name: 'Stripe Card', desc: 'Visa / MasterCard / Amex global', icon: '💳', action: null },
+      { name: 'Crypto USDT', desc: 'Polygon mainnet, low fee', icon: '🪙', action: 'web3' },
+    ].forEach(p => {
+      const card = el('div', { style: { background: 'var(--bg-base)',
+        padding: '14px 16px', borderRadius: '8px',
+        border: '1px solid ' + (p.recommended ? 'var(--gold-l,#facc15)' : 'var(--border)'),
+        cursor: p.action ? 'pointer' : 'default' } });
+      if (p.action) {
+        card.onclick = () => { setView(p.action); };
+      }
+      card.appendChild(el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' } }, [
+        el('span', { style: { fontSize: '22px' }, text: p.icon }),
+        p.recommended ? el('span', { style: { fontSize: '10px', color: 'var(--gold-l,#facc15)',
+          background: 'rgba(253,230,138,0.1)', padding: '2px 8px', borderRadius: '8px',
+          fontWeight: '600' }, text: 'RECOMMENDED' }) : el('span'),
+      ]));
+      card.appendChild(el('div', { style: { fontSize: '14px', color: 'var(--ink-100)', fontWeight: '600', marginBottom: '4px' },
+                                    text: p.name }));
+      card.appendChild(el('div', { style: { fontSize: '11px', color: 'var(--ink-400)' }, text: p.desc }));
+      pmGrid.appendChild(card);
+    });
+    pmCard.appendChild(pmGrid);
+    wrap.appendChild(pmCard);
+
+    container.appendChild(wrap);
+  }
+
+  /* ═══════════════════════════════════════════════
+     API DOCS · 491 endpoints + SDK snippets
+     Pattern: Stripe API Docs + GitHub REST docs
+     ═══════════════════════════════════════════════ */
+  let _docsState = { selectedPath: null, search: '', filter: 'all' };
+  let _docsCache = null;
+
+  async function renderApiDocs(container) {
+    container.innerHTML = '';
+    const wrap = el('div', { style: { padding: '16px 20px', maxWidth: '1600px', margin: '0 auto' } });
+    wrap.appendChild(el('div', { style: { display: 'flex', alignItems: 'baseline', gap: '14px', marginBottom: '6px' } }, [
+      el('h2', { style: { fontSize: '24px', color: 'var(--ink-50)', margin: 0 }, text: '📚 API Docs' }),
+      el('span', { style: { fontSize: '13px', color: 'var(--ink-400)' },
+                    text: '491 endpoints · curl + Python + JavaScript + Go snippets' })
+    ]));
+
+    // Search bar
+    const searchRow = el('div', { style: { display: 'flex', gap: '10px', marginBottom: '14px' } });
+    const searchInp = el('input', { type: 'text', placeholder: '🔍 Search endpoint (vd: /router/complete, deploy, mail)',
+      style: { flex: '1', padding: '12px 16px', background: 'var(--bg-card,#14142a)',
+        border: '1px solid var(--border)', borderRadius: '10px', color: 'var(--ink-50)',
+        fontSize: '14px' }, value: _docsState.search });
+    searchInp.oninput = () => { _docsState.search = searchInp.value; docsRenderList(); };
+    searchRow.appendChild(searchInp);
+    wrap.appendChild(searchRow);
+
+    // Split: endpoint list (left) + detail (right)
+    const split = el('div', { style: { display: 'grid', gridTemplateColumns: '380px 1fr', gap: '14px',
+      minHeight: 'calc(100vh - 250px)' } });
+
+    const listPane = el('div', { id: 'docs-list', style: { ...dbCard(), overflowY: 'auto',
+      maxHeight: 'calc(100vh - 220px)' } });
+    listPane.appendChild(el('div', { style: { padding: '14px 18px', color: 'var(--ink-400)', fontSize: '13px' },
+                                       text: 'Đang tải OpenAPI spec...' }));
+    split.appendChild(listPane);
+
+    const detailPane = el('div', { id: 'docs-detail', style: { ...dbCard(), padding: '20px 24px',
+      overflowY: 'auto', maxHeight: 'calc(100vh - 220px)' } });
+    detailPane.appendChild(el('div', { style: { padding: '40px 20px', textAlign: 'center', color: 'var(--ink-400)' },
+                                        text: '← Chọn endpoint bên trái để xem chi tiết + code snippets' }));
+    split.appendChild(detailPane);
+
+    wrap.appendChild(split);
+    container.appendChild(wrap);
+
+    // Load OpenAPI
+    if (!_docsCache) {
+      try {
+        const r = await fetch('/openapi.json');
+        _docsCache = await r.json();
+      } catch (e) {
+        listPane.innerHTML = '<div style="padding:20px;color:#fb7185">Lỗi tải spec: ' + e.message + '</div>';
+        return;
+      }
+    }
+    docsRenderList();
+  }
+
+  function docsRenderList() {
+    const listPane = byId('docs-list'); if (!listPane || !_docsCache) return;
+    listPane.innerHTML = '';
+    const paths = _docsCache.paths || {};
+    const q = _docsState.search.toLowerCase().trim();
+
+    // Group by category (third path segment)
+    const groups = {};
+    Object.keys(paths).sort().forEach(p => {
+      if (q && !p.toLowerCase().includes(q)) {
+        // also search in summaries
+        const summaries = Object.values(paths[p]).map(m => (m.summary || '').toLowerCase()).join(' ');
+        if (!summaries.includes(q)) return;
+      }
+      const parts = p.split('/');
+      const cat = parts[3] || 'root';
+      groups[cat] = groups[cat] || [];
+      groups[cat].push(p);
+    });
+
+    const totalShown = Object.values(groups).reduce((a, b) => a + b.length, 0);
+    listPane.appendChild(el('div', { style: { padding: '10px 18px', fontSize: '11px', color: 'var(--ink-400)',
+      borderBottom: '1px solid var(--border)', textTransform: 'uppercase', fontWeight: '600' },
+      text: totalShown + ' endpoints · ' + Object.keys(groups).length + ' categories' }));
+
+    Object.keys(groups).sort().forEach(cat => {
+      listPane.appendChild(el('div', { style: { padding: '8px 18px', fontSize: '11px',
+        color: 'var(--gold-l,#facc15)', background: 'rgba(253,230,138,0.04)',
+        textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' },
+        text: '/' + cat + ' (' + groups[cat].length + ')' }));
+      groups[cat].forEach(p => {
+        const methods = Object.keys(paths[p]).filter(m => ['get','post','put','delete','patch'].includes(m));
+        methods.forEach(m => {
+          const summary = paths[p][m].summary || '';
+          const row = el('div', { style: { padding: '8px 18px', borderBottom: '1px solid var(--border)',
+            cursor: 'pointer', display: 'flex', gap: '10px', alignItems: 'center',
+            background: _docsState.selectedPath === p+'::'+m ? 'rgba(125,104,255,0.08)' : 'transparent',
+            transition: 'background 0.1s' } });
+          row.onmouseenter = () => { if (_docsState.selectedPath !== p+'::'+m) row.style.background = 'rgba(125,104,255,0.04)'; };
+          row.onmouseleave = () => { if (_docsState.selectedPath !== p+'::'+m) row.style.background = 'transparent'; };
+          row.onclick = () => { _docsState.selectedPath = p+'::'+m; docsRenderList(); docsRenderDetail(p, m); };
+          const methodColors = { get: 'var(--aurora,#22d3ee)', post: 'var(--indigo,#7d68ff)',
+                                  put: 'var(--gold-l,#facc15)', delete: '#fb7185', patch: 'var(--crown,#a855f7)' };
+          row.appendChild(el('span', { style: { color: methodColors[m] || 'var(--ink-300)', fontSize: '10px',
+            fontFamily: 'monospace', fontWeight: '700', minWidth: '40px' }, text: m.toUpperCase() }));
+          row.appendChild(el('div', { style: { flex: '1', overflow: 'hidden' } }, [
+            el('div', { style: { fontSize: '12px', color: 'var(--ink-100)', fontFamily: 'monospace',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }, text: p }),
+            summary ? el('div', { style: { fontSize: '11px', color: 'var(--ink-400)', marginTop: '2px',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }, text: summary }) : el('div'),
+          ]));
+          listPane.appendChild(row);
+        });
+      });
+    });
+  }
+
+  function docsRenderDetail(path, method) {
+    const pane = byId('docs-detail'); if (!pane) return;
+    pane.innerHTML = '';
+    const spec = (_docsCache.paths || {})[path] || {};
+    const op = spec[method] || {};
+    const methodColors = { get: 'var(--aurora,#22d3ee)', post: 'var(--indigo,#7d68ff)',
+                            put: 'var(--gold-l,#facc15)', delete: '#fb7185', patch: 'var(--crown,#a855f7)' };
+
+    // Header
+    pane.appendChild(el('div', { style: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' } }, [
+      el('span', { style: { padding: '6px 14px', background: methodColors[method] || 'var(--ink-400)',
+        color: '#fff', borderRadius: '6px', fontSize: '12px', fontWeight: '700',
+        fontFamily: 'monospace' }, text: method.toUpperCase() }),
+      el('code', { style: { fontSize: '15px', color: 'var(--ink-100)', fontFamily: 'monospace',
+        wordBreak: 'break-all' }, text: path }),
+    ]));
+    if (op.summary) {
+      pane.appendChild(el('div', { style: { fontSize: '14px', color: 'var(--ink-200)', marginBottom: '6px' },
+                                    text: op.summary }));
+    }
+    if (op.description) {
+      pane.appendChild(el('div', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '18px',
+        lineHeight: '1.6', whiteSpace: 'pre-wrap' }, text: op.description }));
+    }
+
+    // Parameters
+    const params = op.parameters || [];
+    if (params.length > 0) {
+      pane.appendChild(el('h4', { style: { fontSize: '13px', color: 'var(--gold-l,#facc15)',
+        marginTop: '14px', marginBottom: '8px', textTransform: 'uppercase', fontWeight: '700' },
+        text: 'Parameters' }));
+      const pCard = el('div', { style: { background: 'var(--bg-base)', borderRadius: '8px', overflow: 'hidden' } });
+      params.forEach(p => {
+        const row = el('div', { style: { padding: '10px 14px', borderBottom: '1px solid var(--border)',
+          fontSize: '12px', display: 'grid', gridTemplateColumns: '140px 80px 80px 1fr', gap: '12px',
+          alignItems: 'center' } });
+        row.appendChild(el('code', { style: { color: 'var(--aurora,#22d3ee)' }, text: p.name }));
+        row.appendChild(el('span', { style: { color: 'var(--ink-400)', fontSize: '11px' }, text: p.in || '—' }));
+        row.appendChild(el('span', { style: { color: p.required ? '#fb7185' : 'var(--ink-400)',
+          fontSize: '11px', fontWeight: p.required ? '600' : '400' },
+          text: p.required ? 'required' : 'optional' }));
+        row.appendChild(el('span', { style: { color: 'var(--ink-300)' }, text: p.description || '—' }));
+        pCard.appendChild(row);
+      });
+      pane.appendChild(pCard);
+    }
+
+    // Request body
+    if (op.requestBody) {
+      pane.appendChild(el('h4', { style: { fontSize: '13px', color: 'var(--gold-l,#facc15)',
+        marginTop: '14px', marginBottom: '8px', textTransform: 'uppercase', fontWeight: '700' },
+        text: 'Request body' }));
+      const schema = op.requestBody.content?.['application/json']?.schema;
+      const ref = schema?.$ref?.split('/').pop();
+      const schemaDef = ref ? _docsCache.components?.schemas?.[ref] : schema;
+      pane.appendChild(el('pre', { style: { background: 'var(--bg-base)', padding: '14px 16px',
+        borderRadius: '8px', fontSize: '11px', color: 'var(--ink-200)',
+        fontFamily: 'monospace', overflowX: 'auto', margin: 0 },
+        text: JSON.stringify(schemaDef || {}, null, 2) }));
+    }
+
+    // Code snippets
+    pane.appendChild(el('h4', { style: { fontSize: '13px', color: 'var(--gold-l,#facc15)',
+      marginTop: '18px', marginBottom: '8px', textTransform: 'uppercase', fontWeight: '700' },
+      text: '⚡ Code snippets' }));
+
+    const snippetTabs = ['curl', 'Python', 'JavaScript', 'Go'];
+    const snippetWrap = el('div');
+    const tabRow = el('div', { style: { display: 'flex', gap: '4px', marginBottom: '8px' } });
+    const codeBox = el('pre', { style: { background: '#0a0a18', padding: '14px 16px',
+      borderRadius: '8px', fontSize: '11px', color: 'var(--aurora,#22d3ee)',
+      fontFamily: 'monospace', overflowX: 'auto', margin: 0, lineHeight: '1.5' } });
+    const renderSnip = (lang) => {
+      codeBox.textContent = docsGenSnippet(lang, method, path, op);
+    };
+    snippetTabs.forEach((lbl, idx) => {
+      const btn = el('button', { style: { padding: '6px 12px',
+        background: idx === 0 ? 'var(--bg-card,#14142a)' : 'transparent',
+        color: idx === 0 ? 'var(--ink-100)' : 'var(--ink-400)',
+        border: 'none', borderBottom: idx === 0 ? '2px solid var(--indigo,#7d68ff)' : '2px solid transparent',
+        cursor: 'pointer', fontSize: '12px', fontWeight: idx === 0 ? '600' : '500' }, text: lbl });
+      btn.onclick = () => {
+        tabRow.querySelectorAll('button').forEach((b, i) => {
+          b.style.borderBottom = b === btn ? '2px solid var(--indigo,#7d68ff)' : '2px solid transparent';
+          b.style.color = b === btn ? 'var(--ink-100)' : 'var(--ink-400)';
+          b.style.background = b === btn ? 'var(--bg-card,#14142a)' : 'transparent';
+        });
+        renderSnip(lbl);
+      };
+      tabRow.appendChild(btn);
+    });
+    snippetWrap.appendChild(tabRow);
+    snippetWrap.appendChild(codeBox);
+    pane.appendChild(snippetWrap);
+    renderSnip('curl');
+
+    // Try it button
+    const tryBtn = el('button', { style: { marginTop: '16px', padding: '10px 22px',
+      background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+      color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer',
+      fontWeight: '600', fontSize: '13px' }, text: '▶ Try it (paste vào AI Playground hoặc khác)' });
+    tryBtn.onclick = () => {
+      if (path.includes('/router/complete')) {
+        setView('ai-playground');
+      } else {
+        toast('Try-it in-place: paste curl snippet vào terminal hoặc CTO Chat', 'info');
+      }
+    };
+    pane.appendChild(tryBtn);
+  }
+
+  function docsGenSnippet(lang, method, path, op) {
+    const url = 'https://zenicloud.io' + path.replace('{', '${').replace('}', '}');
+    const ws = state.currentWs || 'YOUR_WORKSPACE';
+    const token = 'YOUR_PAT_TOKEN';
+    const hasBody = op.requestBody;
+    const bodyExample = hasBody ? '{"key":"value"}' : '';
+    const wsQuery = path.includes('?') ? '&ws=' + ws : '?ws=' + ws;
+
+    if (lang === 'curl') {
+      let s = 'curl -X ' + method.toUpperCase() + ' "' + url + wsQuery + '" \\\n';
+      s += '  -H "Authorization: Bearer ' + token + '"';
+      if (hasBody) {
+        s += ' \\\n  -H "Content-Type: application/json" \\\n';
+        s += '  -d \'' + bodyExample + '\'';
+      }
+      return s;
+    } else if (lang === 'Python') {
+      let s = 'import requests\n\n';
+      s += 'response = requests.' + method + '(\n';
+      s += '    "' + url + wsQuery + '",\n';
+      s += '    headers={"Authorization": "Bearer ' + token + '"}';
+      if (hasBody) s += ',\n    json=' + bodyExample;
+      s += '\n)\n';
+      s += 'print(response.json())';
+      return s;
+    } else if (lang === 'JavaScript') {
+      let s = 'const response = await fetch("' + url + wsQuery + '", {\n';
+      s += '  method: "' + method.toUpperCase() + '",\n';
+      s += '  headers: {\n';
+      s += '    "Authorization": "Bearer ' + token + '"';
+      if (hasBody) s += ',\n    "Content-Type": "application/json"';
+      s += '\n  }';
+      if (hasBody) s += ',\n  body: JSON.stringify(' + bodyExample + ')';
+      s += '\n});\n';
+      s += 'const data = await response.json();\nconsole.log(data);';
+      return s;
+    } else if (lang === 'Go') {
+      let s = 'package main\n\nimport (\n  "fmt"\n  "io"\n  "net/http"\n';
+      if (hasBody) s += '  "strings"\n';
+      s += ')\n\nfunc main() {\n';
+      if (hasBody) s += '  payload := strings.NewReader(`' + bodyExample + '`)\n';
+      s += '  req, _ := http.NewRequest("' + method.toUpperCase() + '", "' + url + wsQuery + '", '
+        + (hasBody ? 'payload' : 'nil') + ')\n';
+      s += '  req.Header.Set("Authorization", "Bearer ' + token + '")\n';
+      if (hasBody) s += '  req.Header.Set("Content-Type", "application/json")\n';
+      s += '  resp, _ := http.DefaultClient.Do(req)\n';
+      s += '  defer resp.Body.Close()\n';
+      s += '  body, _ := io.ReadAll(resp.Body)\n';
+      s += '  fmt.Println(string(body))\n}';
+      return s;
+    }
+    return '';
   }
 
   function ctoStartPoll() {
