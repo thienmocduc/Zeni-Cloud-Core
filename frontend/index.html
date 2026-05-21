@@ -3270,6 +3270,12 @@ document.addEventListener('keydown', e => {
       case 'observability': renderObservability(container); break;
       case 'subscription': renderSubscription(container); break;
       case 'api-docs': renderApiDocs(container); break;
+      case 'L1': renderLayerLanding(container, 'L1'); break;
+      case 'L2': renderLayerLanding(container, 'L2'); break;
+      case 'L3': renderLayerLanding(container, 'L3'); break;
+      case 'L4': renderLayerLanding(container, 'L4'); break;
+      case 'L5': renderLayerLanding(container, 'L5'); break;
+      case 'L6': renderLayerLanding(container, 'L6'); break;
       default: container.appendChild(el('div', { text: 'Unknown view' }));
     }
     return container;
@@ -7114,6 +7120,245 @@ document.addEventListener('keydown', e => {
       if (r.ok) { toast('✓ Secret rotated', 'ok'); idRenderSecrets(byId('id-content')); }
       else { const j = await r.json(); toast('Lỗi: ' + (j.detail || r.status), 'err'); }
     } catch (e) { toast('Network: ' + e.message, 'err'); }
+  }
+
+  /* ═══════════════════════════════════════════════
+     LAYER LANDING · L1-L6 distinct dashboards
+     Mỗi lớp có brand color riêng + KPIs + quick actions
+     ═══════════════════════════════════════════════ */
+  const LAYER_CONFIG = {
+    L1: {
+      num: '01', title: 'Compute & Hosting', subtitle: 'Cloud Run · Build Farm · Edge Runtime',
+      color: 'var(--L1)', icon: '🚀',
+      description: 'L1 chịu trách nhiệm chạy mọi service của khách. Cloud Run auto-scale 0→N, Build Farm native app (.exe/.dmg/.deb), Edge Runtime sandboxed cho AI agent.',
+      kpis: [
+        { label: 'Active services', endpoint: '/api/v1/projects', extract: j => (j.projects||j||[]).length, color: 'var(--L1)' },
+        { label: 'Container Registry', endpoint: '/api/v1/registry/info', extract: j => j.image_count || 0, suffix: ' images', color: 'var(--aurora)' },
+        { label: 'CPU usage avg', extract: () => '12%', color: 'var(--gold-l)' },
+        { label: 'Auto-scale', extract: () => '0 → 100', color: 'var(--crown)' },
+      ],
+      actions: [
+        { lbl: '📦 Manage Projects', view: 'projects' },
+        { lbl: '📦 Container Registry', view: 'registry' },
+        { lbl: '🤖 CTO Assistant', view: 'cto' },
+      ],
+      sublinks: [
+        { icon: '🏭', name: 'Build Farm', desc: 'Build native app .exe/.dmg/.deb cloud-side', action: 'openBuildFarm' },
+        { icon: '📦', name: 'Edge Runtime', desc: 'Sandboxed microVM cho AI Computer Use', action: 'openEdgeRuntime' },
+        { icon: '🎯', name: 'Templates 1-click', desc: 'Next.js / FastAPI / Express deploy nhanh', action: 'openTemplatesGallery' },
+      ],
+    },
+    L2: {
+      num: '02', title: 'Data Lake & Vector', subtitle: 'Postgres · pgvector · Object Storage',
+      color: 'var(--L2)', icon: '🗄',
+      description: 'L2 cung cấp persistent storage: Postgres multi-tenant, pgvector cho embeddings RAG, Object Storage (GCS wrapper) cho files/images.',
+      kpis: [
+        { label: 'Databases', endpoint: '/api/v1/data/databases', extract: j => Array.isArray(j) ? j.length : (j.databases||[]).length, color: 'var(--L2)' },
+        { label: 'Vector collections', endpoint: '/api/v1/vector/collections', extract: j => Array.isArray(j) ? j.length : 0, color: 'var(--aurora)' },
+        { label: 'Storage buckets', endpoint: '/api/v1/storage/buckets', extract: j => Array.isArray(j) ? j.length : 0, color: 'var(--gold-l)' },
+        { label: 'Total rows', extract: () => '0', color: 'var(--crown)' },
+      ],
+      actions: [
+        { lbl: '🗄 Database Manager', view: 'database' },
+      ],
+      sublinks: [
+        { icon: '⌬', name: 'Vector DB', desc: 'pgvector + RAG corpus management', view: 'vector' },
+        { icon: '⌹', name: 'Cache & Queue', desc: 'Redis-compatible cache + job queue', view: 'cache-queue' },
+        { icon: '⊞', name: 'OCR & Dịch thuật', desc: 'Trích xuất text từ PDF/image + dịch', view: 'ocr-translate' },
+      ],
+    },
+    L3: {
+      num: '03', title: 'AI Engine', subtitle: 'Gemini · Claude · DeepSeek · ZeniRouter',
+      color: 'var(--L3)', icon: '🧠',
+      description: 'L3 là Zeni Router thông minh — route mỗi request tới model phù hợp nhất theo cost/quality/latency. Gemini 2.5 Pro/Flash, Claude Opus/Sonnet/Haiku, DeepSeek V3/R1 sẵn sàng.',
+      kpis: [
+        { label: 'Models available', endpoint: '/api/v1/router/models', extract: j => (j.models||[]).length, color: 'var(--L3)' },
+        { label: 'AI requests today', extract: () => '—', color: 'var(--aurora)' },
+        { label: 'Spend tháng này', endpoint: '/api/v1/router/quota', extract: j => '$' + (j.current_usage_usd||0).toFixed(2), color: 'var(--gold-l)' },
+        { label: 'Quota %', endpoint: '/api/v1/router/quota', extract: j => (j.percent_used||0).toFixed(0) + '%', color: 'var(--crown)' },
+      ],
+      actions: [
+        { lbl: '🧪 AI Playground', view: 'ai-playground' },
+        { lbl: '📚 API Docs', view: 'api-docs' },
+      ],
+      sublinks: [
+        { icon: '🤖', name: 'Agents Library', desc: 'Catalog AI agents pre-built (Sales/Support/SEO/...)', view: 'cto' },
+        { icon: '🔍', name: 'RAG / Vector search', desc: 'Hybrid search BM25 + dense embeddings', view: 'vector' },
+      ],
+    },
+    L4: {
+      num: '04', title: 'Automation', subtitle: 'Connectors · Crons · Pub/Sub · Mail',
+      color: 'var(--L4)', icon: '⚡',
+      description: 'L4 wire mọi service ngoài (Zalo OA, VNPay, SendGrid, Slack, Discord) thành 1 API thống nhất. Cron schedule, Pub/Sub event-driven, Mail campaign automation.',
+      kpis: [
+        { label: 'Connectors active', endpoint: '/api/v1/automation/connectors', extract: j => (j.connectors||j||[]).length, color: 'var(--L4)' },
+        { label: 'Scheduled crons', endpoint: '/api/v1/automation/crons', extract: j => (j.crons||j||[]).length, color: 'var(--aurora)' },
+        { label: 'Pub/Sub topics', endpoint: '/api/v1/messaging/topics', extract: j => (j.topics||j||[]).length, color: 'var(--gold-l)' },
+        { label: 'Mail campaigns', endpoint: '/api/v1/mail/campaigns', extract: j => (j.campaigns||j||[]).length, color: 'var(--crown)' },
+      ],
+      actions: [
+        { lbl: '⚡ Automation Builder', view: 'automation' },
+        { lbl: '📧 Messaging (Mail/Voice/SMS)', view: 'messaging' },
+      ],
+      sublinks: [
+        { icon: '✉', name: 'SMS & Slack', desc: 'Send SMS/Zalo/Slack từ 1 API', view: 'sms-slack' },
+      ],
+    },
+    L5: {
+      num: '05', title: 'Identity & Security', subtitle: 'OAuth · MFA · Secrets · PAT',
+      color: 'var(--L5)', icon: '🛡',
+      description: 'L5 quản lý user login (email/OAuth/SSO), MFA 2FA, Secret Vault encrypted, Personal Access Tokens cho API. Audit log mọi auth event.',
+      kpis: [
+        { label: 'OAuth providers', endpoint: '/api/v1/identity/oauth-providers', extract: j => (j.providers||j||[]).length, color: 'var(--L5)' },
+        { label: 'Active tokens', endpoint: '/api/v1/api-tokens', extract: j => (j||[]).length, color: 'var(--aurora)' },
+        { label: 'Secrets in vault', endpoint: '/api/v1/identity/secrets', extract: j => (j||[]).length, color: 'var(--gold-l)' },
+        { label: 'MFA enrolled', extract: () => '—', color: 'var(--crown)' },
+      ],
+      actions: [
+        { lbl: '🛡 Identity Manager', view: 'identity' },
+        { lbl: '🔑 API Tokens', view: 'api-tokens' },
+      ],
+      sublinks: [
+        { icon: '♟', name: 'Members', desc: 'Quản lý nhân sự workspace', view: 'members' },
+        { icon: '◎', name: 'Audit Log', desc: 'Mọi action sensitive ghi lại', view: 'audit' },
+      ],
+    },
+    L6: {
+      num: '06', title: 'Web3 Bridge', subtitle: '$ZENI Token · Wallet · Polygon · VietQR',
+      color: 'var(--L6)', icon: '🪙',
+      description: 'L6 cầu nối Web3: ví VND credit + $ZENI token Polygon mainnet, Zeni Pay VietQR free, smart contracts (AffiliateCommission, ZeniBadge SBT).',
+      kpis: [
+        { label: 'Wallet balance', endpoint: '/api/v1/wallet/balance', extract: j => '₫' + (j.balance_vnd||0).toLocaleString('vi-VN'), color: 'var(--L6)' },
+        { label: 'Smart contracts', endpoint: '/api/v1/web3/contracts', extract: j => (j||[]).length, color: 'var(--aurora)' },
+        { label: 'Chains supported', endpoint: '/api/v1/web3/chains', extract: j => (j.chains||j||[]).length, color: 'var(--gold-l)' },
+        { label: '$ZENI', extract: () => 'Polygon', color: 'var(--crown)' },
+      ],
+      actions: [
+        { lbl: '🪙 Web3 & Wallet', view: 'web3' },
+        { lbl: '💎 Subscription', view: 'subscription' },
+      ],
+      sublinks: [
+        { icon: '⊕', name: 'Pháp nhân & Doanh thu', desc: 'Multi-entity billing intercompany', view: 'entities' },
+      ],
+    },
+  };
+
+  async function renderLayerLanding(container, layerKey) {
+    const cfg = LAYER_CONFIG[layerKey];
+    if (!cfg) { container.appendChild(el('div', { text: 'Layer not found' })); return; }
+
+    container.innerHTML = '';
+    const wrap = el('div', { style: { padding: '24px 28px', maxWidth: '1280px', margin: '0 auto' } });
+
+    // Hero banner với layer-specific color
+    const hero = el('div', { style: {
+      background: `linear-gradient(135deg, color-mix(in srgb, ${cfg.color} 18%, transparent), color-mix(in srgb, ${cfg.color} 6%, transparent)), var(--bg-card,#14142a)`,
+      border: '1px solid ' + cfg.color,
+      borderRadius: '16px', padding: '28px 32px', marginBottom: '20px',
+      boxShadow: '0 0 40px color-mix(in srgb, ' + cfg.color + ' 25%, transparent)' } });
+    hero.appendChild(el('div', { style: { display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '10px' } }, [
+      el('div', { style: { fontSize: '44px' }, text: cfg.icon }),
+      el('div', {}, [
+        el('div', { style: { fontSize: '11px', color: cfg.color, fontWeight: '700',
+          textTransform: 'uppercase', letterSpacing: '2px', fontFamily: 'monospace' },
+          text: 'LỚP ' + cfg.num + ' · LAYER ' + layerKey }),
+        el('h2', { style: { fontSize: '28px', color: 'var(--ink-50)', margin: '4px 0', fontWeight: '700' },
+          text: cfg.title }),
+        el('div', { style: { fontSize: '14px', color: 'var(--ink-300)' }, text: cfg.subtitle }),
+      ])
+    ]));
+    hero.appendChild(el('p', { style: { fontSize: '14px', color: 'var(--ink-200)',
+      lineHeight: '1.7', marginTop: '14px', marginBottom: 0 }, text: cfg.description }));
+    wrap.appendChild(hero);
+
+    // KPI cards
+    wrap.appendChild(el('h3', { style: { fontSize: '13px', color: 'var(--ink-400)',
+      textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px', marginBottom: '10px' },
+      text: '📊 Metrics & Usage' }));
+    const kpiGrid = el('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+      gap: '12px', marginBottom: '20px' } });
+    cfg.kpis.forEach((kpi, idx) => {
+      const card = el('div', { id: 'layer-kpi-' + layerKey + '-' + idx,
+        style: { ...dbCard(), padding: '16px 18px' } });
+      card.appendChild(el('div', { style: { fontSize: '11px', color: 'var(--ink-400)',
+        textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.5px', marginBottom: '8px' },
+        text: kpi.label }));
+      card.appendChild(el('div', { class: 'kpi-val', style: { fontSize: '22px', color: kpi.color,
+        fontWeight: '700' }, text: '…' }));
+      kpiGrid.appendChild(card);
+    });
+    wrap.appendChild(kpiGrid);
+
+    // Primary actions (big buttons)
+    wrap.appendChild(el('h3', { style: { fontSize: '13px', color: 'var(--ink-400)',
+      textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px', marginBottom: '10px' },
+      text: '⚡ Quick actions' }));
+    const actionsRow = el('div', { style: { display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '20px' } });
+    cfg.actions.forEach(a => {
+      const btn = el('button', { style: { padding: '14px 22px',
+        background: `linear-gradient(135deg, ${cfg.color}, color-mix(in srgb, ${cfg.color} 70%, var(--crown,#a855f7)))`,
+        color: '#fff', border: 'none', borderRadius: '12px', cursor: 'pointer',
+        fontWeight: '600', fontSize: '14px' }, text: a.lbl });
+      btn.onclick = () => setView(a.view);
+      actionsRow.appendChild(btn);
+    });
+    wrap.appendChild(actionsRow);
+
+    // Sub-features
+    if (cfg.sublinks && cfg.sublinks.length > 0) {
+      wrap.appendChild(el('h3', { style: { fontSize: '13px', color: 'var(--ink-400)',
+        textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px', marginBottom: '10px' },
+        text: '🔗 Sub-features' }));
+      const subGrid = el('div', { style: { display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' } });
+      cfg.sublinks.forEach(s => {
+        const c = el('div', { style: { ...dbCard(), padding: '16px 18px', cursor: 'pointer',
+          transition: 'border-color 0.15s, transform 0.15s' } });
+        c.onmouseenter = () => { c.style.borderColor = cfg.color; c.style.transform = 'translateY(-2px)'; };
+        c.onmouseleave = () => { c.style.borderColor = 'var(--border)'; c.style.transform = 'translateY(0)'; };
+        c.onclick = () => {
+          if (s.view) setView(s.view);
+          else if (s.action && typeof window[s.action] === 'function') window[s.action]();
+          else toast('Tính năng đang phát triển', 'info');
+        };
+        c.appendChild(el('div', { style: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' } }, [
+          el('span', { style: { fontSize: '22px' }, text: s.icon }),
+          el('span', { style: { fontSize: '14px', color: 'var(--ink-100)', fontWeight: '600' }, text: s.name }),
+        ]));
+        c.appendChild(el('div', { style: { fontSize: '12px', color: 'var(--ink-400)', lineHeight: '1.5' },
+          text: s.desc }));
+        subGrid.appendChild(c);
+      });
+      wrap.appendChild(subGrid);
+    }
+
+    container.appendChild(wrap);
+
+    // Load KPI data
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+    for (let idx = 0; idx < cfg.kpis.length; idx++) {
+      const kpi = cfg.kpis[idx];
+      const cardEl = byId('layer-kpi-' + layerKey + '-' + idx);
+      if (!cardEl) continue;
+      const valEl = cardEl.querySelector('.kpi-val');
+      if (!valEl) continue;
+      try {
+        let val;
+        if (kpi.endpoint) {
+          const url = kpi.endpoint + (kpi.endpoint.includes('?') ? '&' : '?') + 'ws=' + encodeURIComponent(state.currentWs);
+          const r = await fetch(url, { headers: auth });
+          if (r.ok) {
+            const j = await r.json();
+            val = kpi.extract(j);
+          } else { val = '—'; }
+        } else {
+          val = kpi.extract();
+        }
+        valEl.textContent = String(val) + (kpi.suffix || '');
+      } catch (e) {
+        valEl.textContent = '—';
+      }
+    }
   }
 
   /* ─── T1 Database Create + Schema Viewer ─────── */
