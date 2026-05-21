@@ -2088,6 +2088,9 @@ select {
         <div class="nav-item" data-view="automation" style="--layer-color: var(--gold);">
           <span class="nav-icon">⚡</span> <span>Automation</span>
         </div>
+        <div class="nav-item" data-view="messaging" style="--layer-color: var(--gold);">
+          <span class="nav-icon">📧</span> <span>Messaging</span>
+        </div>
         <div class="nav-item" data-view="cto" style="--layer-color: var(--gold);">
           <span class="nav-icon">💬</span> <span>AI Support Chat</span>
         </div>
@@ -3250,6 +3253,7 @@ document.addEventListener('keydown', e => {
       case 'database': renderDatabaseManager(container); break;
       case 'identity': renderIdentityManager(container); break;
       case 'automation': renderAutomation(container); break;
+      case 'messaging': renderMessaging(container); break;
       default: container.appendChild(el('div', { text: 'Unknown view' }));
     }
     return container;
@@ -5240,6 +5244,294 @@ document.addEventListener('keydown', e => {
         row.appendChild(retry);
         card.appendChild(row);
       });
+    } catch (e) {
+      card.innerHTML = '<div style="padding:20px;color:#fb7185">Lỗi: ' + e.message + '</div>';
+    }
+  }
+
+  /* ═══════════════════════════════════════════════
+     MESSAGING · Mail + Voice + SMS/PubSub
+     Pattern: SendGrid + Twilio + GCP Pub/Sub
+     ═══════════════════════════════════════════════ */
+  let _msgState = { activeTab: 'mail' };
+
+  async function renderMessaging(container) {
+    container.innerHTML = '';
+    const wrap = el('div', { style: { padding: '16px 20px', maxWidth: '1400px', margin: '0 auto' } });
+
+    wrap.appendChild(el('div', { style: { display: 'flex', alignItems: 'baseline', gap: '14px', marginBottom: '6px' } }, [
+      el('h2', { style: { fontSize: '24px', color: 'var(--ink-50)', margin: 0 }, text: '📧 Messaging' }),
+      el('span', { style: { fontSize: '13px', color: 'var(--ink-400)' },
+                    text: 'L7 Mail/Voice/SMS · Email campaigns · Voice IVR · Pub/Sub topics' })
+    ]));
+    wrap.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '18px' },
+                                text: 'Workspace: ' + (state.currentWs || '—') }));
+
+    const tabBar = el('div', { style: { display: 'flex', gap: '4px', borderBottom: '1px solid var(--border)',
+      marginBottom: '16px' } });
+    const tabs = [
+      { id: 'mail', label: '📧 Email campaigns' },
+      { id: 'voice', label: '📞 Voice & IVR' },
+      { id: 'pubsub', label: '📨 Pub/Sub topics' },
+    ];
+    tabs.forEach(t => {
+      const btn = el('button', { style: dbTabStyle(_msgState.activeTab === t.id), text: t.label });
+      btn.onclick = () => { _msgState.activeTab = t.id; renderMessaging(container); };
+      tabBar.appendChild(btn);
+    });
+    wrap.appendChild(tabBar);
+
+    const content = el('div', { id: 'msg-content' });
+    wrap.appendChild(content);
+    container.appendChild(wrap);
+
+    if (_msgState.activeTab === 'mail') await msgRenderMail(content);
+    else if (_msgState.activeTab === 'voice') await msgRenderVoice(content);
+    else if (_msgState.activeTab === 'pubsub') await msgRenderPubSub(content);
+  }
+
+  async function msgRenderMail(c) {
+    c.innerHTML = '';
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+
+    // Analytics cards
+    const stats = el('div', { id: 'mail-stats',
+      style: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '14px' } });
+    c.appendChild(stats);
+
+    // Header + new campaign
+    const header = el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' } });
+    header.appendChild(el('h3', { style: { fontSize: '15px', color: 'var(--ink-100)', margin: 0 }, text: '📨 Campaigns' }));
+    const newBtn = el('button', { style: { padding: '10px 18px',
+      background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+      color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
+      fontWeight: '600', fontSize: '14px' }, text: '+ Tạo campaign' });
+    newBtn.onclick = () => toast('Modal tạo campaign — next iteration', 'info');
+    header.appendChild(newBtn);
+    c.appendChild(header);
+
+    // Campaigns list
+    const card = el('div', { id: 'mail-campaigns', style: dbCard() });
+    card.appendChild(el('div', { style: { padding: '14px 18px', color: 'var(--ink-400)', fontSize: '13px' },
+                                  text: 'Đang tải campaigns...' }));
+    c.appendChild(card);
+
+    // Load analytics
+    try {
+      const r = await fetch('/api/v1/mail/analytics/overview?ws=' + encodeURIComponent(state.currentWs), { headers: auth });
+      const j = r.ok ? await r.json() : {};
+      const figures = [
+        { lbl: 'Sent', val: (j.sent || 0).toLocaleString(), color: 'var(--ink-100)' },
+        { lbl: 'Open rate', val: (j.open_rate || 0).toFixed(1) + '%', color: 'var(--aurora,#22d3ee)' },
+        { lbl: 'Click rate', val: (j.click_rate || 0).toFixed(1) + '%', color: 'var(--indigo,#7d68ff)' },
+        { lbl: 'Bounce rate', val: (j.bounce_rate || 0).toFixed(1) + '%', color: '#fb7185' },
+      ];
+      stats.innerHTML = '';
+      figures.forEach(f => {
+        const card2 = el('div', { style: { ...dbCard(), padding: '14px 18px' } });
+        card2.appendChild(el('div', { style: { fontSize: '11px', color: 'var(--ink-400)',
+          textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '600', marginBottom: '6px' }, text: f.lbl }));
+        card2.appendChild(el('div', { style: { fontSize: '22px', color: f.color, fontWeight: '700' }, text: f.val }));
+        stats.appendChild(card2);
+      });
+    } catch (e) {}
+
+    // Load campaigns
+    try {
+      const r = await fetch('/api/v1/mail/campaigns?ws=' + encodeURIComponent(state.currentWs), { headers: auth });
+      const j = await r.json();
+      card.innerHTML = '';
+      const camps = Array.isArray(j) ? j : (j.campaigns || j.items || []);
+      if (camps.length === 0) {
+        const empty = el('div', { style: { padding: '40px 20px', textAlign: 'center', color: 'var(--ink-400)' } });
+        empty.appendChild(el('div', { style: { fontSize: '40px', marginBottom: '10px' }, text: '📧' }));
+        empty.appendChild(el('div', { style: { fontSize: '15px', color: 'var(--ink-200)' }, text: 'Chưa có campaign nào' }));
+        card.appendChild(empty);
+      } else {
+        const hdr = el('div', { style: { display: 'grid',
+          gridTemplateColumns: '2fr 1.3fr 1fr 1fr 1fr 120px', gap: '14px',
+          padding: '12px 18px', borderBottom: '1px solid var(--border)',
+          fontSize: '11px', color: 'var(--ink-400)', fontWeight: '700', textTransform: 'uppercase' } });
+        ['Subject', 'Status', 'Recipients', 'Open', 'Click', 'Actions'].forEach(t => hdr.appendChild(el('div', { text: t })));
+        card.appendChild(hdr);
+
+        camps.forEach(cm => {
+          const row = el('div', { style: { display: 'grid',
+            gridTemplateColumns: '2fr 1.3fr 1fr 1fr 1fr 120px', gap: '14px',
+            padding: '12px 18px', borderBottom: '1px solid var(--border)',
+            fontSize: '13px', alignItems: 'center' } });
+          row.appendChild(el('div', {}, [
+            el('div', { style: { color: 'var(--ink-100)', fontWeight: '500' }, text: cm.subject || cm.name || '(no subject)' }),
+            el('div', { style: { fontSize: '11px', color: 'var(--ink-400)', marginTop: '2px' },
+                         text: 'From: ' + (cm.from_email || '—') }),
+          ]));
+          const stat = cm.status || 'draft';
+          const sc = stat === 'sent' || stat === 'active' ? 'var(--aurora,#22d3ee)' :
+                     stat === 'scheduled' ? 'var(--gold-l,#facc15)' :
+                     stat === 'sending' ? 'var(--indigo,#7d68ff)' : 'var(--ink-400)';
+          row.appendChild(el('span', { style: { color: sc, fontSize: '11px',
+            padding: '4px 10px', background: 'rgba(34,211,238,0.08)', borderRadius: '6px',
+            border: '1px solid ' + sc, display: 'inline-block', width: 'fit-content',
+            textTransform: 'uppercase' }, text: stat }));
+          row.appendChild(el('div', { style: { color: 'var(--ink-200)' }, text: (cm.recipient_count || 0).toLocaleString() }));
+          row.appendChild(el('div', { style: { color: 'var(--aurora,#22d3ee)' }, text: (cm.open_rate || 0).toFixed(0) + '%' }));
+          row.appendChild(el('div', { style: { color: 'var(--indigo,#7d68ff)' }, text: (cm.click_rate || 0).toFixed(0) + '%' }));
+          const actions = el('div', { style: { display: 'flex', gap: '4px' } });
+          if (stat === 'draft' || stat === 'scheduled') {
+            const sendBtn = el('button', { style: { padding: '5px 9px', background: 'rgba(125,104,255,0.1)',
+              color: 'var(--indigo,#7d68ff)', border: '1px solid var(--indigo,#7d68ff)',
+              borderRadius: '5px', cursor: 'pointer', fontSize: '11px' }, text: '▶ Send' });
+            sendBtn.onclick = async () => {
+              if (!confirm('Gửi campaign "' + (cm.subject || '?') + '" cho ' + cm.recipient_count + ' người?')) return;
+              const rr = await fetch('/api/v1/mail/campaigns/' + cm.id + '/send-now?ws=' + encodeURIComponent(state.currentWs),
+                { method: 'POST', headers: auth });
+              if (rr.ok) { toast('✓ Đã queue gửi', 'ok'); msgRenderMail(c); }
+              else { toast('✗ Send fail', 'err'); }
+            };
+            actions.appendChild(sendBtn);
+          }
+          if (stat === 'sending' || stat === 'scheduled') {
+            const pauseBtn = el('button', { style: { padding: '5px 9px', background: 'rgba(253,230,138,0.08)',
+              color: 'var(--gold-l,#facc15)', border: '1px solid var(--gold-l,#facc15)',
+              borderRadius: '5px', cursor: 'pointer', fontSize: '11px' }, text: '⏸' });
+            pauseBtn.onclick = async () => {
+              const rr = await fetch('/api/v1/mail/campaigns/' + cm.id + '/pause?ws=' + encodeURIComponent(state.currentWs),
+                { method: 'POST', headers: auth });
+              if (rr.ok) { toast('✓ Paused', 'ok'); msgRenderMail(c); }
+            };
+            actions.appendChild(pauseBtn);
+          }
+          row.appendChild(actions);
+          card.appendChild(row);
+        });
+      }
+    } catch (e) {
+      card.innerHTML = '<div style="padding:20px;color:#fb7185">Lỗi: ' + e.message + '</div>';
+    }
+  }
+
+  async function msgRenderVoice(c) {
+    c.innerHTML = '';
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+
+    // Stats card
+    const statsRow = el('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+      gap: '12px', marginBottom: '14px' } });
+    c.appendChild(statsRow);
+
+    try {
+      const r = await fetch('/api/v1/voice/analytics/overview?ws=' + encodeURIComponent(state.currentWs), { headers: auth });
+      const j = r.ok ? await r.json() : {};
+      const figures = [
+        { lbl: 'Calls today', val: (j.calls_today || 0).toLocaleString(), color: 'var(--ink-100)' },
+        { lbl: 'Avg duration', val: ((j.avg_duration_sec || 0)).toFixed(1) + 's', color: 'var(--aurora,#22d3ee)' },
+        { lbl: 'Success rate', val: (j.success_rate || 0).toFixed(1) + '%', color: 'var(--indigo,#7d68ff)' },
+      ];
+      figures.forEach(f => {
+        const card = el('div', { style: { ...dbCard(), padding: '14px 18px' } });
+        card.appendChild(el('div', { style: { fontSize: '11px', color: 'var(--ink-400)',
+          textTransform: 'uppercase', fontWeight: '600', marginBottom: '6px' }, text: f.lbl }));
+        card.appendChild(el('div', { style: { fontSize: '22px', color: f.color, fontWeight: '700' }, text: f.val }));
+        statsRow.appendChild(card);
+      });
+    } catch (e) {
+      statsRow.appendChild(el('div', { style: { color: 'var(--ink-400)', fontSize: '13px', gridColumn: '1/-1' },
+                                        text: 'Stats unavailable' }));
+    }
+
+    // Header
+    const header = el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' } });
+    header.appendChild(el('h3', { style: { fontSize: '15px', color: 'var(--ink-100)', margin: 0 }, text: '🎙 Voice Agents (IVR)' }));
+    const newBtn = el('button', { style: { padding: '10px 18px',
+      background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+      color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
+      fontWeight: '600', fontSize: '14px' }, text: '+ Tạo voice agent' });
+    newBtn.onclick = () => toast('Voice agent builder — next iteration', 'info');
+    header.appendChild(newBtn);
+    c.appendChild(header);
+
+    const card = el('div', { id: 'voice-agents-list', style: dbCard() });
+    card.appendChild(el('div', { style: { padding: '14px 18px', color: 'var(--ink-400)', fontSize: '13px' },
+                                  text: 'Đang tải voice agents...' }));
+    c.appendChild(card);
+
+    try {
+      const r = await fetch('/api/v1/voice/agents?ws=' + encodeURIComponent(state.currentWs), { headers: auth });
+      const j = await r.json();
+      card.innerHTML = '';
+      const agents = Array.isArray(j) ? j : (j.agents || j.items || []);
+      if (agents.length === 0) {
+        const empty = el('div', { style: { padding: '40px 20px', textAlign: 'center', color: 'var(--ink-400)' } });
+        empty.appendChild(el('div', { style: { fontSize: '40px', marginBottom: '10px' }, text: '📞' }));
+        empty.appendChild(el('div', { style: { fontSize: '15px', color: 'var(--ink-200)' },
+                                       text: 'Chưa có voice agent nào' }));
+        card.appendChild(empty);
+      } else {
+        agents.forEach(a => {
+          const row = el('div', { style: { padding: '14px 18px', borderBottom: '1px solid var(--border)',
+            display: 'flex', justifyContent: 'space-between' } });
+          row.appendChild(el('div', {}, [
+            el('div', { style: { color: 'var(--ink-100)', fontWeight: '500' }, text: a.name || '(unnamed)' }),
+            el('div', { style: { fontSize: '11px', color: 'var(--ink-400)', marginTop: '2px' },
+                         text: a.phone_number || 'No phone yet' }),
+          ]));
+          const stat = a.status || 'inactive';
+          const sc = stat === 'active' ? 'var(--aurora,#22d3ee)' : 'var(--ink-400)';
+          row.appendChild(el('span', { style: { color: sc, fontSize: '11px',
+            padding: '4px 10px', background: 'rgba(34,211,238,0.08)', borderRadius: '6px',
+            border: '1px solid ' + sc, alignSelf: 'center', textTransform: 'uppercase' }, text: stat }));
+          card.appendChild(row);
+        });
+      }
+    } catch (e) {
+      card.innerHTML = '<div style="padding:20px;color:#fb7185">Lỗi: ' + e.message + '</div>';
+    }
+  }
+
+  async function msgRenderPubSub(c) {
+    c.innerHTML = '';
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+
+    const header = el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' } });
+    header.appendChild(el('h3', { style: { fontSize: '15px', color: 'var(--ink-100)', margin: 0 }, text: '📨 Pub/Sub topics' }));
+    const newBtn = el('button', { style: { padding: '10px 18px',
+      background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+      color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
+      fontWeight: '600', fontSize: '14px' }, text: '+ Tạo topic' });
+    header.appendChild(newBtn);
+    c.appendChild(header);
+
+    const card = el('div', { id: 'pubsub-topics', style: dbCard() });
+    card.appendChild(el('div', { style: { padding: '14px 18px', color: 'var(--ink-400)', fontSize: '13px' },
+                                  text: 'Đang tải topics...' }));
+    c.appendChild(card);
+
+    try {
+      const r = await fetch('/api/v1/messaging/topics?ws=' + encodeURIComponent(state.currentWs), { headers: auth });
+      const j = await r.json();
+      card.innerHTML = '';
+      const topics = Array.isArray(j) ? j : (j.topics || j.items || []);
+      if (topics.length === 0) {
+        const empty = el('div', { style: { padding: '40px 20px', textAlign: 'center', color: 'var(--ink-400)' } });
+        empty.appendChild(el('div', { style: { fontSize: '40px', marginBottom: '10px' }, text: '📨' }));
+        empty.appendChild(el('div', { style: { fontSize: '15px', color: 'var(--ink-200)' },
+                                       text: 'Chưa có topic nào' }));
+        empty.appendChild(el('div', { style: { fontSize: '12px', color: 'var(--ink-400)', marginTop: '6px' },
+                                       text: 'Tạo topic để publish event giữa services' }));
+        card.appendChild(empty);
+      } else {
+        topics.forEach(tp => {
+          const row = el('div', { style: { padding: '14px 18px', borderBottom: '1px solid var(--border)',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center' } });
+          row.appendChild(el('div', {}, [
+            el('div', { style: { color: 'var(--ink-100)', fontFamily: 'monospace', fontWeight: '500' },
+                         text: tp.name || tp.id }),
+            el('div', { style: { fontSize: '11px', color: 'var(--ink-400)', marginTop: '2px' },
+                         text: 'Subscribers: ' + (tp.subscription_count || 0) + ' · Messages: ' + (tp.message_count || 0) }),
+          ]));
+          card.appendChild(row);
+        });
+      }
     } catch (e) {
       card.innerHTML = '<div style="padding:20px;color:#fb7185">Lỗi: ' + e.message + '</div>';
     }
