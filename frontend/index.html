@@ -2079,6 +2079,9 @@ select {
         <div class="nav-item" data-view="ai-playground" style="--layer-color: var(--gold);">
           <span class="nav-icon">🧪</span> <span>AI Playground</span>
         </div>
+        <div class="nav-item" data-view="design-studio" style="--layer-color: var(--L3);">
+          <span class="nav-icon">🏛</span> <span>Design Studio</span>
+        </div>
         <div class="nav-item" data-view="database" style="--layer-color: var(--gold);">
           <span class="nav-icon">🗄</span> <span>Database</span>
         </div>
@@ -3276,6 +3279,7 @@ document.addEventListener('keydown', e => {
       case 'L4': renderLayerLanding(container, 'L4'); break;
       case 'L5': renderLayerLanding(container, 'L5'); break;
       case 'L6': renderLayerLanding(container, 'L6'); break;
+      case 'design-studio': renderDesignStudio(container); break;
       default: container.appendChild(el('div', { text: 'Unknown view' }));
     }
     return container;
@@ -7120,6 +7124,351 @@ document.addEventListener('keydown', e => {
       if (r.ok) { toast('✓ Secret rotated', 'ok'); idRenderSecrets(byId('id-content')); }
       else { const j = await r.json(); toast('Lỗi: ' + (j.detail || r.status), 'err'); }
     } catch (e) { toast('Network: ' + e.message, 'err'); }
+  }
+
+  /* ═══════════════════════════════════════════════
+     DESIGN STUDIO · architecture + interior render
+     Pattern: Midjourney/Imagen UI · 5 Vietnam styles
+     ═══════════════════════════════════════════════ */
+  let _dsState = { activeTab: 'quick', selectedStyle: 'indochine_vn', renders: [] };
+
+  const DESIGN_STYLES = [
+    { id: 'indochine_vn', name: 'Indochine Việt Nam', emoji: '🏯',
+      desc: 'Pháp colonial × hoa văn Việt, ngói âm dương, ban công sắt rèn',
+      prompt_suffix: 'Indochine Vietnamese interior, French colonial architecture mixed with Vietnamese motifs, traditional yin-yang roof tiles, wrought iron balcony, teak wood furniture, lotus patterns, warm tropical light, 8k photorealistic' },
+    { id: 'japandi', name: 'Japandi', emoji: '🌸',
+      desc: 'Tối giản Nhật-Bắc Âu, gỗ sáng, minimalism warm',
+      prompt_suffix: 'Japandi interior design, Japanese-Scandinavian minimalism, light oak wood, neutral palette, natural linen, soft morning light, clean lines, zen atmosphere, 8k photorealistic' },
+    { id: 'tropical_villa', name: 'Tropical Villa', emoji: '🌴',
+      desc: 'Bali resort, gỗ tự nhiên, mở thoáng, hồ bơi vô cực',
+      prompt_suffix: 'Tropical villa Bali resort style, natural rattan furniture, open-plan to garden, infinity pool view, teak deck, lush greenery, golden hour sunlight, luxury resort architecture, 8k photorealistic' },
+    { id: 'luxury', name: 'Luxury Modern', emoji: '💎',
+      desc: 'Marble + gold accent, opulent, mid-century luxury',
+      prompt_suffix: 'Modern luxury interior, Calacatta marble walls, brushed gold accents, velvet upholstery, crystal chandelier, mid-century furniture, dramatic lighting, opulent finishes, 8k photorealistic' },
+    { id: 'industrial_loft', name: 'Industrial Loft', emoji: '🏭',
+      desc: 'Loft xưởng, gạch trần, dầm thép, vintage Edison',
+      prompt_suffix: 'Industrial loft interior, exposed red brick walls, raw concrete ceiling, steel beams, Edison bulb lighting, vintage leather sofa, distressed wood floors, high ceiling warehouse conversion, 8k photorealistic' },
+  ];
+
+  async function renderDesignStudio(container) {
+    container.innerHTML = '';
+    const wrap = el('div', { style: { padding: '16px 20px', maxWidth: '1400px', margin: '0 auto' } });
+
+    // Header với L3 aurora color
+    const hero = el('div', { style: {
+      background: 'linear-gradient(135deg, color-mix(in srgb, var(--L3) 18%, transparent), color-mix(in srgb, var(--crown) 8%, transparent)), var(--bg-card,#14142a)',
+      border: '1px solid var(--L3)', borderRadius: '14px', padding: '20px 24px', marginBottom: '18px',
+      boxShadow: '0 0 30px color-mix(in srgb, var(--L3) 20%, transparent)' } });
+    hero.appendChild(el('div', { style: { display: 'flex', alignItems: 'center', gap: '14px' } }, [
+      el('div', { style: { fontSize: '36px' }, text: '🏛' }),
+      el('div', {}, [
+        el('h2', { style: { fontSize: '22px', color: 'var(--ink-50)', margin: 0 }, text: 'Zeni Design Studio' }),
+        el('div', { style: { fontSize: '13px', color: 'var(--ink-300)', marginTop: '3px' },
+          text: 'AI render kiến trúc + nội thất · 5 phong cách VN · Powered by Vertex AI Imagen 3' }),
+      ])
+    ]));
+    wrap.appendChild(hero);
+
+    // Tabs
+    const tabBar = el('div', { style: { display: 'flex', gap: '4px',
+      borderBottom: '1px solid var(--border)', marginBottom: '16px' } });
+    const tabs = [
+      { id: 'quick', label: '⚡ Quick Render (Imagen 3)' },
+      { id: 'orchestrate', label: '🎨 Full Design (Multi-agent)' },
+      { id: 'gallery', label: '🖼 My Gallery' },
+    ];
+    tabs.forEach(t => {
+      const btn = el('button', { style: dbTabStyle(_dsState.activeTab === t.id), text: t.label });
+      btn.onclick = () => { _dsState.activeTab = t.id; renderDesignStudio(container); };
+      tabBar.appendChild(btn);
+    });
+    wrap.appendChild(tabBar);
+
+    const content = el('div', { id: 'ds-content' });
+    wrap.appendChild(content);
+    container.appendChild(wrap);
+
+    if (_dsState.activeTab === 'quick') dsRenderQuick(content);
+    else if (_dsState.activeTab === 'orchestrate') dsRenderOrchestrate(content);
+    else if (_dsState.activeTab === 'gallery') dsRenderGallery(content);
+  }
+
+  function dsRenderQuick(c) {
+    c.innerHTML = '';
+    const grid = el('div', { style: { display: 'grid', gridTemplateColumns: '380px 1fr', gap: '14px' } });
+
+    // Left: form
+    const formCard = el('div', { style: { ...dbCard(), padding: '18px 20px' } });
+    formCard.appendChild(el('h3', { style: { fontSize: '14px', color: 'var(--ink-100)',
+      margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: '0.5px',
+      fontWeight: '700' }, text: '⚡ Quick render — 30 giây' }));
+
+    // Style picker (visual grid)
+    formCard.appendChild(modalLabel('Phong cách'));
+    const styleGrid = el('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)',
+      gap: '8px', marginBottom: '14px' } });
+    DESIGN_STYLES.forEach(s => {
+      const card = el('div', { style: { padding: '10px 12px', cursor: 'pointer',
+        background: _dsState.selectedStyle === s.id ? 'rgba(34,211,238,0.12)' : 'var(--bg-base)',
+        border: '1px solid ' + (_dsState.selectedStyle === s.id ? 'var(--L3)' : 'var(--border)'),
+        borderRadius: '8px', transition: 'all 0.15s' } });
+      card.onclick = () => { _dsState.selectedStyle = s.id; dsRenderQuick(c); };
+      card.appendChild(el('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' } }, [
+        el('span', { style: { fontSize: '18px' }, text: s.emoji }),
+        el('span', { style: { fontSize: '13px', color: 'var(--ink-100)', fontWeight: '600' }, text: s.name }),
+      ]));
+      card.appendChild(el('div', { style: { fontSize: '11px', color: 'var(--ink-400)', lineHeight: '1.4' },
+        text: s.desc }));
+      styleGrid.appendChild(card);
+    });
+    formCard.appendChild(styleGrid);
+
+    formCard.appendChild(modalLabel('Mô tả không gian (Vietnamese / English)'));
+    const promptTa = modalTextarea({
+      placeholder: 'vd: Phòng khách 30m² hướng nam, cửa sổ lớn, tone xanh đậm, sofa da nâu cho gia đình 4 người',
+      style: { minHeight: '100px' } });
+    formCard.appendChild(promptTa);
+
+    const row = el('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' } });
+    const sWrap = el('div'); sWrap.appendChild(modalLabel('Aspect ratio'));
+    const sSel = modalSelect();
+    [['1:1', 'Square 1:1'], ['16:9', 'Widescreen 16:9'], ['9:16', 'Portrait 9:16'], ['4:3', 'Landscape 4:3']].forEach(([v, t]) => {
+      const o = el('option', { value: v, text: t }); if (v === '16:9') o.selected = true;
+      sSel.appendChild(o);
+    });
+    sWrap.appendChild(sSel);
+    row.appendChild(sWrap);
+    const nWrap = el('div'); nWrap.appendChild(modalLabel('Số ảnh'));
+    const nSel = modalSelect();
+    [1, 2, 4].forEach(n => nSel.appendChild(el('option', { value: n, text: n + ' ảnh' })));
+    nSel.value = '2';
+    nWrap.appendChild(nSel);
+    row.appendChild(nWrap);
+    formCard.appendChild(row);
+
+    const renderBtn = el('button', { id: 'ds-render-btn', style: { width: '100%', padding: '14px',
+      background: 'linear-gradient(135deg, var(--L3), var(--crown))',
+      color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
+      fontWeight: '600', fontSize: '15px', marginTop: '8px' }, text: '🎨 Render ngay (~30s)' });
+    renderBtn.onclick = async () => {
+      const userPrompt = promptTa.value.trim();
+      if (!userPrompt) { toast('Cần mô tả không gian', 'err'); return; }
+      const style = DESIGN_STYLES.find(s => s.id === _dsState.selectedStyle);
+      const fullPrompt = userPrompt + '. ' + style.prompt_suffix;
+      renderBtn.disabled = true; renderBtn.textContent = '🎨 Đang render…';
+      const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || ''),
+                     'Content-Type': 'application/json' };
+      try {
+        const r = await fetch('/api/v1/ai/generate-image?ws=' + encodeURIComponent(state.currentWs), {
+          method: 'POST', headers: auth,
+          body: JSON.stringify({ prompt: fullPrompt, aspect_ratio: sSel.value,
+            n: parseInt(nSel.value, 10), style: _dsState.selectedStyle,
+            model: 'imagen-3.0-generate-001' })
+        });
+        const j = await r.json();
+        if (!r.ok) { toast('Lỗi: ' + (j.detail || r.status), 'err'); renderBtn.disabled = false; renderBtn.textContent = '🎨 Render ngay (~30s)'; return; }
+        // Show result + save to gallery
+        const imgs = j.images || j.urls || (j.url ? [j.url] : []);
+        const entry = { id: Date.now(), prompt: userPrompt, style: style.id, style_name: style.name,
+          aspect: sSel.value, images: imgs, cost: j.cost_usd, created_at: new Date().toISOString() };
+        _dsState.renders.unshift(entry);
+        dsRenderResults(entry);
+      } catch (e) { toast('Network: ' + e.message, 'err'); }
+      renderBtn.disabled = false; renderBtn.textContent = '🎨 Render ngay (~30s)';
+    };
+    formCard.appendChild(renderBtn);
+
+    formCard.appendChild(el('div', { style: { marginTop: '12px', fontSize: '11px',
+      color: 'var(--ink-400)', textAlign: 'center' },
+      text: 'Cost: ~$0.04/render · Imagen 3 powered · Output 1024×1024' }));
+
+    grid.appendChild(formCard);
+
+    // Right: result area
+    const resultPane = el('div', { id: 'ds-result', style: { ...dbCard(), padding: '20px',
+      minHeight: '500px' } });
+    if (_dsState.renders.length > 0) {
+      dsRenderResults(_dsState.renders[0]);
+    } else {
+      resultPane.appendChild(el('div', { style: { textAlign: 'center', padding: '80px 20px',
+        color: 'var(--ink-400)' } }, [
+        el('div', { style: { fontSize: '48px', marginBottom: '10px' }, text: '🏛' }),
+        el('div', { style: { fontSize: '15px', color: 'var(--ink-200)', marginBottom: '6px' },
+          text: 'Chưa render gì' }),
+        el('div', { style: { fontSize: '12px' }, text: 'Chọn phong cách + nhập mô tả → bấm Render' }),
+      ]));
+    }
+    grid.appendChild(resultPane);
+
+    c.appendChild(grid);
+  }
+
+  function dsRenderResults(entry) {
+    const pane = byId('ds-result'); if (!pane) return;
+    pane.innerHTML = '';
+    const style = DESIGN_STYLES.find(s => s.id === entry.style);
+    pane.appendChild(el('div', { style: { marginBottom: '12px' } }, [
+      el('div', { style: { fontSize: '12px', color: 'var(--ink-400)' },
+        text: '🎨 ' + (style?.name || entry.style) + ' · ' + entry.aspect + ' · ' + (entry.cost ? '$' + entry.cost.toFixed(4) : '—') }),
+      el('div', { style: { fontSize: '13px', color: 'var(--ink-200)', marginTop: '4px', lineHeight: '1.5' },
+        text: '"' + entry.prompt + '"' }),
+    ]));
+
+    if (!entry.images || entry.images.length === 0) {
+      pane.appendChild(el('div', { style: { padding: '40px', textAlign: 'center', color: '#fb7185' },
+        text: 'Không có ảnh trả về — em đang debug' }));
+      return;
+    }
+
+    const imgGrid = el('div', { style: { display: 'grid',
+      gridTemplateColumns: entry.images.length === 1 ? '1fr' : 'repeat(2, 1fr)',
+      gap: '10px' } });
+    entry.images.forEach(src => {
+      const wrap = el('div', { style: { position: 'relative', borderRadius: '10px',
+        overflow: 'hidden', border: '1px solid var(--border)' } });
+      const img = el('img', { src, style: { width: '100%', height: 'auto', display: 'block' } });
+      wrap.appendChild(img);
+      const overlay = el('div', { style: { position: 'absolute', bottom: '0', left: '0', right: '0',
+        padding: '10px', background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
+        display: 'flex', justifyContent: 'flex-end', gap: '6px' } });
+      const dlBtn = el('a', { href: src, download: 'zeni-design-' + Date.now() + '.png',
+        target: '_blank', style: { padding: '6px 12px', background: 'rgba(255,255,255,0.9)',
+          color: '#000', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
+          textDecoration: 'none' }, text: '⬇ Tải' });
+      overlay.appendChild(dlBtn);
+      wrap.appendChild(overlay);
+      imgGrid.appendChild(wrap);
+    });
+    pane.appendChild(imgGrid);
+  }
+
+  async function dsRenderOrchestrate(c) {
+    c.innerHTML = '';
+    const card = el('div', { style: { ...dbCard(), padding: '24px 28px' } });
+    card.appendChild(el('h3', { style: { fontSize: '16px', color: 'var(--ink-50)', margin: '0 0 6px' },
+      text: '🎨 Full Design Pipeline — multi-agent' }));
+    card.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '16px', lineHeight: '1.6' },
+      text: '6 KTS AI agents collab: brief analysis → style consult → floor plan → 3D render → cost estimate → presentation. Time: 3-5 phút.' }));
+
+    card.appendChild(modalLabel('Brief khách hàng *'));
+    const briefTa = modalTextarea({
+      placeholder: 'vd: Gia đình 4 người, lô đất 8×20m mặt nam, ngân sách 3 tỷ, phong cách Indochine, 3 tầng, hồ cá Koi, đầy đủ tiện nghi hiện đại',
+      style: { minHeight: '120px' } });
+    card.appendChild(briefTa);
+
+    const row = el('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' } });
+    const f1 = el('div'); f1.appendChild(modalLabel('Style'));
+    const styleSel = modalSelect();
+    DESIGN_STYLES.forEach(s => styleSel.appendChild(el('option', { value: s.id, text: s.emoji + ' ' + s.name })));
+    f1.appendChild(styleSel); row.appendChild(f1);
+    const f2 = el('div'); f2.appendChild(modalLabel('Số tầng'));
+    const floorsInp = modalInput({ type: 'number', value: '3', min: '1', max: '10' });
+    f2.appendChild(floorsInp); row.appendChild(f2);
+    const f3 = el('div'); f3.appendChild(modalLabel('Số người'));
+    const resInp = modalInput({ type: 'number', value: '4', min: '1', max: '20' });
+    f3.appendChild(resInp); row.appendChild(f3);
+    const f4 = el('div'); f4.appendChild(modalLabel('Tỉnh/thành'));
+    const provSel = modalSelect();
+    ['Hà Nội', 'TP.HCM', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ', 'Quảng Ninh', 'Bình Dương', 'Đồng Nai'].forEach(p =>
+      provSel.appendChild(el('option', { value: p, text: p })));
+    f4.appendChild(provSel); row.appendChild(f4);
+    card.appendChild(row);
+
+    const runBtn = el('button', { id: 'ds-orch-btn', style: { padding: '14px 28px', marginTop: '16px',
+      background: 'linear-gradient(135deg, var(--L3), var(--crown))',
+      color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
+      fontWeight: '600', fontSize: '15px' }, text: '🎨 Run full design (~3-5 phút)' });
+    card.appendChild(runBtn);
+
+    const resultBox = el('div', { id: 'ds-orch-result', style: { marginTop: '16px' } });
+    card.appendChild(resultBox);
+    c.appendChild(card);
+
+    runBtn.onclick = async () => {
+      const brief = briefTa.value.trim();
+      if (!brief) { toast('Cần brief khách hàng', 'err'); return; }
+      runBtn.disabled = true; runBtn.textContent = '🎨 Đang chạy 6 agents…';
+      resultBox.innerHTML = '<div style="padding:14px;color:var(--ink-300);font-size:13px">⏳ KTS AI đang phân tích brief, chọn style, vẽ mặt bằng, render 3D... có thể mất 3-5 phút</div>';
+      const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || ''),
+                     'Content-Type': 'application/json' };
+      try {
+        const r = await fetch('/api/v1/design/orchestrate?ws=' + encodeURIComponent(state.currentWs), {
+          method: 'POST', headers: auth,
+          body: JSON.stringify({ brief, style_choice: styleSel.value,
+            num_floors: parseInt(floorsInp.value, 10),
+            num_residents: parseInt(resInp.value, 10),
+            location_province: provSel.value })
+        });
+        const j = await r.json();
+        if (!r.ok) {
+          resultBox.innerHTML = '';
+          resultBox.appendChild(el('div', { style: { padding: '14px', color: '#fb7185', fontSize: '13px' },
+            text: '✗ Lỗi: ' + (j.detail || r.status) }));
+          runBtn.disabled = false; runBtn.textContent = '🎨 Run full design (~3-5 phút)';
+          return;
+        }
+        resultBox.innerHTML = '';
+        // Verdict + metrics
+        resultBox.appendChild(el('div', { style: { padding: '14px 18px', background: 'var(--bg-base)',
+          borderRadius: '10px', marginBottom: '12px' } }, [
+          el('div', { style: { fontSize: '13px', color: 'var(--gold-l)', textTransform: 'uppercase',
+            fontWeight: '600', marginBottom: '6px' }, text: '⚖ Verdict' }),
+          el('div', { style: { fontSize: '14px', color: 'var(--ink-100)' }, text: j.verdict || '—' }),
+          el('div', { style: { fontSize: '11px', color: 'var(--ink-400)', marginTop: '8px' },
+            text: 'Session: ' + (j.session_id || '?').slice(0, 12) + ' · ' + Object.keys(j.agents_results || {}).length + ' agents · ' + (j.errors?.length || 0) + ' errors' }),
+        ]));
+        // Agents results
+        if (j.agents_results) {
+          Object.entries(j.agents_results).forEach(([agent, result]) => {
+            const agCard = el('div', { style: { ...dbCard(), padding: '14px 18px', marginBottom: '10px' } });
+            agCard.appendChild(el('div', { style: { fontSize: '12px', color: 'var(--aurora)',
+              textTransform: 'uppercase', fontWeight: '600', marginBottom: '6px' },
+              text: '🤖 ' + agent }));
+            const text = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+            agCard.appendChild(el('pre', { style: { fontSize: '12px', color: 'var(--ink-200)',
+              whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, maxHeight: '200px',
+              overflowY: 'auto', fontFamily: 'inherit', lineHeight: '1.6' }, text }));
+            resultBox.appendChild(agCard);
+          });
+        }
+      } catch (e) {
+        resultBox.innerHTML = '';
+        resultBox.appendChild(el('div', { style: { padding: '14px', color: '#fb7185' },
+          text: '✗ Network: ' + e.message }));
+      }
+      runBtn.disabled = false; runBtn.textContent = '🎨 Run full design (~3-5 phút)';
+    };
+  }
+
+  function dsRenderGallery(c) {
+    c.innerHTML = '';
+    if (_dsState.renders.length === 0) {
+      const empty = el('div', { style: { ...dbCard(), padding: '60px 20px', textAlign: 'center', color: 'var(--ink-400)' } });
+      empty.appendChild(el('div', { style: { fontSize: '40px', marginBottom: '10px' }, text: '🖼' }));
+      empty.appendChild(el('div', { style: { fontSize: '15px', color: 'var(--ink-200)' },
+        text: 'Gallery trống — render ảnh ở tab "Quick Render" trước' }));
+      c.appendChild(empty);
+      return;
+    }
+    const grid = el('div', { style: { display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' } });
+    _dsState.renders.forEach(entry => {
+      entry.images.forEach(src => {
+        const card = el('div', { style: { ...dbCard(), overflow: 'hidden', cursor: 'pointer' } });
+        const img = el('img', { src, style: { width: '100%', height: '200px', objectFit: 'cover', display: 'block' } });
+        card.appendChild(img);
+        card.appendChild(el('div', { style: { padding: '10px 12px' } }, [
+          el('div', { style: { fontSize: '11px', color: 'var(--L3)', fontWeight: '600' },
+            text: '🎨 ' + entry.style_name }),
+          el('div', { style: { fontSize: '12px', color: 'var(--ink-300)', marginTop: '4px',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+            text: entry.prompt }),
+        ]));
+        card.onclick = () => window.open(src, '_blank');
+        grid.appendChild(card);
+      });
+    });
+    c.appendChild(grid);
   }
 
   /* ═══════════════════════════════════════════════
