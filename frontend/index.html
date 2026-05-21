@@ -2085,6 +2085,9 @@ select {
         <div class="nav-item" data-view="identity" style="--layer-color: var(--gold);">
           <span class="nav-icon">🛡</span> <span>Identity</span>
         </div>
+        <div class="nav-item" data-view="automation" style="--layer-color: var(--gold);">
+          <span class="nav-icon">⚡</span> <span>Automation</span>
+        </div>
         <div class="nav-item" data-view="cto" style="--layer-color: var(--gold);">
           <span class="nav-icon">💬</span> <span>AI Support Chat</span>
         </div>
@@ -3246,6 +3249,7 @@ document.addEventListener('keydown', e => {
       case 'ai-playground': renderAiPlayground(container); break;
       case 'database': renderDatabaseManager(container); break;
       case 'identity': renderIdentityManager(container); break;
+      case 'automation': renderAutomation(container); break;
       default: container.appendChild(el('div', { text: 'Unknown view' }));
     }
     return container;
@@ -4936,6 +4940,308 @@ document.addEventListener('keydown', e => {
       });
     } catch (e) {
       list.innerHTML = '<div style="padding:20px;color:#fb7185">Lỗi: ' + e.message + '</div>';
+    }
+  }
+
+  /* ═══════════════════════════════════════════════
+     AUTOMATION · connectors + crons + webhook DLQ
+     Pattern: Zapier connector store + cron management
+     ═══════════════════════════════════════════════ */
+  let _autoState = { activeTab: 'connectors' };
+
+  async function renderAutomation(container) {
+    container.innerHTML = '';
+    const wrap = el('div', { style: { padding: '16px 20px', maxWidth: '1400px', margin: '0 auto' } });
+
+    wrap.appendChild(el('div', { style: { display: 'flex', alignItems: 'baseline', gap: '14px', marginBottom: '6px' } }, [
+      el('h2', { style: { fontSize: '24px', color: 'var(--ink-50)', margin: 0 }, text: '⚡ Automation' }),
+      el('span', { style: { fontSize: '13px', color: 'var(--ink-400)' },
+                    text: 'L4 Automation · Connectors · Cron jobs · Webhook DLQ' })
+    ]));
+    wrap.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-300)', marginBottom: '18px' },
+                                text: 'Workspace: ' + (state.currentWs || '—') }));
+
+    const tabBar = el('div', { style: { display: 'flex', gap: '4px', borderBottom: '1px solid var(--border)',
+      marginBottom: '16px' } });
+    const tabs = [
+      { id: 'connectors', label: '🔌 Connectors' },
+      { id: 'crons', label: '⏰ Scheduled Tasks' },
+      { id: 'webhooks', label: '🪝 Webhook DLQ' },
+    ];
+    tabs.forEach(t => {
+      const btn = el('button', { style: dbTabStyle(_autoState.activeTab === t.id), text: t.label });
+      btn.onclick = () => { _autoState.activeTab = t.id; renderAutomation(container); };
+      tabBar.appendChild(btn);
+    });
+    wrap.appendChild(tabBar);
+
+    const content = el('div', { id: 'auto-content' });
+    wrap.appendChild(content);
+    container.appendChild(wrap);
+
+    if (_autoState.activeTab === 'connectors') await autoRenderConnectors(content);
+    else if (_autoState.activeTab === 'crons') await autoRenderCrons(content);
+    else if (_autoState.activeTab === 'webhooks') await autoRenderWebhooks(content);
+  }
+
+  async function autoRenderConnectors(c) {
+    c.innerHTML = '';
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+
+    // Installed
+    const installedHeader = el('h3', { style: { fontSize: '15px', color: 'var(--ink-100)',
+      marginTop: 0, marginBottom: '10px' }, text: '✓ Installed' });
+    c.appendChild(installedHeader);
+    const installedCard = el('div', { id: 'auto-installed', style: dbCard() });
+    installedCard.appendChild(el('div', { style: { padding: '14px 18px', color: 'var(--ink-400)', fontSize: '13px' },
+                                           text: 'Loading...' }));
+    c.appendChild(installedCard);
+
+    // Catalog (available to install)
+    const catalogHeader = el('h3', { style: { fontSize: '15px', color: 'var(--ink-100)',
+      marginTop: '24px', marginBottom: '10px' }, text: '📦 Available connectors' });
+    c.appendChild(catalogHeader);
+    const catalogGrid = el('div', { id: 'auto-catalog', style: { display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' } });
+    catalogGrid.appendChild(el('div', { style: { padding: '14px 18px', color: 'var(--ink-400)', fontSize: '13px' },
+                                         text: 'Loading...' }));
+    c.appendChild(catalogGrid);
+
+    // Load installed
+    try {
+      const r = await fetch('/api/v1/automation/connectors?ws=' + encodeURIComponent(state.currentWs), { headers: auth });
+      const j = await r.json();
+      installedCard.innerHTML = '';
+      const list = Array.isArray(j) ? j : (j.connectors || j.items || []);
+      if (list.length === 0) {
+        installedCard.appendChild(el('div', { style: { padding: '20px', textAlign: 'center', color: 'var(--ink-400)', fontSize: '13px' },
+                                                text: 'Chưa cài connector nào. Xem catalog bên dưới.' }));
+      } else {
+        list.forEach(co => {
+          const row = el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            padding: '14px 18px', borderBottom: '1px solid var(--border)' } });
+          row.appendChild(el('div', {}, [
+            el('div', { style: { color: 'var(--ink-100)', fontWeight: '500' },
+                         text: (autoIcon(co.kind) + ' ') + (co.name || co.kind || 'unknown') }),
+            el('div', { style: { fontSize: '11px', color: 'var(--ink-400)', marginTop: '2px' },
+                         text: 'Kind: ' + (co.kind || '?') + ' · Added: ' + (co.created_at || '—').toString().slice(0,16) }),
+          ]));
+          const del = el('button', { style: { padding: '6px 12px', background: 'rgba(251,113,133,0.1)',
+            color: '#fb7185', border: '1px solid rgba(251,113,133,0.3)', borderRadius: '6px',
+            cursor: 'pointer', fontSize: '12px' }, text: 'Gỡ cài' });
+          del.onclick = async () => {
+            if (!confirm('Gỡ connector ' + (co.name || co.kind) + '?')) return;
+            const dr = await fetch('/api/v1/automation/connectors/' + co.id + '?ws=' + encodeURIComponent(state.currentWs),
+              { method: 'DELETE', headers: auth });
+            if (dr.ok) { toast('✓ Đã gỡ', 'ok'); autoRenderConnectors(c); }
+            else { toast('✗ Gỡ fail', 'err'); }
+          };
+          row.appendChild(del);
+          installedCard.appendChild(row);
+        });
+      }
+    } catch (e) { installedCard.innerHTML = '<div style="padding:16px;color:#fb7185">Lỗi: ' + e.message + '</div>'; }
+
+    // Load catalog
+    try {
+      const r = await fetch('/api/v1/automation/catalog?ws=' + encodeURIComponent(state.currentWs), { headers: auth });
+      const j = await r.json();
+      catalogGrid.innerHTML = '';
+      const items = Array.isArray(j) ? j : (j.catalog || j.connectors || []);
+      if (items.length === 0) {
+        catalogGrid.appendChild(el('div', { style: { padding: '20px', color: 'var(--ink-400)', fontSize: '13px',
+                                                       gridColumn: '1/-1', textAlign: 'center' },
+                                              text: 'Catalog đang được build. Các connector phổ biến sẽ có sớm.' }));
+      } else {
+        items.forEach(item => {
+          const card = el('div', { style: { ...dbCard(), padding: '16px', cursor: 'pointer',
+            transition: 'border-color 0.15s' } });
+          card.onmouseenter = () => card.style.borderColor = 'var(--indigo,#7d68ff)';
+          card.onmouseleave = () => card.style.borderColor = 'var(--border)';
+          card.appendChild(el('div', { style: { fontSize: '24px', marginBottom: '8px' }, text: autoIcon(item.kind || item.id) }));
+          card.appendChild(el('div', { style: { fontSize: '14px', color: 'var(--ink-100)', fontWeight: '600', marginBottom: '4px' },
+                                        text: item.name || item.title || item.kind }));
+          card.appendChild(el('div', { style: { fontSize: '11px', color: 'var(--ink-400)', lineHeight: '1.4',
+                                                  minHeight: '32px', marginBottom: '10px' },
+                                        text: item.description || item.summary || '—' }));
+          const installBtn = el('button', { style: { padding: '6px 12px', width: '100%',
+            background: 'rgba(125,104,255,0.12)', color: 'var(--indigo,#7d68ff)',
+            border: '1px solid var(--indigo,#7d68ff)', borderRadius: '6px',
+            cursor: 'pointer', fontSize: '12px', fontWeight: '600' }, text: '+ Install' });
+          installBtn.onclick = () => toast('Modal config connector ' + item.kind + ' — coming next iteration', 'info');
+          card.appendChild(installBtn);
+          catalogGrid.appendChild(card);
+        });
+      }
+    } catch (e) { catalogGrid.innerHTML = '<div style="padding:16px;color:#fb7185;grid-column:1/-1">Lỗi: ' + e.message + '</div>'; }
+  }
+
+  function autoIcon(kind) {
+    const m = { zalo_oa: '💬', zalo: '💬', vnpay: '💳', momo: '💸', stripe: '💳',
+                sendgrid: '📧', gmail: '📨', mailgun: '📧', twilio: '📞', esms: '📱',
+                slack: '💼', discord: '🎮', telegram: '✈', github: '🐙', gitlab: '🦊',
+                webhook: '🪝', cron: '⏰', http: '🌐' };
+    return m[kind?.toLowerCase()] || '🔗';
+  }
+
+  async function autoRenderCrons(c) {
+    c.innerHTML = '';
+    const header = el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      marginBottom: '14px' } });
+    header.appendChild(el('div', { style: { color: 'var(--ink-300)', fontSize: '13px' },
+                                    text: 'Scheduled tasks chạy theo cron schedule. Standard cron format: M H DoM Mon DoW' }));
+    const addBtn = el('button', { style: { padding: '10px 18px',
+      background: 'linear-gradient(135deg,var(--indigo,#7d68ff),var(--crown,#a855f7))',
+      color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer',
+      fontWeight: '600', fontSize: '14px' }, text: '+ Tạo cron mới' });
+    addBtn.onclick = () => toast('Modal tạo cron — coming next iteration', 'info');
+    header.appendChild(addBtn);
+    c.appendChild(header);
+
+    const card = el('div', { id: 'auto-crons-list', style: dbCard() });
+    card.appendChild(el('div', { style: { padding: '14px 18px', color: 'var(--ink-400)', fontSize: '13px' },
+                                  text: 'Đang tải scheduled tasks...' }));
+    c.appendChild(card);
+
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+    try {
+      const r = await fetch('/api/v1/automation/crons?ws=' + encodeURIComponent(state.currentWs), { headers: auth });
+      const j = await r.json();
+      card.innerHTML = '';
+      const crons = Array.isArray(j) ? j : (j.crons || j.items || []);
+      if (crons.length === 0) {
+        const empty = el('div', { style: { padding: '40px 20px', textAlign: 'center', color: 'var(--ink-400)' } });
+        empty.appendChild(el('div', { style: { fontSize: '40px', marginBottom: '10px' }, text: '⏰' }));
+        empty.appendChild(el('div', { style: { fontSize: '15px', color: 'var(--ink-200)' }, text: 'Chưa có cron nào' }));
+        card.appendChild(empty);
+        return;
+      }
+
+      const hdr = el('div', { style: { display: 'grid',
+        gridTemplateColumns: '2fr 1.2fr 1.2fr 100px 180px', gap: '14px',
+        padding: '12px 18px', borderBottom: '1px solid var(--border)',
+        fontSize: '11px', color: 'var(--ink-400)', fontWeight: '700', textTransform: 'uppercase' } });
+      ['Name', 'Cron schedule', 'Last run', 'Status', 'Actions'].forEach(t => hdr.appendChild(el('div', { text: t })));
+      card.appendChild(hdr);
+
+      crons.forEach(cr => {
+        const row = el('div', { style: { display: 'grid',
+          gridTemplateColumns: '2fr 1.2fr 1.2fr 100px 180px', gap: '14px',
+          padding: '14px 18px', borderBottom: '1px solid var(--border)',
+          fontSize: '13px', alignItems: 'center' } });
+        row.appendChild(el('div', {}, [
+          el('div', { style: { color: 'var(--ink-100)', fontWeight: '500' }, text: cr.name || '(unnamed)' }),
+          el('div', { style: { fontSize: '11px', color: 'var(--ink-400)', marginTop: '2px' },
+                       text: cr.target || cr.action || '—' }),
+        ]));
+        row.appendChild(el('code', { style: { color: 'var(--aurora,#22d3ee)', fontSize: '12px' },
+                                      text: cr.schedule || cr.cron || '—' }));
+        row.appendChild(el('div', { style: { color: 'var(--ink-300)', fontSize: '12px' },
+                                     text: cr.last_run_at ? cr.last_run_at.toString().replace('T',' ').slice(0,16) : '—' }));
+        const active = cr.enabled !== false && cr.status !== 'paused';
+        const sc = active ? 'var(--aurora,#22d3ee)' : 'var(--gold-l,#facc15)';
+        row.appendChild(el('span', { style: { color: sc, fontSize: '11px',
+          padding: '4px 10px', background: 'rgba(34,211,238,0.08)', borderRadius: '6px',
+          border: '1px solid ' + sc, display: 'inline-block', width: 'fit-content' },
+          text: active ? 'ACTIVE' : 'PAUSED' }));
+
+        const actions = el('div', { style: { display: 'flex', gap: '4px' } });
+        const runBtn = el('button', { style: { padding: '5px 9px', background: 'rgba(125,104,255,0.1)',
+          color: 'var(--indigo,#7d68ff)', border: '1px solid var(--indigo,#7d68ff)',
+          borderRadius: '5px', cursor: 'pointer', fontSize: '11px' }, text: '▶ Run' });
+        runBtn.onclick = async () => {
+          const rr = await fetch('/api/v1/automation/crons/' + cr.name + '/run-now?ws=' + encodeURIComponent(state.currentWs),
+            { method: 'POST', headers: auth });
+          toast(rr.ok ? '✓ Triggered' : '✗ Run fail', rr.ok ? 'ok' : 'err');
+        };
+        actions.appendChild(runBtn);
+        const toggleBtn = el('button', { style: { padding: '5px 9px',
+          background: active ? 'rgba(253,230,138,0.08)' : 'rgba(34,211,238,0.08)',
+          color: active ? 'var(--gold-l,#facc15)' : 'var(--aurora,#22d3ee)',
+          border: '1px solid ' + (active ? 'var(--gold-l,#facc15)' : 'var(--aurora,#22d3ee)'),
+          borderRadius: '5px', cursor: 'pointer', fontSize: '11px' },
+          text: active ? '⏸ Pause' : '▶ Resume' });
+        toggleBtn.onclick = async () => {
+          const ep = active ? 'pause' : 'resume';
+          const rr = await fetch('/api/v1/automation/crons/' + cr.name + '/' + ep + '?ws=' + encodeURIComponent(state.currentWs),
+            { method: 'POST', headers: auth });
+          if (rr.ok) { toast('✓ ' + ep, 'ok'); autoRenderCrons(c); } else { toast('✗ Fail', 'err'); }
+        };
+        actions.appendChild(toggleBtn);
+        const del = el('button', { style: { padding: '5px 9px', background: 'rgba(251,113,133,0.1)',
+          color: '#fb7185', border: '1px solid rgba(251,113,133,0.3)',
+          borderRadius: '5px', cursor: 'pointer', fontSize: '11px' }, text: '🗑' });
+        del.onclick = async () => {
+          if (!confirm('Xóa cron ' + cr.name + '?')) return;
+          const rr = await fetch('/api/v1/automation/crons/' + cr.name + '?ws=' + encodeURIComponent(state.currentWs),
+            { method: 'DELETE', headers: auth });
+          if (rr.ok) { toast('✓ Đã xóa', 'ok'); autoRenderCrons(c); }
+        };
+        actions.appendChild(del);
+        row.appendChild(actions);
+        card.appendChild(row);
+      });
+    } catch (e) {
+      card.innerHTML = '<div style="padding:20px;color:#fb7185">Lỗi: ' + e.message + '</div>';
+    }
+  }
+
+  async function autoRenderWebhooks(c) {
+    c.innerHTML = '';
+    const card = el('div', { id: 'auto-wh-list', style: dbCard() });
+    card.appendChild(el('div', { style: { padding: '14px 18px', color: 'var(--ink-400)', fontSize: '13px' },
+                                  text: 'Đang tải webhook attempts...' }));
+    c.appendChild(card);
+
+    const auth = { 'Authorization': 'Bearer ' + (localStorage.getItem('zeni.jwt.access') || '') };
+    try {
+      const r = await fetch('/api/v1/automation/webhook-attempts?ws=' + encodeURIComponent(state.currentWs) + '&limit=50', { headers: auth });
+      const j = await r.json();
+      card.innerHTML = '';
+      const attempts = Array.isArray(j) ? j : (j.attempts || j.items || []);
+      if (attempts.length === 0) {
+        const empty = el('div', { style: { padding: '40px 20px', textAlign: 'center', color: 'var(--ink-400)' } });
+        empty.appendChild(el('div', { style: { fontSize: '40px', marginBottom: '10px' }, text: '🪝' }));
+        empty.appendChild(el('div', { style: { fontSize: '15px', color: 'var(--ink-200)' },
+                                       text: 'Không có failed webhook nào — chuyện tốt!' }));
+        card.appendChild(empty);
+        return;
+      }
+      const hdr = el('div', { style: { display: 'grid',
+        gridTemplateColumns: '1.2fr 2fr 100px 1fr 80px 80px', gap: '14px',
+        padding: '12px 18px', borderBottom: '1px solid var(--border)',
+        fontSize: '11px', color: 'var(--ink-400)', fontWeight: '700', textTransform: 'uppercase' } });
+      ['Time', 'URL', 'Status', 'Error', 'Attempts', 'Action'].forEach(t => hdr.appendChild(el('div', { text: t })));
+      card.appendChild(hdr);
+      attempts.forEach(a => {
+        const row = el('div', { style: { display: 'grid',
+          gridTemplateColumns: '1.2fr 2fr 100px 1fr 80px 80px', gap: '14px',
+          padding: '12px 18px', borderBottom: '1px solid var(--border)',
+          fontSize: '12px', alignItems: 'center' } });
+        row.appendChild(el('div', { style: { color: 'var(--ink-300)' },
+                                     text: (a.created_at || '—').toString().replace('T',' ').slice(0,19) }));
+        row.appendChild(el('div', { style: { color: 'var(--ink-200)', fontFamily: 'monospace',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }, text: a.url || '—' }));
+        const code = a.status_code || a.http_status || 0;
+        const codeColor = code >= 200 && code < 300 ? 'var(--aurora,#22d3ee)' : '#fb7185';
+        row.appendChild(el('span', { style: { color: codeColor, fontWeight: '600' }, text: code || 'ERR' }));
+        row.appendChild(el('div', { style: { color: 'var(--ink-400)', fontSize: '11px',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+          text: (a.error || a.message || '').slice(0, 80) }));
+        row.appendChild(el('div', { style: { color: 'var(--ink-300)' }, text: (a.attempt_count || 1) + 'x' }));
+        const retry = el('button', { style: { padding: '4px 10px', background: 'rgba(125,104,255,0.1)',
+          color: 'var(--indigo,#7d68ff)', border: '1px solid var(--indigo,#7d68ff)',
+          borderRadius: '5px', cursor: 'pointer', fontSize: '11px' }, text: '↻ Retry' });
+        retry.onclick = async () => {
+          const rr = await fetch('/api/v1/automation/webhook-attempts/' + a.id + '/retry?ws=' + encodeURIComponent(state.currentWs),
+            { method: 'POST', headers: auth });
+          toast(rr.ok ? '✓ Retried' : '✗ Fail', rr.ok ? 'ok' : 'err');
+        };
+        row.appendChild(retry);
+        card.appendChild(row);
+      });
+    } catch (e) {
+      card.innerHTML = '<div style="padding:20px;color:#fb7185">Lỗi: ' + e.message + '</div>';
     }
   }
 
