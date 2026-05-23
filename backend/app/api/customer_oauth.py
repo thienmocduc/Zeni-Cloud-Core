@@ -33,7 +33,7 @@ from app.db.base import get_db
 
 router = APIRouter(prefix="/identity/oauth-providers", tags=["identity", "customer-oauth"])
 
-ALLOWED_PROVIDERS = {"zalo", "apple", "facebook", "line", "kakao", "tiktok", "linkedin", "generic"}
+ALLOWED_PROVIDERS = {"google", "zalo", "apple", "facebook", "line", "kakao", "tiktok", "linkedin", "generic"}
 
 
 class ProviderCreateIn(BaseModel):
