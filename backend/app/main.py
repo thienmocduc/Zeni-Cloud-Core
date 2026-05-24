@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
-from app.api import admin_access, admin_access_callback, admin_platform, agents, agents_library, ai, ai_core, api_tokens, audit, auth, automation, backup_dr, benchmarks, billing, billing_v2, books, build_farm, cache, compliance, cost_dashboard, crons, customer_oauth, customer_oauth_flow, data, design, edge_cdn, edge_runtime, email_api, email_verify, gcp, github_integration, identity, internal_cron, legal_entities, login_2fa, mail as mail_hosting, members, messaging, mfa, mobile_certs, multi_region, oauth, observability, ocr, package_registry, payouts, phone_otp, pricing, privacy, projects, push_notifications, queue, quick_deploy, realtime, reseller, router as zeni_router_api, slack, sms, source_upload, storage as zeni_storage, translate, trial, vector, vector_premium, voice_ai, waitlist, wallet, web3, workspace_whitelist, workspaces, zeni_mail, zeni_pay, zeni_token, zeni_voice
+from app.api import admin_access, admin_access_callback, admin_platform, agents, agents_library, ai, ai_core, api_tokens, audit, auth, automation, backup_dr, benchmarks, billing, billing_v2, books, build_farm, cache, compliance, cost_dashboard, crons, cto_console, cto_coder, customer_oauth, customer_oauth_flow, data, design, edge_cdn, edge_runtime, email_api, email_verify, gcp, github_integration, identity, internal_cron, legal_entities, login_2fa, mail as mail_hosting, members, messaging, mfa, mobile_certs, multi_region, oauth, observability, ocr, openai_compat, package_registry, payouts, phone_otp, pricing, privacy, projects, push_notifications, queue, quick_deploy, realtime, reseller, router as zeni_router_api, router_stream, slack, sms, source_upload, storage as zeni_storage, tenant_provision, translate, trial, vector, vector_premium, voice_ai, waitlist, wallet, web3, workspace_whitelist, workspaces, zeni_mail, zeni_pay, zeni_token, zeni_voice
 # Note: zeni_studio, zeni_crm, zeni_workspace = SaaS apps (not cloud infra),
 # code retained in apps/ for future independent deploy as Cloud Run services.
 from app.middleware.metrics_middleware import MetricsMiddleware
@@ -303,6 +303,8 @@ app.include_router(login_2fa.router,              prefix=API_PREFIX)
 
 # ─── 3h Sprint — ZeniRouter + Pricing + Quota (v52) ─────
 app.include_router(zeni_router_api.router,        prefix=API_PREFIX)
+app.include_router(router_stream.router,          prefix=API_PREFIX)  # SSE streaming AI
+app.include_router(openai_compat.router,          prefix=API_PREFIX)  # OpenAI-compatible proxy
 app.include_router(pricing.router,                prefix=API_PREFIX)
 
 # ─── Sprint A4 — Phase 0+1 (v56): Observability + Messaging + Zeni Pay + Zeni Books ─
@@ -342,6 +344,9 @@ app.include_router(source_upload.router,          prefix=API_PREFIX)  # ZIP uplo
 app.include_router(quick_deploy.router,           prefix=API_PREFIX)  # Quick Deploy (1-call API for AI agents)
 app.include_router(design.router,                 prefix=API_PREFIX)  # Design Agents: 6 KTS AI (kiến trúc + nội thất + kết cấu + MEP + BOQ + QA)
 app.include_router(mail_hosting.router,           prefix=API_PREFIX)  # L7 Mail Hosting · per-domain mailboxes (Phase 1 skeleton)
+app.include_router(tenant_provision.router,       prefix=API_PREFIX)  # Tenant Provisioning: auto-create workspace+user+wallet+token
+app.include_router(cto_console.router,            prefix=API_PREFIX)  # CTO Console: 3-tab support + provisioning + auto-coder (Owner-only)
+app.include_router(cto_coder.router,              prefix=API_PREFIX)  # CTO Coder Swarm: 6-vai Council deliberation + execution (Owner-only)
 
 
 # ─── Frontend SPA mount ──────────────────────────────
@@ -454,15 +459,42 @@ if _static_dir.exists():
         # SPA fallback — let client-side router handle the path
         return FileResponse(str(_app_path))
 
+    # ── Login aliases: /login, /signin → /app (login modal) ──
+    # Chairman bug 2026-05-23: bookmarked /login fell back to landing.
+    # FIX: serve _app_path (which contains login form) directly.
+    @app.get("/login", include_in_schema=False)
+    @app.get("/signin", include_in_schema=False)
+    async def serve_login_alias() -> FileResponse:
+        return FileResponse(str(_app_path))
+    # ── Additional public static pages ──────────────────────
+    # Chairman bug 2026-05-23: /admin.html, /cto.html, /support.html,
+    # /reseller-portal.html, /verify-email.html existed in frontend/ but
+    # were NOT routed -> catch-all served landing. Add explicit routes.
+    _public_pages = {
+        "admin": "admin.html",
+        "cto": "cto.html",
+        "support": "support.html",
+        "reseller-portal": "reseller-portal.html",
+        "verify-email": "verify-email.html",
+    }
+    for _route, _filename in _public_pages.items():
+        _page_path = _static_dir / _filename
+        if _page_path.exists():
+            def _make_handler(target_path: Path = _page_path):
+                async def handler() -> FileResponse:
+                    return FileResponse(str(target_path))
+                return handler
+            _handler = _make_handler()
+            app.add_api_route(f"/{_route}", _handler, methods=["GET"], include_in_schema=False)
+            app.add_api_route(f"/{_route}.html", _handler, methods=["GET"], include_in_schema=False)
+
     # ── Catch-all for landing-style anchors (#pricing etc.) ─
-    # Only handle paths that aren't reserved; otherwise let FastAPI 404
     @app.get("/{full_path:path}", include_in_schema=False)
     async def serve_landing_fallback(full_path: str) -> FileResponse:
         if full_path.startswith(("api/", "docs", "openapi.json", "redoc", "health", "static/", "app/", "app")):
             return JSONResponse(status_code=404, content={"detail": "not found"})
-        # Anything else → landing page (handles SPA-like marketing routing)
         if _landing_path.exists():
             return FileResponse(str(_landing_path))
         return FileResponse(str(_app_path))
 else:
-    log.warning("frontend dir not found at %s — SPA disabled", _static_dir)
+    log.warning("frontend dir not found at %s - SPA disabled", _static_dir)
