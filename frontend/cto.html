@@ -1,0 +1,1820 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Zeni Cloud · CTO Console</title>
+<meta name="theme-color" content="#0A0A0F" />
+<link rel="icon" href="/static/favicon.ico" />
+<style>
+  /* ─── Theme — pattern lấy cảm hứng ClawWits + Claude Code dark ─── */
+  :root {
+    --bg: #0A0A0F;
+    --bg-elev: #0f1419;
+    --bg-card: #161b22;
+    --bg-card-hover: #1f2733;
+    --border: #21262d;
+    --border-strong: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --text-dim: #6e7681;
+    --gold: #D4A85A;          /* claw-gold (ClawWits brand inspiration) */
+    --teal: #0E5C5C;
+    --primary: #58a6ff;
+    --success: #3fb950;
+    --warning: #d29922;
+    --danger: #f85149;
+    --agent: #bc8cff;
+    --shadow: 0 6px 24px rgba(0,0,0,.5);
+    --mono: "SF Mono","Fira Code","Cascadia Code",ui-monospace,Consolas,monospace;
+  }
+  *,*::before,*::after { box-sizing: border-box }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+    font-size: 14px; line-height: 1.55;
+    color: var(--text); background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, textarea, select { font-family: inherit; font-size: inherit; color: inherit }
+  button { cursor: pointer; border: 0; background: transparent }
+  a { color: var(--primary); text-decoration: none }
+  a:hover { text-decoration: underline }
+  pre, code { font-family: var(--mono) }
+
+  /* ─── Global scrollbar style — CẤM thanh cuộn trắng to xấu ──────
+     Chairman lock 11/05: KHÔNG BAO GIỜ để default Chrome scrollbar.
+     Firefox: scrollbar-width:thin. Chrome/Safari: ::-webkit-scrollbar mọi
+     elements (main, inline overflow:auto pre, vote cards, code blocks,
+     textarea, select dropdowns). Dùng !important để override inline overflow. */
+  html, body, * {
+    scrollbar-width: thin !important;
+    scrollbar-color: var(--border-strong) transparent !important;
+  }
+  *::-webkit-scrollbar,
+  *::-webkit-scrollbar:horizontal,
+  *::-webkit-scrollbar:vertical {
+    width: 6px !important;
+    height: 6px !important;
+    background: transparent !important;
+  }
+  *::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-track-piece {
+    background: transparent !important;
+    border: 0 !important;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--border-strong) !important;
+    border-radius: 3px !important;
+    border: 0 !important;
+  }
+  *::-webkit-scrollbar-thumb:hover { background: var(--primary) !important; }
+  *::-webkit-scrollbar-corner,
+  *::-webkit-scrollbar-button {
+    background: transparent !important;
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  *::-webkit-resizer { display: none !important; }
+
+  /* ─── App shell ────────────────────────────────── */
+  .app { display: flex; flex-direction: column; height: 100vh; overflow: hidden }
+  .topbar {
+    background: linear-gradient(180deg, var(--bg-elev) 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 18px;
+    display: flex; align-items: center; gap: 16px;
+    flex-shrink: 0;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 10px; font-weight: 600;
+  }
+  .brand-badge {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--gold), #f59e0b);
+    color: #0a0a0f; font-weight: 800; text-align: center; line-height: 30px;
+    font-size: 13px;
+  }
+  .brand-name { color: var(--gold); font-weight: 700 }
+  .brand-sub { color: var(--text-dim); font-size: 12px; margin-left: 4px }
+  .topbar-spacer { flex: 1 }
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 999px; font-size: 12px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+  .pill.live { color: var(--success) }
+  .pill.live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--success); display: inline-block; box-shadow: 0 0 6px var(--success) }
+  .me-info { font-size: 12.5px; color: var(--text-muted) }
+  .me-info b { color: var(--gold) }
+
+  /* ─── Tab bar ──────────────────────────────────── */
+  .tabbar {
+    display: flex; gap: 0;
+    background: var(--bg-elev); border-bottom: 1px solid var(--border);
+    padding: 0 16px;
+    flex-shrink: 0;
+  }
+  .tab {
+    padding: 11px 18px;
+    color: var(--text-muted); font-weight: 500; font-size: 13.5px;
+    border-bottom: 2px solid transparent; transition: .15s;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .tab:hover { color: var(--text); background: var(--bg-card) }
+  .tab.active {
+    color: var(--gold); border-bottom-color: var(--gold);
+    background: linear-gradient(180deg, transparent 0%, rgba(212,168,90,.05) 100%);
+  }
+  .tab-icon { font-size: 15px }
+  .tab-count {
+    margin-left: 4px; padding: 1px 6px; border-radius: 999px;
+    background: var(--border-strong); color: var(--text-muted);
+    font-size: 10.5px; font-weight: 600;
+  }
+  .tab.active .tab-count { background: var(--gold); color: #0a0a0f }
+
+  /* ─── Tab pages ────────────────────────────────── */
+  .tab-page {
+    display: none;
+    flex: 1; overflow: hidden;
+    grid-template-columns: 320px 1fr 360px;
+  }
+  .tab-page.active { display: grid }
+
+  /* Coder tab override — 3-cột rộng hơn */
+  .tab-page.coder { grid-template-columns: 280px 1fr 380px }
+
+  /* ─── Sidebar (left col) ───────────────────────── */
+  .side {
+    background: var(--bg-elev); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; min-height: 0;
+  }
+  .side-head {
+    padding: 12px 14px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .side-head h3 { margin: 0; font-size: 13px; color: var(--text); font-weight: 600 }
+  .btn-sm {
+    background: var(--gold); color: #0a0a0f; padding: 5px 10px;
+    border-radius: 6px; font-weight: 600; font-size: 12px;
+  }
+  .btn-sm:hover { background: #f59e0b }
+  .btn-ghost-sm {
+    color: var(--text-muted); padding: 4px 8px;
+    border-radius: 5px; font-size: 12px;
+  }
+  .btn-ghost-sm:hover { color: var(--text); background: var(--bg-card) }
+  .side-list { flex: 1; overflow-y: auto; padding: 4px 0 }
+  .side-list::-webkit-scrollbar { width: 5px }
+  .side-list::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px }
+
+  .item {
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: background .12s;
+  }
+  .item:hover { background: var(--bg-card) }
+  .item.active { background: var(--bg-card); border-left: 3px solid var(--gold); padding-left: 11px }
+  .item-title {
+    font-weight: 600; font-size: 13px; margin-bottom: 3px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .item-meta { display: flex; gap: 6px; align-items: center; font-size: 11px; color: var(--text-dim) }
+  .item-status {
+    display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px;
+    font-weight: 600; text-transform: uppercase;
+  }
+  .item-status.open, .item-status.executing { background: rgba(88,166,255,.18); color: var(--primary) }
+  .item-status.proposed { background: rgba(210,153,34,.18); color: var(--warning) }
+  .item-status.approved { background: rgba(63,185,80,.18); color: var(--success) }
+  .item-status.executed, .item-status.resolved { background: rgba(63,185,80,.18); color: var(--success) }
+  .item-status.failed, .item-status.rejected { background: rgba(248,81,73,.18); color: var(--danger) }
+  .item-status.closed { background: rgba(110,118,129,.18); color: var(--text-dim) }
+  .empty { padding: 30px 14px; text-align: center; color: var(--text-dim); font-size: 12.5px }
+
+  /* ─── Main (middle col) ───────────────────────── */
+  .main {
+    display: flex; flex-direction: column; min-height: 0;
+    background: var(--bg);
+  }
+  .main-head {
+    padding: 11px 18px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px; min-height: 50px;
+    background: var(--bg-elev);
+  }
+  .mh-info { flex: 1; min-width: 0 }
+  .mh-title { font-weight: 600; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+  .mh-sub { font-size: 11.5px; color: var(--text-dim); margin-top: 2px }
+
+  .stream { flex: 1; overflow-y: auto; padding: 18px 0; display: flex; flex-direction: column; gap: 10px }
+  .stream::-webkit-scrollbar { width: 6px }
+  .stream::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px }
+
+  .empty-stream {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: var(--text-dim); padding: 40px 20px; text-align: center;
+  }
+  .empty-stream h3 { font-size: 17px; color: var(--text); margin: 8px 0 6px }
+  .empty-stream p { font-size: 13px; max-width: 420px; line-height: 1.6 }
+
+  .msg { padding: 0 18px; display: flex; gap: 10px; max-width: 920px; margin: 0 auto; width: 100% }
+  .msg-avatar {
+    width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 11.5px; color: #fff;
+  }
+  .msg-avatar.customer  { background: linear-gradient(135deg, #58a6ff, #1f6feb) }
+  .msg-avatar.chairman  { background: linear-gradient(135deg, var(--gold), #f59e0b); color: #0a0a0f }
+  .msg-avatar.agent     { background: linear-gradient(135deg, var(--agent), #8957e5) }
+  .msg-avatar.system    { background: linear-gradient(135deg, #6e7681, #484f58) }
+  .msg-body { flex: 1; min-width: 0; max-width: 720px }
+  .msg-meta {
+    display: flex; gap: 7px; align-items: center; margin-bottom: 3px;
+    font-size: 11px; color: var(--text-dim);
+  }
+  .msg-meta b { color: var(--text); font-weight: 600 }
+  .agent-tag {
+    color: var(--agent); padding: 1px 5px; border-radius: 3px;
+    background: rgba(188,140,255,.12); font-size: 10px; font-weight: 600;
+  }
+  .msg-content {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 13px; font-size: 13px; line-height: 1.55;
+    overflow-wrap: anywhere; word-break: break-word;
+  }
+  .msg-content pre {
+    background: rgba(0,0,0,.45); border-radius: 6px; padding: 9px 11px;
+    overflow-x: auto; font-size: 12px; line-height: 1.5;
+    border: 1px solid var(--border); margin: 6px 0;
+  }
+  .msg-content code:not(pre code) {
+    background: rgba(0,0,0,.35); padding: 1px 5px; border-radius: 3px; font-size: 12px;
+  }
+  .msg-content p { margin: 0 0 6px }
+  .msg-content p:last-child { margin-bottom: 0 }
+  .msg-content ul, .msg-content ol { margin: 5px 0 5px 18px; padding: 0 }
+  .msg-content li { margin: 2px 0 }
+
+  /* ─── Composer ───────────────────────────────── */
+  .composer {
+    border-top: 1px solid var(--border); padding: 12px 18px;
+    background: var(--bg-elev); flex-shrink: 0;
+  }
+  .composer-shell {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 9px 11px; max-width: 920px; margin: 0 auto;
+    transition: border-color .15s;
+  }
+  .composer-shell:focus-within { border-color: var(--gold) }
+  .composer textarea {
+    width: 100%; background: transparent; border: 0; outline: none; resize: none;
+    color: var(--text); font-size: 13px; line-height: 1.55;
+    min-height: 22px; max-height: 180px;
+  }
+  .composer textarea::placeholder { color: var(--text-dim) }
+  .composer-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 6px; gap: 10px;
+  }
+  .composer-hint { font-size: 11px; color: var(--text-dim) }
+  .composer-hint kbd {
+    background: rgba(0,0,0,.4); padding: 1px 5px; border-radius: 3px;
+    font-family: inherit; font-size: 10px;
+  }
+  .composer-actions { display: flex; gap: 6px; align-items: center }
+  .composer-toggle { display: flex; gap: 4px; align-items: center; font-size: 11px; color: var(--text-muted) }
+  .composer-toggle input { accent-color: var(--gold) }
+  .btn-send {
+    background: var(--gold); color: #0a0a0f; padding: 6px 14px;
+    border-radius: 7px; font-weight: 700; font-size: 12.5px; transition: .12s;
+  }
+  .btn-send:hover { background: #f59e0b }
+  .btn-send:disabled { opacity: .4; cursor: not-allowed }
+
+  /* ─── Right panel (tools + actions) ───────────── */
+  .right {
+    background: var(--bg-elev); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; min-height: 0;
+  }
+  .right-head {
+    padding: 12px 14px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .right-head h3 { margin: 0; font-size: 13px; color: var(--text); font-weight: 600 }
+  .right-body { flex: 1; overflow-y: auto; padding: 10px 0 }
+  .right-body::-webkit-scrollbar { width: 5px }
+  .right-body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px }
+
+  .tool-card {
+    margin: 8px 12px; padding: 10px 12px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .tool-head {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12.5px; font-weight: 600; margin-bottom: 4px;
+  }
+  .tool-head .risk-badge {
+    margin-left: auto; padding: 1px 6px; border-radius: 4px; font-size: 10px;
+    font-weight: 700; text-transform: uppercase;
+  }
+  .risk-badge.safe        { background: rgba(63,185,80,.18); color: var(--success) }
+  .risk-badge.low         { background: rgba(88,166,255,.18); color: var(--primary) }
+  .risk-badge.medium      { background: rgba(210,153,34,.18); color: var(--warning) }
+  .risk-badge.high        { background: rgba(248,81,73,.18); color: var(--danger) }
+  .risk-badge.destructive { background: var(--danger); color: #fff }
+  .tool-args {
+    background: rgba(0,0,0,.4); border-radius: 5px; padding: 7px 9px;
+    font-family: var(--mono); font-size: 11px; color: var(--text-muted);
+    max-height: 80px; overflow-y: auto; white-space: pre-wrap;
+    margin: 5px 0;
+  }
+  .tool-result {
+    background: rgba(63,185,80,.06); border: 1px solid rgba(63,185,80,.3);
+    border-radius: 5px; padding: 7px 9px;
+    font-family: var(--mono); font-size: 11px; color: var(--success);
+    max-height: 100px; overflow-y: auto; white-space: pre-wrap;
+    margin-top: 5px;
+  }
+  .tool-error {
+    background: rgba(248,81,73,.06); border: 1px solid rgba(248,81,73,.3);
+    border-radius: 5px; padding: 7px 9px;
+    font-family: var(--mono); font-size: 11px; color: var(--danger);
+    max-height: 100px; overflow-y: auto; white-space: pre-wrap;
+    margin-top: 5px;
+  }
+  .tool-actions { display: flex; gap: 6px; margin-top: 7px }
+  .tc-btn {
+    padding: 4px 9px; border-radius: 5px; font-size: 11px; font-weight: 600;
+  }
+  .tc-btn.approve { background: var(--success); color: #052e1c }
+  .tc-btn.reject { background: rgba(248,81,73,.16); color: var(--danger) }
+  .tc-btn:hover { opacity: .85 }
+  .tool-meta { font-size: 10.5px; color: var(--text-dim); margin-top: 5px }
+
+  .quick-actions { padding: 12px 14px }
+  .quick-actions h4 {
+    margin: 0 0 8px; font-size: 11px; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;
+  }
+  .qa-btn {
+    display: block; width: 100%; text-align: left;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 7px; padding: 8px 10px; margin-bottom: 6px;
+    font-size: 12px; color: var(--text); transition: .12s;
+  }
+  .qa-btn:hover { background: var(--bg-card-hover); border-color: var(--gold) }
+  .qa-btn .qa-icon { margin-right: 6px }
+  .qa-btn .qa-desc { display: block; font-size: 10.5px; color: var(--text-dim); margin-top: 2px }
+
+  /* ─── Coder tab — file viewer ─────────────────── */
+  .file-viewer {
+    flex: 1; overflow: hidden; display: flex; flex-direction: column;
+  }
+  .file-tabs {
+    display: flex; gap: 0; background: var(--bg-elev);
+    border-bottom: 1px solid var(--border); padding: 0 12px;
+    overflow-x: auto;
+  }
+  .file-tab {
+    padding: 8px 14px; font-size: 12px; color: var(--text-muted);
+    border-right: 1px solid var(--border); white-space: nowrap;
+    cursor: pointer; transition: .12s;
+  }
+  .file-tab.active { color: var(--gold); background: var(--bg) }
+  .file-tab:hover { color: var(--text) }
+  .file-tab .x { margin-left: 6px; opacity: .5 }
+  .file-tab .x:hover { opacity: 1 }
+  .file-content {
+    flex: 1; overflow: auto; padding: 14px 18px;
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.6;
+    white-space: pre; tab-size: 2;
+  }
+  .file-content::-webkit-scrollbar { width: 8px; height: 8px }
+  .file-content::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px }
+  .file-content .empty-state {
+    color: var(--text-dim); text-align: center; padding: 40px;
+    font-family: inherit;
+  }
+
+  /* ─── Modals + toast ──────────────────────────── */
+  .modal-bg {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    align-items: center; justify-content: center; z-index: 50; padding: 20px;
+  }
+  .modal-bg.show { display: flex }
+  .modal {
+    background: var(--bg-elev); border: 1px solid var(--border-strong);
+    border-radius: 12px; padding: 22px; max-width: 520px; width: 100%;
+    box-shadow: var(--shadow);
+  }
+  .modal h3 { margin: 0 0 5px; font-size: 17px; color: var(--gold) }
+  .modal-sub { color: var(--text-muted); font-size: 13px; margin-bottom: 16px }
+  .field { margin-bottom: 12px }
+  .field label { display: block; margin-bottom: 4px; font-size: 12px; color: var(--text-muted); font-weight: 600 }
+  .field input, .field select, .field textarea {
+    width: 100%; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 11px; outline: none; transition: border-color .12s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--gold) }
+  .field textarea { resize: vertical; min-height: 70px; font-family: inherit }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; max-width: 380px;
+    padding: 11px 15px; border-radius: 9px; font-size: 12.5px;
+    box-shadow: var(--shadow); z-index: 100;
+    transform: translateX(120%); transition: transform .25s ease;
+  }
+  .toast.show { transform: translateX(0) }
+  .toast.info { background: var(--bg-card); border: 1px solid var(--primary); color: var(--text) }
+  .toast.success { background: rgba(63,185,80,.14); border: 1px solid var(--success); color: var(--success) }
+  .toast.error { background: rgba(248,81,73,.14); border: 1px solid var(--danger); color: var(--danger) }
+
+  /* ─── Live Workstream (Tab 3 Coder Swarm) ───────── */
+  .ls-input-card {
+    margin: 14px 18px 8px; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: 12px; padding: 14px;
+  }
+  .ls-input-card textarea {
+    width: 100%; background: var(--bg-elev); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; outline: none; resize: vertical;
+    color: var(--text); font-size: 13px; line-height: 1.55; min-height: 60px;
+  }
+  .ls-input-card textarea:focus { border-color: var(--gold) }
+  .ls-preview {
+    margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;
+    font-size: 11.5px; align-items: center;
+  }
+  .ls-complexity-badge {
+    padding: 3px 10px; border-radius: 999px; font-weight: 700;
+    text-transform: uppercase; font-size: 10.5px;
+  }
+  .ls-complexity-badge.simple { background: rgba(63,185,80,.16); color: var(--success) }
+  .ls-complexity-badge.medium { background: rgba(88,166,255,.16); color: var(--primary) }
+  .ls-complexity-badge.complex { background: rgba(212,168,90,.16); color: var(--gold) }
+  .ls-complexity-badge.critical { background: rgba(248,81,73,.18); color: var(--danger) }
+  .ls-cost-est { color: var(--text-muted) }
+  .ls-cost-est b { color: var(--gold) }
+  .ls-tier-pills { display: inline-flex; gap: 4px }
+  .ls-tier-pill { padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600 }
+  .ls-tier-pill.fast { background: rgba(63,185,80,.16); color: var(--success) }
+  .ls-tier-pill.balanced { background: rgba(88,166,255,.16); color: var(--primary) }
+  .ls-tier-pill.frontier { background: rgba(212,168,90,.18); color: var(--gold) }
+  .ls-action-bar {
+    margin-top: 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  }
+  .btn-run {
+    background: linear-gradient(135deg, var(--gold), #f59e0b);
+    color: #0a0a0f; padding: 8px 18px; border-radius: 8px;
+    font-weight: 700; font-size: 13px; transition: .12s;
+  }
+  .btn-run:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(212,168,90,.3) }
+  .btn-run:disabled { opacity: .4; cursor: not-allowed; transform: none }
+
+  /* ─── Plan tree ─────────────────────────────── */
+  .ls-plan-card {
+    margin: 0 18px 14px; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+  }
+  .ls-plan-head {
+    padding: 11px 14px; background: var(--bg-elev); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px; font-size: 13px;
+  }
+  .ls-plan-head h4 { margin: 0; flex: 1; font-size: 13px; font-weight: 600 }
+  .ls-plan-status { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700 }
+  .ls-plan-status.planning { background: rgba(88,166,255,.18); color: var(--primary) }
+  .ls-plan-status.approved { background: rgba(63,185,80,.16); color: var(--success) }
+  .ls-plan-status.executing { background: rgba(212,168,90,.18); color: var(--gold) }
+  .ls-plan-status.awaiting_approval { background: rgba(212,168,90,.18); color: var(--gold) }
+  .ls-plan-status.completed { background: rgba(63,185,80,.18); color: var(--success) }
+  .ls-plan-status.failed, .ls-plan-status.aborted { background: rgba(248,81,73,.18); color: var(--danger) }
+  .ls-plan-body { padding: 8px 0 }
+
+  .ls-step {
+    padding: 10px 14px; border-left: 3px solid transparent;
+    border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: flex-start;
+  }
+  .ls-step:last-child { border-bottom: 0 }
+  .ls-step.pending { border-left-color: var(--text-dim) }
+  .ls-step.executing { border-left-color: var(--primary); background: rgba(88,166,255,.04) }
+  .ls-step.completed { border-left-color: var(--success); background: rgba(63,185,80,.03) }
+  .ls-step.failed { border-left-color: var(--danger); background: rgba(248,81,73,.04) }
+  .ls-step.skipped { border-left-color: var(--text-dim); opacity: .5 }
+  .ls-step-num {
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+    background: var(--bg-elev); border: 1px solid var(--border-strong);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: var(--text-muted);
+  }
+  .ls-step.completed .ls-step-num { background: var(--success); color: #052e1c; border-color: var(--success) }
+  .ls-step.executing .ls-step-num { background: var(--primary); color: #fff; border-color: var(--primary) }
+  .ls-step.failed .ls-step-num { background: var(--danger); color: #fff; border-color: var(--danger) }
+  .ls-step-body { flex: 1; min-width: 0 }
+  .ls-step-tool {
+    font-family: var(--mono); font-size: 12.5px; font-weight: 600; color: var(--gold);
+  }
+  .ls-step-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px }
+  .ls-step-args {
+    margin-top: 5px; background: rgba(0,0,0,.35); border-radius: 5px; padding: 5px 8px;
+    font-family: var(--mono); font-size: 10.5px; color: var(--text-muted);
+    max-height: 70px; overflow-y: auto; white-space: pre-wrap;
+  }
+  .ls-step-result {
+    margin-top: 5px; background: rgba(63,185,80,.06); border: 1px solid rgba(63,185,80,.3);
+    border-radius: 5px; padding: 5px 8px;
+    font-family: var(--mono); font-size: 10.5px; color: var(--success);
+    max-height: 80px; overflow-y: auto; white-space: pre-wrap;
+  }
+  .ls-step-error {
+    margin-top: 5px; background: rgba(248,81,73,.06); border: 1px solid rgba(248,81,73,.3);
+    border-radius: 5px; padding: 5px 8px;
+    font-family: var(--mono); font-size: 10.5px; color: var(--danger);
+    max-height: 80px; overflow-y: auto; white-space: pre-wrap;
+  }
+  .ls-step-meta {
+    margin-top: 6px; display: flex; gap: 10px; font-size: 10.5px; color: var(--text-dim);
+    align-items: center; flex-wrap: wrap;
+  }
+  .ls-step-actions { display: flex; gap: 6px; margin-top: 7px }
+  .ls-verdict {
+    padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600;
+  }
+  .ls-verdict.pass { background: rgba(63,185,80,.18); color: var(--success) }
+  .ls-verdict.fail { background: rgba(248,81,73,.18); color: var(--danger) }
+  .ls-verdict.warn { background: rgba(212,168,90,.18); color: var(--gold) }
+
+  /* ─── 6-Vai Council voices ────────────────── */
+  .ls-voice {
+    margin: 8px 12px; padding: 10px 12px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .ls-voice-head {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12.5px; font-weight: 600; margin-bottom: 5px;
+  }
+  .ls-voice-icon {
+    width: 24px; height: 24px; border-radius: 6px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0;
+  }
+  .ls-voice-icon.architect { background: linear-gradient(135deg, #a78bfa, #7c3aed); color: #fff }
+  .ls-voice-icon.planner   { background: linear-gradient(135deg, #58a6ff, #1f6feb); color: #fff }
+  .ls-voice-icon.coder     { background: linear-gradient(135deg, var(--gold), #d97706); color: #0a0a0f }
+  .ls-voice-icon.reviewer  { background: linear-gradient(135deg, #34d399, #10b981); color: #042f1c }
+  .ls-voice-icon.security  { background: linear-gradient(135deg, #f87171, #dc2626); color: #fff }
+  .ls-voice-icon.qa        { background: linear-gradient(135deg, #f59e0b, #d97706); color: #0a0a0f }
+  .ls-voice-name { color: var(--text) }
+  .ls-voice-vote {
+    margin-left: auto; padding: 1px 7px; border-radius: 4px;
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+  }
+  .ls-voice-vote.yes { background: rgba(63,185,80,.18); color: var(--success) }
+  .ls-voice-vote.no { background: rgba(248,81,73,.18); color: var(--danger) }
+  .ls-voice-vote.abstain { background: rgba(110,118,129,.18); color: var(--text-dim) }
+  .ls-voice-vote.veto { background: var(--danger); color: #fff }
+  .ls-voice-meta {
+    font-size: 10.5px; color: var(--text-dim); display: flex; gap: 8px;
+    margin-bottom: 5px; flex-wrap: wrap;
+  }
+  .ls-voice-meta b { color: var(--gold); font-weight: 600 }
+  .ls-voice-bubble {
+    background: rgba(0,0,0,.32); border-radius: 6px; padding: 7px 9px;
+    font-size: 11.5px; line-height: 1.5; color: var(--text-muted);
+    max-height: 90px; overflow-y: auto;
+    word-break: break-word; white-space: pre-wrap;
+  }
+
+  /* ─── Cost meter ──────────────────────────────── */
+  .ls-cost-meter {
+    margin: 8px 12px; padding: 10px 12px;
+    background: linear-gradient(135deg, rgba(212,168,90,.08), rgba(212,168,90,.02));
+    border: 1px solid rgba(212,168,90,.3); border-radius: 8px;
+  }
+  .ls-cost-row { display: flex; justify-content: space-between; font-size: 11.5px; margin: 3px 0 }
+  .ls-cost-row b { color: var(--gold); font-family: var(--mono) }
+  .ls-cost-total {
+    font-size: 14px; font-weight: 700; color: var(--gold);
+    border-top: 1px solid rgba(212,168,90,.3); padding-top: 5px; margin-top: 5px;
+  }
+
+  /* ─── Forbidden screen ─────────────────────────── */
+  .forbidden {
+    display: flex; align-items: center; justify-content: center;
+    height: 100vh; padding: 40px; text-align: center;
+  }
+  .forbidden-card {
+    max-width: 480px; padding: 30px;
+    background: var(--bg-card); border: 1px solid var(--danger);
+    border-radius: 12px;
+  }
+  .forbidden-card h2 { color: var(--danger); margin: 0 0 8px }
+  .forbidden-card p { color: var(--text-muted); margin: 0 0 16px }
+</style>
+</head>
+<body>
+
+<!-- Loading state (visible by default — show until boot resolves) -->
+<div class="forbidden" id="loading-screen">
+  <div class="forbidden-card" style="border-color:var(--gold)">
+    <div style="font-size:42px;text-align:center;margin-bottom:10px;animation:pulse 1.5s ease-in-out infinite">⚒️</div>
+    <h2 style="color:var(--gold);text-align:center">Đang tải CTO Console…</h2>
+    <p style="text-align:center" id="loading-msg">Verify quyền truy cập + load workspaces…</p>
+    <div id="loading-error" style="display:none;text-align:center;margin-top:14px">
+      <p style="color:var(--danger);font-size:12px;font-family:var(--mono);background:rgba(248,81,73,.08);padding:10px;border-radius:6px;border:1px solid rgba(248,81,73,.3)" id="loading-error-detail"></p>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+        <a href="/app" class="btn-send" style="display:inline-block;text-decoration:none">🔐 Login lại</a>
+        <a href="/support" class="btn-ghost-sm" style="display:inline-block;text-decoration:none;padding:8px 16px;border:1px solid var(--border);border-radius:8px">💬 Support Center</a>
+      </div>
+    </div>
+  </div>
+</div>
+<style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}</style>
+
+<!-- Forbidden state (Owner-only) — shown only when role !== Owner -->
+<div class="forbidden" id="forbidden" style="display:none">
+  <div class="forbidden-card">
+    <h2>🛡️ CTO Console — Owner Only</h2>
+    <p>Trang này chỉ dành cho role <b>Owner</b> (chairman + CTO Zeni Cloud). Nếu bạn là khách cần support → vui lòng dùng <a href="/support">Support Center</a>.</p>
+    <a href="/app" class="btn-send" style="display:inline-block;text-decoration:none">← Về Dashboard</a>
+  </div>
+</div>
+
+<!-- Main app shell -->
+<div class="app" id="app" style="display:none">
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-badge">Z</div>
+      <div>
+        <span class="brand-name">Zeni</span><span> CTO Console</span>
+        <span class="brand-sub">v1 · Claude-style 3-tab</span>
+      </div>
+    </div>
+    <div class="topbar-spacer"></div>
+    <span class="pill live" id="pill-status">production · v131</span>
+    <span class="me-info" id="me-info">…</span>
+    <a href="/app" class="btn-ghost-sm">← Dashboard</a>
+  </header>
+
+  <!-- Tabs -->
+  <nav class="tabbar">
+    <div class="tab active" data-tab="support">
+      <span class="tab-icon">💬</span> Chat Support
+      <span class="tab-count" id="cnt-support">·</span>
+    </div>
+    <div class="tab" data-tab="provisioning">
+      <span class="tab-icon">🔑</span> Provisioning
+      <span class="tab-count" id="cnt-provisioning">·</span>
+    </div>
+    <div class="tab" data-tab="coder">
+      <span class="tab-icon">⚒️</span> Auto Coder
+      <span class="tab-count" id="cnt-coder">·</span>
+    </div>
+  </nav>
+
+  <!-- ═════════ TAB 1 — CHAT SUPPORT ═════════ -->
+  <div class="tab-page active" data-page="support">
+    <aside class="side">
+      <div class="side-head">
+        <h3>Sessions từ khách</h3>
+        <button class="btn-sm" id="new-support">+ Mới</button>
+      </div>
+      <div class="side-list" id="list-support"><div class="empty">Đang tải…</div></div>
+    </aside>
+
+    <main class="main">
+      <div class="main-head">
+        <div class="mh-info">
+          <div class="mh-title" id="hd-support-title">Chọn session</div>
+          <div class="mh-sub" id="hd-support-sub">Chairman + AI agent reply customer</div>
+        </div>
+        <button class="btn-ghost-sm" id="resolve-support" style="display:none">✓ Resolved</button>
+      </div>
+      <div class="stream" id="stream-support">
+        <div class="empty-stream">
+          <div style="font-size:42px">💬</div>
+          <h3>Chat Support — khách báo lỗi</h3>
+          <p>Đây là sessions support từ khách (qua /support). Chairman + AI agent có thể reply. AI agent FAQ retrieval đã wire.</p>
+        </div>
+      </div>
+      <div class="composer" id="composer-support" style="display:none">
+        <div class="composer-shell">
+          <textarea id="input-support" placeholder="Reply khách… (Markdown OK)" rows="1"></textarea>
+          <div class="composer-bar">
+            <div class="composer-hint"><kbd>Enter</kbd> gửi · <kbd>Shift+Enter</kbd> xuống dòng</div>
+            <button class="btn-send" id="send-support">Gửi</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <aside class="right">
+      <div class="right-head"><h3>Quick Actions</h3></div>
+      <div class="quick-actions">
+        <h4>Khi gặp lỗi khách hay hỏi</h4>
+        <button class="qa-btn" data-faq="image not found">
+          <span class="qa-icon">🐳</span> Image not found 422
+          <span class="qa-desc">Hướng dẫn whitelist + push Docker Hub</span>
+        </button>
+        <button class="qa-btn" data-faq="missing bearer">
+          <span class="qa-icon">🔐</span> Missing bearer token 401
+          <span class="qa-desc">Hướng dẫn refresh JWT / dùng PAT</span>
+        </button>
+        <button class="qa-btn" data-faq="port">
+          <span class="qa-icon">🚪</span> Container failed PORT
+          <span class="qa-desc">App phải listen $PORT env</span>
+        </button>
+        <button class="qa-btn" data-faq="ghcr">
+          <span class="qa-icon">🚫</span> ghcr.io không pull được
+          <span class="qa-desc">Cloud Run only docker.io / pkg.dev</span>
+        </button>
+        <button class="qa-btn" data-faq="topup">
+          <span class="qa-icon">💰</span> Topup wallet VND
+          <span class="qa-desc">VietQR EMV NAPAS flow</span>
+        </button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ═════════ TAB 2 — PROVISIONING ═════════ -->
+  <div class="tab-page" data-page="provisioning">
+    <aside class="side">
+      <div class="side-head">
+        <h3>Provisioning sessions</h3>
+        <button class="btn-sm" id="new-provisioning">+ Mới</button>
+      </div>
+      <div class="side-list" id="list-provisioning"><div class="empty">Chưa có session</div></div>
+    </aside>
+
+    <main class="main">
+      <div class="main-head">
+        <div class="mh-info">
+          <div class="mh-title" id="hd-provisioning-title">Provisioning Workspace</div>
+          <div class="mh-sub" id="hd-provisioning-sub">Cấp PAT + add registry whitelist + create project — AI agent propose</div>
+        </div>
+      </div>
+      <div class="stream" id="stream-provisioning">
+        <div class="empty-stream">
+          <div style="font-size:42px">🔑</div>
+          <h3>Provisioning Chat</h3>
+          <p>Bảo agent: "Tạo PAT cho workspace witsagi, scope full" hoặc "Add ghcr.io/myorg/ vào whitelist clawwits". Agent propose tool call → chairman duyệt.</p>
+        </div>
+      </div>
+      <div class="composer" id="composer-provisioning" style="display:none">
+        <div class="composer-shell">
+          <textarea id="input-provisioning" placeholder="VD: 'Tạo PAT scope deploy cho workspace clawwits, 90 ngày'" rows="1"></textarea>
+          <div class="composer-bar">
+            <div class="composer-hint">AI agent sẽ propose tool calls — chairman duyệt từng cái</div>
+            <button class="btn-send" id="send-provisioning">Hỏi agent</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <aside class="right">
+      <div class="right-head">
+        <h3>Tool calls pending</h3>
+        <button class="btn-ghost-sm" id="refresh-tools">↻</button>
+      </div>
+      <div class="right-body" id="tools-provisioning">
+        <div class="empty">Chưa có tool call</div>
+      </div>
+      <div class="quick-actions" style="border-top:1px solid var(--border)">
+        <h4>Tool 1-click</h4>
+        <button class="qa-btn" data-quick="create_pat">
+          <span class="qa-icon">🎫</span> Create PAT
+          <span class="qa-desc">Cấp Personal Access Token cho workspace</span>
+        </button>
+        <button class="qa-btn" data-quick="add_whitelist">
+          <span class="qa-icon">📦</span> Add Image Whitelist
+          <span class="qa-desc">Cho phép registry prefix mới</span>
+        </button>
+        <button class="qa-btn" data-quick="list_workspaces">
+          <span class="qa-icon">🗂️</span> List All Workspaces
+          <span class="qa-desc">Auto-execute (safe)</span>
+        </button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ═════════ TAB 3 — AUTO CODER (Live Workstream) ═════════ -->
+  <div class="tab-page coder" data-page="coder">
+    <aside class="side">
+      <div class="side-head">
+        <h3>Coder Runs</h3>
+        <button class="btn-ghost-sm" id="refresh-runs" title="Refresh">↻</button>
+      </div>
+      <div class="side-list" id="list-runs"><div class="empty">Đang tải runs…</div></div>
+    </aside>
+
+    <main class="main" style="overflow-y:auto">
+      <div class="main-head">
+        <div class="mh-info">
+          <div class="mh-title">⚒️ Zeni Coder Swarm — 6-Vai Council</div>
+          <div class="mh-sub">Adaptive Tier Routing · Opus 4.7 cho task critical · Pattern lấy cảm hứng CodeWits</div>
+        </div>
+      </div>
+
+      <!-- Requirement Input -->
+      <div class="ls-input-card">
+        <label style="font-size:12px;color:var(--text-muted);font-weight:600;display:block;margin-bottom:5px">
+          Yêu cầu (1 dòng — Council 6-vai sẽ thảo luận parallel):
+        </label>
+        <textarea id="run-requirement" placeholder='VD: "Deploy Next.js portfolio + Stripe checkout cho clawwits, add custom domain"'></textarea>
+        <div class="ls-preview" id="run-preview">
+          <span style="color:var(--text-dim)">Gõ requirement để xem complexity + cost preview…</span>
+        </div>
+        <div class="ls-action-bar">
+          <div style="display:flex;gap:10px;align-items:center;flex:1">
+            <label style="font-size:11.5px;color:var(--text-muted)">
+              Workspace khách (optional):
+              <select id="run-target-ws" style="background:var(--bg-elev);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:5px;font-size:12px;margin-left:4px">
+                <option value="">— internal —</option>
+              </select>
+            </label>
+          </div>
+          <button class="btn-run" id="btn-run-council">▶ Run with Council</button>
+        </div>
+      </div>
+
+      <!-- Plan tree (loaded after deliberation) -->
+      <div id="active-run-area"></div>
+    </main>
+
+    <aside class="right">
+      <div class="right-head">
+        <h3>6-Vai Council Voices</h3>
+      </div>
+      <div class="right-body" id="council-voices">
+        <div class="empty">Tạo run để xem 6-vai thảo luận…</div>
+      </div>
+      <div class="ls-cost-meter" id="cost-meter" style="display:none">
+        <div class="ls-cost-row"><span>Total cost:</span><b id="cost-total">$0.0000</b></div>
+        <div class="ls-cost-row"><span>Tokens in/out:</span><b id="cost-tokens">0/0</b></div>
+        <div class="ls-cost-total" id="cost-banner">Run pending</div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- New session modal -->
+<div class="modal-bg" id="modal-new">
+  <div class="modal">
+    <h3 id="modal-title">Tạo session mới</h3>
+    <p class="modal-sub" id="modal-sub">…</p>
+    <form id="new-form">
+      <div class="field">
+        <label>Tiêu đề</label>
+        <input id="m-title" type="text" maxlength="200" required />
+      </div>
+      <div class="field">
+        <label>Workspace khách (target)</label>
+        <select id="m-ws"><option value="">(internal — không gắn workspace khách)</option></select>
+      </div>
+      <div class="field">
+        <label>Tin nhắn đầu tiên (optional)</label>
+        <textarea id="m-msg" placeholder="Chairman note hoặc AI prompt initial…"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost-sm" id="m-cancel">Hủy</button>
+        <button type="submit" class="btn-send">Tạo</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/static/zeni-api.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const state = {
+    me: null,
+    workspaces: [],
+    activeTab: 'support',
+    sessions: { support: [], provisioning: [], coder: [] },
+    activeSession: { support: null, provisioning: null, coder: null },
+    messages: { support: [], provisioning: [], coder: [] },
+    toolCalls: { support: [], provisioning: [], coder: [] },
+    pollTimer: null,
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const escapeHtml = (s) => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+  function renderMarkdown(s) {
+    let h = escapeHtml(s);
+    h = h.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (_, l, c) =>
+      '<pre><code>' + c.replace(/\n+$/, '') + '</code></pre>');
+    h = h.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+    h = h.replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>');
+    h = h.replace(/_([^_\n]+)_/g, '<i>$1</i>');
+    h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+                  '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    h = h.replace(/(^|\n)(?:[-•]\s+(.+))/g, '$1<li>$2</li>');
+    h = h.replace(/(<li>.+<\/li>)+/g, (m) => '<ul>' + m + '</ul>');
+    h = h.split(/\n{2,}/).map(p =>
+      /^<(ul|ol|pre|div)/.test(p.trim()) ? p : '<p>' + p.replace(/\n/g, '<br/>') + '</p>'
+    ).join('');
+    return h;
+  }
+
+  function toast(msg, kind) {
+    kind = kind || 'info';
+    const el = $('toast');
+    el.className = 'toast ' + kind;
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => el.classList.remove('show'), 3500);
+  }
+
+  function fmtTime(iso) {
+    if (!iso) return '';
+    try {
+      const d = new Date(iso); const now = new Date();
+      const diff = (now - d) / 1000;
+      if (diff < 60) return 'vừa xong';
+      if (diff < 3600) return Math.floor(diff / 60) + ' phút';
+      if (diff < 86400) return Math.floor(diff / 3600) + ' giờ';
+      return d.toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+    } catch (e) { return iso; }
+  }
+
+  // ─── API client ────────────────────────────────
+  async function apiFetch(path, opts = {}) {
+    const accounts = JSON.parse(localStorage.getItem('zeni.accounts.v1') || '[]');
+    const activeId = localStorage.getItem('zeni.active.account');
+    const acc = accounts.find(a => a.id === activeId);
+    const tok = (acc && acc.access_token) || localStorage.getItem('zeni.jwt.access');
+    if (!tok) {
+      const err = new Error('Phiên đăng nhập hết hạn — chưa có token JWT trong browser. Login từ /app trước rồi vào /cto.');
+      err.code = 'NO_TOKEN';
+      err.redirect = '/app';
+      throw err;
+    }
+    const url = '/api/v1' + path;
+    const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok };
+    const init = { method: opts.method || 'GET', headers };
+    if (opts.body !== undefined) init.body = typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body);
+    let res;
+    try {
+      res = await fetch(url, init);
+    } catch (netErr) {
+      const err = new Error('Không kết nối được backend (' + netErr.message + ')');
+      err.code = 'NETWORK';
+      throw err;
+    }
+    if (res.status === 401) {
+      const err = new Error('Token JWT hết hạn — login lại tại /app');
+      err.code = 'TOKEN_EXPIRED';
+      err.redirect = '/app';
+      throw err;
+    }
+    if (res.status === 403) {
+      const detail = await res.json().catch(() => ({}));
+      const err = new Error('Forbidden: ' + (detail.detail || 'Không đủ quyền'));
+      err.code = 'FORBIDDEN';
+      err.status = 403;
+      throw err;
+    }
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({ detail: res.statusText }));
+      const msg = typeof detail.detail === 'string' ? detail.detail : JSON.stringify(detail.detail || detail);
+      const err = new Error(msg); err.status = res.status; throw err;
+    }
+    if (res.status === 204) return null;
+    return res.json();
+  }
+
+  function showLoadingError(msg, autoRedirect) {
+    const loading = $('loading-screen');
+    if (!loading) return;
+    $('loading-msg').textContent = 'Không vào được CTO Console';
+    $('loading-error').style.display = 'block';
+    $('loading-error-detail').textContent = msg;
+    if (autoRedirect) {
+      // Don't auto-redirect — chairman thấy error message, click thủ công
+    }
+  }
+
+  function hideLoading() {
+    const loading = $('loading-screen');
+    if (loading) loading.style.display = 'none';
+  }
+
+  // ─── Boot ───────────────────────────────────────
+  async function boot() {
+    try {
+      const me = await apiFetch('/auth/me');
+      state.me = me;
+      if (me.role !== 'Owner') {
+        // Show forbidden screen instead of app
+        hideLoading();
+        $('forbidden').style.display = 'flex';
+        $('app').style.display = 'none';
+        return;
+      }
+      // Owner verified — show app, hide loading
+      hideLoading();
+      $('forbidden').style.display = 'none';
+      $('app').style.display = 'flex';
+      $('me-info').innerHTML = '👋 <b>' + escapeHtml(me.name || me.email) + '</b> · Owner';
+
+      const ws = await apiFetch('/workspaces').catch(() => []);
+      state.workspaces = ws || [];
+      const sel = $('m-ws');
+      if (sel) {
+        sel.innerHTML = '<option value="">(internal — không gắn workspace khách)</option>'
+          + state.workspaces.map(w =>
+              '<option value="' + escapeHtml(w.id) + '">' + escapeHtml(w.id + ' · ' + (w.name || '')) + '</option>'
+            ).join('');
+      }
+
+      // Load sessions + runs in background — không block UI
+      // Tab 3 (Coder) dùng data model runs, không dùng sessions như Tab 1+2
+      Promise.all([
+        loadSessions('support').catch(e => console.warn('support', e)),
+        loadSessions('provisioning').catch(e => console.warn('provisioning', e)),
+        loadRuns().catch(e => console.warn('coder runs', e)),
+      ]);
+    } catch (e) {
+      console.error('boot crash', e);
+      // ALWAYS hide loading + show error screen (never leave page black)
+      const errorMsg = e.message || 'Unknown error';
+      const code = e.code || 'UNKNOWN';
+      showLoadingError('[' + code + '] ' + errorMsg);
+    }
+  }
+
+  async function loadSessions(type) {
+    try {
+      const list = await apiFetch('/cto/sessions?session_type=' + type);
+      state.sessions[type] = list || [];
+      renderSessions(type);
+      $('cnt-' + type).textContent = list.length;
+    } catch (e) {
+      console.error('loadSessions', type, e);
+      $('list-' + type).innerHTML = '<div class="empty">Lỗi: ' + escapeHtml(e.message) + '</div>';
+    }
+  }
+
+  function renderSessions(type) {
+    const wrap = $('list-' + type);
+    const list = state.sessions[type];
+    if (!list.length) {
+      wrap.innerHTML = '<div class="empty">Chưa có session.<br/><br/>Bấm <b>+ Mới</b> để tạo.</div>';
+      return;
+    }
+    wrap.innerHTML = list.map(s => {
+      const cls = s.id === state.activeSession[type] ? 'item active' : 'item';
+      return '<div class="' + cls + '" data-sid="' + escapeHtml(s.id) + '" data-type="' + type + '">'
+        + '<div class="item-title">' + escapeHtml(s.title) + '</div>'
+        + '<div class="item-meta">'
+        + '<span class="item-status ' + escapeHtml(s.status) + '">' + escapeHtml(s.status) + '</span>'
+        + (s.target_workspace ? '<span>→ ' + escapeHtml(s.target_workspace) + '</span>' : '')
+        + '<span>· ' + escapeHtml(fmtTime(s.last_message_at || s.created_at)) + '</span>'
+        + '</div></div>';
+    }).join('');
+  }
+
+  async function openSession(type, sid) {
+    state.activeSession[type] = sid;
+    renderSessions(type);
+    const sess = state.sessions[type].find(s => s.id === sid);
+    if (sess) {
+      $('hd-' + type + '-title').textContent = sess.title;
+      const wsTag = sess.target_workspace ? ' · → ' + sess.target_workspace : ' · internal';
+      $('hd-' + type + '-sub').textContent = sess.status + wsTag + ' · ' + fmtTime(sess.last_message_at || sess.created_at);
+      if (type === 'support') $('resolve-support').style.display = sess.status === 'resolved' ? 'none' : 'inline-flex';
+      $('composer-' + type).style.display = sess.status === 'closed' ? 'none' : 'block';
+    }
+    await Promise.all([loadMessages(type, sid), loadToolCalls(type, sid)]);
+    startPolling();
+  }
+
+  async function loadMessages(type, sid) {
+    try {
+      const msgs = await apiFetch('/support/sessions/' + sid + '/messages');
+      state.messages[type] = msgs || [];
+      renderMessages(type);
+    } catch (e) { console.error('loadMessages', e); }
+  }
+
+  function renderMessages(type) {
+    const stream = $('stream-' + type);
+    const msgs = state.messages[type];
+    if (!msgs.length) {
+      stream.innerHTML = '<div class="empty-stream"><div style="font-size:36px">📭</div><h3>Chưa có tin nhắn</h3><p>Gửi tin đầu tiên.</p></div>';
+      return;
+    }
+    stream.innerHTML = msgs.map(m => {
+      const initial = m.sender_type === 'agent' ? 'AI'
+                    : m.sender_type === 'chairman' ? 'CTO'
+                    : m.sender_type === 'system' ? 'SYS'
+                    : ((m.sender_name || '?')[0] || '?').toUpperCase();
+      const aiTag = m.sender_type === 'agent' && m.ai_model
+        ? '<span class="agent-tag">' + escapeHtml(m.ai_model) + '</span>'
+        : '';
+      return '<div class="msg">'
+        + '<div class="msg-avatar ' + escapeHtml(m.sender_type) + '">' + escapeHtml(initial) + '</div>'
+        + '<div class="msg-body">'
+        +   '<div class="msg-meta">'
+        +     '<b>' + escapeHtml(m.sender_name || m.sender_type) + '</b>'
+        +     aiTag
+        +     '<span>' + escapeHtml(fmtTime(m.created_at)) + '</span>'
+        +   '</div>'
+        +   '<div class="msg-content">' + renderMarkdown(m.content) + '</div>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+    stream.scrollTop = stream.scrollHeight;
+  }
+
+  async function loadToolCalls(type, sid) {
+    if (!sid || type === 'support') return;
+    try {
+      const tc = await apiFetch('/cto/tool-calls?session_id=' + sid);
+      state.toolCalls[type] = tc || [];
+      renderToolCalls(type);
+    } catch (e) { console.error('loadToolCalls', e); }
+  }
+
+  function renderToolCalls(type) {
+    if (type === 'support') return;
+    const wrap = $('tools-' + type);
+    const list = state.toolCalls[type];
+    if (!list.length) {
+      wrap.innerHTML = '<div class="empty">Chưa có tool call</div>';
+      return;
+    }
+    wrap.innerHTML = list.map(tc => {
+      const args = typeof tc.tool_args === 'object' ? tc.tool_args : {};
+      const result = tc.execution_result;
+      const showApprove = tc.status === 'proposed';
+      return '<div class="tool-card">'
+        + '<div class="tool-head">'
+        +   '<span>🔧 ' + escapeHtml(tc.tool_name) + '</span>'
+        +   '<span class="risk-badge ' + escapeHtml(tc.risk_level) + '">' + escapeHtml(tc.risk_level) + '</span>'
+        + '</div>'
+        + '<div class="item-status ' + escapeHtml(tc.status) + '" style="font-size:10px;display:inline-block;margin-bottom:4px">'
+        +   escapeHtml(tc.status)
+        + '</div>'
+        + '<div class="tool-args">' + escapeHtml(JSON.stringify(args, null, 2)) + '</div>'
+        + (result ? '<div class="tool-result">' + escapeHtml(JSON.stringify(result, null, 2)) + '</div>' : '')
+        + (tc.error_detail ? '<div class="tool-error">' + escapeHtml(tc.error_detail) + '</div>' : '')
+        + (showApprove ? (
+            '<div class="tool-actions">'
+          + '<button class="tc-btn approve" data-approve="' + escapeHtml(tc.id) + '">✓ Duyệt</button>'
+          + '<button class="tc-btn reject" data-reject="' + escapeHtml(tc.id) + '">Từ chối</button>'
+          + '</div>'
+          ) : '')
+        + '<div class="tool-meta">' + escapeHtml(fmtTime(tc.proposed_at))
+        + (tc.target_workspace ? ' · → ' + escapeHtml(tc.target_workspace) : '')
+        + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  async function sendMessage(type) {
+    const input = $('input-' + type);
+    const content = input.value.trim();
+    const sid = state.activeSession[type];
+    if (!content || !sid) return;
+    const btn = $('send-' + type);
+    btn.disabled = true;
+    try {
+      // For support/provisioning/coder — different behavior:
+      if (type === 'support') {
+        await apiFetch('/support/sessions/' + sid + '/messages', {
+          method: 'POST',
+          body: { content, content_format: 'markdown', request_ai_reply: false },
+        });
+      } else {
+        // Provisioning/coder — call agent reasoning
+        await apiFetch('/support/sessions/' + sid + '/messages', {
+          method: 'POST',
+          body: { content, content_format: 'markdown', request_ai_reply: false },
+        });
+        // Ask agent to propose tools
+        const reasoning = await apiFetch('/cto/agent/reason', {
+          method: 'POST',
+          body: { session_id: sid, user_message: content },
+        });
+        // Save agent reply as message
+        if (reasoning.reply) {
+          await apiFetch('/cto/tool-calls/propose', {
+            method: 'POST',
+            body: {
+              session_id: sid,
+              tool_name: 'send_message',  // safe, auto-execute
+              tool_args: { session_id: sid, content: reasoning.reply },
+              proposed_by_agent: reasoning.model || 'agent',
+            },
+          });
+        }
+        // Propose each tool call
+        for (const tc of (reasoning.tool_calls || [])) {
+          await apiFetch('/cto/tool-calls/propose', {
+            method: 'POST',
+            body: {
+              session_id: sid,
+              tool_name: tc.name,
+              tool_args: tc.args || {},
+              proposed_by_agent: reasoning.model || 'agent',
+              target_workspace: state.sessions[type].find(s => s.id === sid)?.target_workspace || null,
+            },
+          });
+        }
+      }
+      input.value = '';
+      input.style.height = 'auto';
+      await Promise.all([loadMessages(type, sid), loadToolCalls(type, sid)]);
+      // 1.5s later poll again (tool exec async)
+      if (type !== 'support') setTimeout(() => loadToolCalls(type, sid), 1500);
+      loadSessions(type);
+    } catch (e) {
+      toast('Gửi lỗi: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function startPolling() {
+    stopPolling();
+    state.pollTimer = setInterval(async () => {
+      const t = state.activeTab;
+      const sid = state.activeSession[t];
+      if (!sid) return;
+      try { await loadMessages(t, sid); if (t !== 'support') await loadToolCalls(t, sid); } catch (e) {}
+    }, 5000);
+  }
+  function stopPolling() {
+    if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
+  }
+
+  // ─── Event delegation ───────────────────────────
+  document.addEventListener('click', async (ev) => {
+    const t = ev.target;
+    // Tab switch
+    const tabBtn = t.closest && t.closest('.tab');
+    if (tabBtn) {
+      const newTab = tabBtn.getAttribute('data-tab');
+      if (newTab && newTab !== state.activeTab) {
+        state.activeTab = newTab;
+        document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === tabBtn));
+        document.querySelectorAll('.tab-page').forEach(p => p.classList.toggle('active', p.getAttribute('data-page') === newTab));
+      }
+      return;
+    }
+    // Session click
+    const item = t.closest && t.closest('.item');
+    if (item) {
+      const sid = item.getAttribute('data-sid');
+      const type = item.getAttribute('data-type');
+      if (sid && type) openSession(type, sid);
+      return;
+    }
+    // Approve tool call
+    if (t.dataset.approve) {
+      if (!confirm('Duyệt tool call này? Agent sẽ thực thi ngay.')) return;
+      try {
+        await apiFetch('/cto/tool-calls/' + t.dataset.approve + '/approve', {
+          method: 'POST', body: { notes: 'approved via UI' },
+        });
+        toast('Approved — đang thực thi', 'success');
+        const sid = state.activeSession[state.activeTab];
+        if (sid) setTimeout(() => loadToolCalls(state.activeTab, sid), 1200);
+      } catch (e) { toast('Approve lỗi: ' + e.message, 'error'); }
+      return;
+    }
+    if (t.dataset.reject) {
+      const reason = prompt('Lý do từ chối?', 'Not safe');
+      if (reason === null) return;
+      try {
+        await apiFetch('/cto/tool-calls/' + t.dataset.reject + '/reject', {
+          method: 'POST', body: { notes: reason },
+        });
+        toast('Rejected', 'info');
+        const sid = state.activeSession[state.activeTab];
+        if (sid) loadToolCalls(state.activeTab, sid);
+      } catch (e) { toast('Reject lỗi: ' + e.message, 'error'); }
+      return;
+    }
+    // Quick action FAQ insert
+    if (t.dataset.faq) {
+      const sid = state.activeSession.support;
+      if (!sid) { toast('Chọn session trước', 'info'); return; }
+      const faqMap = {
+        'image not found': 'Cloud Run reject vì image chưa được build/push. 3 cách fix:\n1. Upload ZIP source: POST /upload/source — Zeni tự build\n2. Build Farm: POST /build-farm/jobs cho Tauri/Rust\n3. Push lên Docker Hub `docker.io/yourname/app:v1` rồi add prefix vào workspace whitelist',
+        'missing bearer': 'Token JWT trong browser hết hạn (TTL 1h). Logout → Login lại → frontend tự refresh token. Nếu API call qua CLI/CI: dùng PAT scope=full thay vì JWT.',
+        'port': 'App phải listen $PORT env (default 8080). Sửa code: `app.listen(process.env.PORT || 8080)`. Hoặc khi tạo project, set field "port" đúng app của bạn.',
+        'ghcr': 'Cloud Run KHÔNG pull image trực tiếp từ ghcr.io. Dùng:\n• docker.io/yourname/ (Docker Hub)\n• us-central1-docker.pkg.dev/zeni-cloud-core/{ws}/ (Zeni AR — chairman cấp SA key)',
+        'topup': 'POST /api/v1/billing/wallet/topup — trả VietQR EMV code (NAPAS) → khách scan qua app banking VN (TPB/VCB/MBB/BIDV/ACB/TCB) → tự động credit wallet sau ~1 phút.',
+      };
+      const content = faqMap[t.dataset.faq];
+      if (content) { $('input-support').value = content; toast('Inserted FAQ — chỉnh sửa rồi gửi', 'info'); }
+      return;
+    }
+    // Quick tool propose
+    if (t.dataset.quick) {
+      const tool = t.dataset.quick;
+      const sid = state.activeSession.provisioning;
+      if (!sid) { toast('Tạo session provisioning trước', 'info'); return; }
+      const argMap = {
+        'create_pat': () => {
+          const ws = prompt('Workspace ID:');
+          if (!ws) return null;
+          const name = prompt('Tên token:', 'CTO-provisioned');
+          const scopes = prompt('Scopes (comma):', 'deploy,read');
+          return { workspace: ws, name, scopes };
+        },
+        'add_whitelist': () => {
+          const ws = prompt('Workspace ID:');
+          if (!ws) return null;
+          const prefix = prompt('Registry prefix (vd docker.io/myorg/):');
+          if (!prefix) return null;
+          return { workspace: ws, prefix, description: 'Added by CTO Console' };
+        },
+        'list_workspaces': () => ({}),
+      };
+      const args = argMap[tool] ? argMap[tool]() : null;
+      if (args === null) return;
+      try {
+        const target_ws = args.workspace || null;
+        await apiFetch('/cto/tool-calls/propose', {
+          method: 'POST',
+          body: { session_id: sid, tool_name: tool, tool_args: args,
+                  proposed_by_agent: 'manual_chairman', target_workspace: target_ws },
+        });
+        toast(tool + ' proposed', 'success');
+        setTimeout(() => loadToolCalls('provisioning', sid), 800);
+      } catch (e) { toast('Propose lỗi: ' + e.message, 'error'); }
+      return;
+    }
+    // New session buttons
+    if (t.id === 'new-support' || t.id === 'new-provisioning' || t.id === 'new-coder') {
+      const type = t.id.replace('new-', '');
+      $('modal-title').textContent = 'Tạo session ' + type;
+      $('modal-sub').textContent = ({
+        support: 'Mở session reply khách (chairman + AI agent)',
+        provisioning: 'Cấp PAT / whitelist / hướng dẫn — AI agent propose tool calls',
+        coder: 'Code + canary deploy projects khách — không phụ thuộc Claude Code',
+      })[type];
+      $('new-form').dataset.type = type;
+      $('modal-new').classList.add('show');
+    }
+    if (t.id === 'm-cancel') $('modal-new').classList.remove('show');
+    if (t.id === 'resolve-support') {
+      const sid = state.activeSession.support;
+      if (!sid || !confirm('Mark session resolved?')) return;
+      try {
+        await apiFetch('/support/sessions/' + sid + '/resolve', { method: 'POST', body: {} });
+        toast('Resolved', 'success');
+        loadSessions('support');
+      } catch (e) { toast(e.message, 'error'); }
+    }
+    if (t.id === 'refresh-tools') {
+      const sid = state.activeSession.provisioning;
+      if (sid) loadToolCalls('provisioning', sid);
+    }
+  });
+
+  // New session form
+  $('new-form').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const type = ev.target.dataset.type;
+    const title = $('m-title').value.trim();
+    const ws = $('m-ws').value || null;
+    const initial = $('m-msg').value.trim() || null;
+    if (!title) return;
+    try {
+      const s = await apiFetch('/cto/sessions', {
+        method: 'POST',
+        body: { title, session_type: type, target_workspace: ws, initial_message: initial },
+      });
+      $('modal-new').classList.remove('show');
+      ev.target.reset();
+      toast('Đã tạo session', 'success');
+      await loadSessions(type);
+      openSession(type, s.id);
+    } catch (e) { toast('Tạo lỗi: ' + e.message, 'error'); }
+  });
+
+  // Send buttons + Enter — defensive (Tab 3 Coder rewrite no longer uses send-coder)
+  ['support', 'provisioning'].forEach(type => {
+    const sendBtn = $('send-' + type);
+    const inp = $('input-' + type);
+    if (sendBtn) sendBtn.addEventListener('click', () => sendMessage(type));
+    if (inp) {
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage(type);
+        }
+      });
+      inp.addEventListener('input', (e) => {
+        e.target.style.height = 'auto';
+        e.target.style.height = Math.min(e.target.scrollHeight, 180) + 'px';
+      });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════
+  // ─── ZENI CODER SWARM (Tab 3 Live Workstream) ──────────
+  // ═══════════════════════════════════════════════════════
+  const swarm = {
+    runs: [],
+    activeRunId: null,
+    activeRun: null,
+    activeSteps: [],
+    activeVotes: [],
+    pollTimer: null,
+    previewTimer: null,
+  };
+
+  const PERSONA_ICONS = {
+    architect: '🏗️', planner: '📋', coder: '⚒️',
+    reviewer: '🔍', security: '🛡️', qa: '✅',
+  };
+
+  // ─── Routing preview live (debounced) ─────────────
+  function debouncedPreview() {
+    if (swarm.previewTimer) clearTimeout(swarm.previewTimer);
+    swarm.previewTimer = setTimeout(updatePreview, 400);
+  }
+
+  async function updatePreview() {
+    const req = $('run-requirement').value.trim();
+    const ws = $('run-target-ws').value;
+    const previewEl = $('run-preview');
+    if (req.length < 5) {
+      previewEl.innerHTML = '<span style="color:var(--text-dim)">Gõ requirement để xem complexity + cost preview…</span>';
+      return;
+    }
+    try {
+      const params = new URLSearchParams({ requirement: req });
+      if (ws) params.set('target_workspace', ws);
+      const data = await apiFetch('/cto/coder/routing-preview?' + params.toString());
+      const cx = data.complexity_detected || 'medium';
+      const cost = data.estimated_cost_per_run_usd || 0;
+      const tiers = data.tier_distribution || {};
+      const personaList = Object.entries(data.personas || {}).map(([p, info]) =>
+        `<span class="ls-tier-pill ${info.tier}" title="${p}: ${info.model_id}">${PERSONA_ICONS[p] || '·'} ${info.model_id.replace('-4-7','-4.7').replace('-4-6','-4.6').replace('-4-5','-4.5')}</span>`
+      ).join(' ');
+      previewEl.innerHTML =
+        `<span class="ls-complexity-badge ${cx}">${cx}</span>` +
+        `<span class="ls-cost-est">~ <b>$${cost.toFixed(4)}</b>/run</span>` +
+        `<span class="ls-tier-pills">${personaList}</span>` +
+        (tiers.frontier > 0 ? `<span style="color:var(--gold);font-weight:600">⭐ ${tiers.frontier} vai dùng FRONTIER (Opus 4.7)</span>` : '');
+    } catch (e) {
+      previewEl.innerHTML = '<span style="color:var(--danger)">Preview lỗi: ' + escapeHtml(e.message) + '</span>';
+    }
+  }
+
+  async function loadRuns() {
+    try {
+      const list = await apiFetch('/cto/coder/runs?limit=50');
+      swarm.runs = list || [];
+      renderRuns();
+      const cnt = $('cnt-coder');
+      if (cnt) cnt.textContent = swarm.runs.length;
+    } catch (e) {
+      const w = $('list-runs');
+      if (w) w.innerHTML = '<div class="empty">Lỗi: ' + escapeHtml(e.message) + '</div>';
+    }
+  }
+
+  function renderRuns() {
+    const wrap = $('list-runs');
+    if (!swarm.runs.length) {
+      wrap.innerHTML = '<div class="empty">Chưa có run nào.<br/>Gõ requirement bên phải → Run with Council.</div>';
+      return;
+    }
+    wrap.innerHTML = swarm.runs.map(r => {
+      const cls = r.id === swarm.activeRunId ? 'item active' : 'item';
+      const icon = r.status === 'completed' ? '✓' :
+                   r.status === 'executing' ? '⏳' :
+                   r.status === 'awaiting_approval' ? '⏸' :
+                   r.status === 'failed' ? '✗' :
+                   r.status === 'aborted' ? '⊘' :
+                   r.status === 'planning' ? '🧠' : '·';
+      const title = (r.requirement || '').slice(0, 80) + ((r.requirement || '').length > 80 ? '…' : '');
+      return '<div class="' + cls + '" data-run-id="' + escapeHtml(r.id) + '">'
+        + '<div class="item-title">' + icon + ' ' + escapeHtml(title) + '</div>'
+        + '<div class="item-meta">'
+        + '<span class="item-status ' + escapeHtml(r.status) + '">' + escapeHtml(r.status) + '</span>'
+        + (r.target_workspace ? '<span>→ ' + escapeHtml(r.target_workspace) + '</span>' : '')
+        + (r.total_cost_usd ? '<span>· $' + r.total_cost_usd.toFixed(4) + '</span>' : '')
+        + '</div></div>';
+    }).join('');
+  }
+
+  async function openRun(runId) {
+    swarm.activeRunId = runId;
+    renderRuns();
+    swarmStartPolling();
+    await Promise.all([refreshActiveRun(), refreshActiveVotes(), refreshActiveSteps()]);
+  }
+
+  async function refreshActiveRun() {
+    if (!swarm.activeRunId) return;
+    try {
+      const run = await apiFetch('/cto/coder/runs/' + swarm.activeRunId);
+      swarm.activeRun = run;
+      renderActiveRun();
+      renderCostMeter();
+    } catch (e) {
+      // Log status + msg + runId — easier debug
+      console.warn('refreshActiveRun', swarm.activeRunId, e.status || '?', e.message || e);
+      // 404 → run đã bị xóa hoặc activeRunId stale → clear
+      if (e.status === 404) {
+        swarm.activeRunId = null;
+        if (swarm.pollTimer) { clearInterval(swarm.pollTimer); swarm.pollTimer = null; }
+      }
+    }
+  }
+
+  async function refreshActiveSteps() {
+    if (!swarm.activeRunId) return;
+    try {
+      const steps = await apiFetch('/cto/coder/runs/' + swarm.activeRunId + '/steps');
+      swarm.activeSteps = steps || [];
+      renderActiveRun();
+    } catch (e) {}
+  }
+
+  async function refreshActiveVotes() {
+    if (!swarm.activeRunId) return;
+    try {
+      const votes = await apiFetch('/cto/coder/runs/' + swarm.activeRunId + '/votes');
+      swarm.activeVotes = votes || [];
+      renderCouncilVoices();
+    } catch (e) {}
+  }
+
+  function renderActiveRun() {
+    const area = $('active-run-area');
+    const run = swarm.activeRun;
+    if (!run) { area.innerHTML = ''; return; }
+
+    const stepsHtml = swarm.activeSteps.length ? swarm.activeSteps.map(s => renderStepCard(s)).join('') :
+      '<div class="empty" style="padding:20px">Chưa có steps. Council đang thảo luận…</div>';
+
+    const canStart = run.status === 'approved' || run.status === 'planning';
+    const startBtn = canStart && run.council_consensus === 'approved'
+      ? '<button class="btn-run" data-start-run="' + escapeHtml(run.id) + '">▶ Start execution</button>'
+      : '';
+    const abortBtn = (run.status === 'executing' || run.status === 'awaiting_approval' || run.status === 'planning')
+      ? '<button class="btn-ghost-sm" data-abort-run="' + escapeHtml(run.id) + '">Abort</button>'
+      : '';
+
+    area.innerHTML =
+      '<div class="ls-plan-card">'
+      + '<div class="ls-plan-head">'
+      +   '<h4>📋 Execution Plan</h4>'
+      +   '<span class="ls-plan-status ' + escapeHtml(run.status) + '">' + escapeHtml(run.status) + '</span>'
+      +   (run.council_consensus ? '<span style="font-size:11px;color:var(--text-muted)">Council: ' + escapeHtml(run.council_consensus) + '</span>' : '')
+      +   startBtn + abortBtn
+      + '</div>'
+      + '<div class="ls-plan-body">' + stepsHtml + '</div>'
+      + '</div>'
+      + (run.architect_design ? renderArchitectCard(run.architect_design) : '')
+      + (run.error_summary ? '<div class="ls-plan-card"><div class="ls-plan-body" style="padding:14px;color:var(--danger);font-size:12px">⚠️ ' + escapeHtml(run.error_summary) + '</div></div>' : '');
+  }
+
+  function renderArchitectCard(design) {
+    if (!design || typeof design !== 'object') return '';
+    // v163 — white-space:pre-wrap để JSON wrap thay vì horizontal scroll bar xấu
+    return '<div class="ls-plan-card">'
+      + '<div class="ls-plan-head"><h4>🏗️ Architect Design</h4>'
+      + '<span style="font-size:11px;color:var(--text-muted)">' + escapeHtml(design.verdict || '') + '</span></div>'
+      + '<div class="ls-plan-body" style="padding:12px"><pre style="background:rgba(0,0,0,.3);padding:10px;border-radius:6px;font-size:11px;color:var(--text-muted);max-height:250px;overflow-y:auto;overflow-x:hidden;margin:0;white-space:pre-wrap;word-break:break-word">'
+      + escapeHtml(JSON.stringify(design, null, 2))
+      + '</pre></div></div>';
+  }
+
+  function renderStepCard(s) {
+    const args = typeof s.tool_args === 'object' ? s.tool_args : {};
+    const result = s.result;
+    const showApprove = s.status === 'pending' && s.requires_approval && !s.approved_at;
+    const verdictHtml = (s.reviewer_verdict || s.qa_verdict)
+      ? '<span class="ls-verdict ' + escapeHtml(s.reviewer_verdict || 'pass') + '">R: ' + escapeHtml(s.reviewer_verdict || '·') + '</span>'
+      + '<span class="ls-verdict ' + escapeHtml(s.qa_verdict || 'pass') + '">QA: ' + escapeHtml(s.qa_verdict || '·') + '</span>'
+      : '';
+    return '<div class="ls-step ' + escapeHtml(s.status) + '">'
+      + '<div class="ls-step-num">' + s.step_idx + '</div>'
+      + '<div class="ls-step-body">'
+      +   '<div class="ls-step-tool">' + escapeHtml(s.tool_name) + '</div>'
+      +   (s.description ? '<div class="ls-step-desc">' + escapeHtml(s.description) + '</div>' : '')
+      +   '<div class="ls-step-args">' + escapeHtml(JSON.stringify(args, null, 2)) + '</div>'
+      +   (result ? '<div class="ls-step-result">' + escapeHtml(typeof result === 'string' ? result : JSON.stringify(result, null, 2)) + '</div>' : '')
+      +   (s.error_detail ? '<div class="ls-step-error">' + escapeHtml(s.error_detail) + '</div>' : '')
+      +   '<div class="ls-step-meta">'
+      +     '<span>status: <b>' + escapeHtml(s.status) + '</b></span>'
+      +     (s.duration_ms ? '<span>· ' + s.duration_ms + 'ms</span>' : '')
+      +     (s.retry_count ? '<span>· retries: ' + s.retry_count + '/' + s.max_retries + '</span>' : '')
+      +     verdictHtml
+      +   '</div>'
+      +   (showApprove ? (
+            '<div class="ls-step-actions">'
+          + '<button class="tc-btn approve" data-approve-step="' + s.step_idx + '">✓ Duyệt</button>'
+          + '<button class="tc-btn reject" data-reject-step="' + s.step_idx + '">Từ chối</button>'
+          + '</div>'
+          ) : '')
+      + '</div></div>';
+  }
+
+  function renderCouncilVoices() {
+    const wrap = $('council-voices');
+    if (!swarm.activeVotes.length) {
+      wrap.innerHTML = '<div class="empty">Chưa có voice nào</div>';
+      return;
+    }
+    // Group latest by agent_role
+    const byAgent = {};
+    swarm.activeVotes.forEach(v => {
+      const k = v.agent_role;
+      if (!byAgent[k] || new Date(v.created_at) > new Date(byAgent[k].created_at)) byAgent[k] = v;
+    });
+    const order = ['architect', 'planner', 'coder', 'reviewer', 'security', 'qa'];
+    wrap.innerHTML = order.filter(a => byAgent[a]).map(a => renderVoice(byAgent[a])).join('');
+  }
+
+  function renderVoice(v) {
+    const icon = PERSONA_ICONS[v.agent_role] || '·';
+    const reasoning = (v.reasoning || '').slice(0, 300) + ((v.reasoning || '').length > 300 ? '…' : '');
+    const modelDisplay = (v.agent_model || '').replace('-4-7','-4.7').replace('-4-6','-4.6').replace('-4-5','-4.5');
+    const isFrontier = v.agent_model === 'opus-4-7' || v.agent_model === 'gpt-5-5';
+    return '<div class="ls-voice">'
+      + '<div class="ls-voice-head">'
+      +   '<span class="ls-voice-icon ' + escapeHtml(v.agent_role) + '">' + icon + '</span>'
+      +   '<span class="ls-voice-name">' + escapeHtml(v.agent_role.toUpperCase()) + '</span>'
+      +   '<span class="ls-voice-vote ' + escapeHtml(v.vote || 'abstain') + '">' + escapeHtml(v.vote || '·') + '</span>'
+      + '</div>'
+      + '<div class="ls-voice-meta">'
+      +   '<span>' + (isFrontier ? '⭐ ' : '') + '<b>' + escapeHtml(modelDisplay) + '</b></span>'
+      +   (v.cost_usd ? '<span>· $' + v.cost_usd.toFixed(4) + '</span>' : '')
+      +   (v.latency_ms ? '<span>· ' + v.latency_ms + 'ms</span>' : '')
+      +   (v.input_tokens ? '<span>· ' + (v.input_tokens + v.output_tokens) + 'tok</span>' : '')
+      + '</div>'
+      + '<div class="ls-voice-bubble">' + escapeHtml(reasoning || '(no reasoning)') + '</div>'
+      + '</div>';
+  }
+
+  function renderCostMeter() {
+    const meter = $('cost-meter');
+    const run = swarm.activeRun;
+    if (!run) { meter.style.display = 'none'; return; }
+    meter.style.display = 'block';
+    $('cost-total').textContent = '$' + (run.total_cost_usd || 0).toFixed(4);
+    $('cost-tokens').textContent = (run.total_input_tokens || 0) + '/' + (run.total_output_tokens || 0);
+    const banner = $('cost-banner');
+    const status = run.status;
+    if (status === 'completed') banner.textContent = '✅ Run completed';
+    else if (status === 'failed') banner.textContent = '❌ Run failed';
+    else if (status === 'executing') banner.textContent = '⏳ Executing step ' + (run.current_step_idx || 0) + '/' + (run.total_steps || 0);
+    else if (status === 'awaiting_approval') banner.textContent = '⏸ Awaiting your approval';
+    else if (status === 'planning') banner.textContent = '🧠 Council deliberating…';
+    else banner.textContent = status;
+  }
+
+  async function startNewRun() {
+    const req = $('run-requirement').value.trim();
+    const ws = $('run-target-ws').value || null;
+    if (!req || req.length < 10) { toast('Requirement quá ngắn (≥10 ký tự)', 'error'); return; }
+    const btn = $('btn-run-council');
+    btn.disabled = true;
+    btn.textContent = '⏳ Council deliberating…';
+    try {
+      const run = await apiFetch('/cto/coder/runs', {
+        method: 'POST',
+        body: { requirement: req, target_workspace: ws },
+      });
+      toast('Council đang thảo luận parallel…', 'success');
+      $('run-requirement').value = '';
+      $('run-preview').innerHTML = '<span style="color:var(--text-dim)">Gõ requirement để xem complexity + cost preview…</span>';
+      await loadRuns();
+      openRun(run.id);
+    } catch (e) {
+      toast('Lỗi: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '▶ Run with Council';
+    }
+  }
+
+  function swarmStartPolling() {
+    if (swarm.pollTimer) clearInterval(swarm.pollTimer);
+    swarm.pollTimer = setInterval(async () => {
+      if (state.activeTab !== 'coder' || !swarm.activeRunId) return;
+      try {
+        await Promise.all([refreshActiveRun(), refreshActiveVotes(), refreshActiveSteps()]);
+        // If completed/failed/aborted → stop poll, refresh run list
+        const st = swarm.activeRun?.status;
+        if (st === 'completed' || st === 'failed' || st === 'aborted') {
+          if (swarm.pollTimer) { clearInterval(swarm.pollTimer); swarm.pollTimer = null; }
+          loadRuns();
+        }
+      } catch (e) {}
+    }, 3000);
+  }
+
+  // Wire Tab 3 events
+  function wireSwarmTab() {
+    $('btn-run-council').addEventListener('click', startNewRun);
+    $('refresh-runs').addEventListener('click', loadRuns);
+    $('run-requirement').addEventListener('input', debouncedPreview);
+    $('run-target-ws').addEventListener('change', debouncedPreview);
+
+    // Populate target workspace select
+    if (state.workspaces && state.workspaces.length) {
+      const sel = $('run-target-ws');
+      state.workspaces.forEach(w => {
+        const opt = document.createElement('option');
+        opt.value = w.id; opt.textContent = w.id + ' · ' + (w.name || '');
+        sel.appendChild(opt);
+      });
+    }
+  }
+
+  // Event delegation for swarm specifically
+  document.addEventListener('click', async (ev) => {
+    const t = ev.target;
+    // Open run
+    const runItem = t.closest && t.closest('[data-run-id]');
+    if (runItem) {
+      const rid = runItem.getAttribute('data-run-id');
+      if (rid) openRun(rid);
+      return;
+    }
+    // Start run execution
+    if (t.dataset && t.dataset.startRun) {
+      try {
+        await apiFetch('/cto/coder/runs/' + t.dataset.startRun + '/start', { method: 'POST', body: {} });
+        toast('Run started', 'success');
+        refreshActiveRun();
+      } catch (e) { toast('Start lỗi: ' + e.message, 'error'); }
+      return;
+    }
+    if (t.dataset && t.dataset.abortRun) {
+      if (!confirm('Abort run này?')) return;
+      try {
+        await apiFetch('/cto/coder/runs/' + t.dataset.abortRun + '/abort', { method: 'POST', body: {} });
+        toast('Run aborted', 'info');
+        loadRuns(); refreshActiveRun();
+      } catch (e) { toast(e.message, 'error'); }
+      return;
+    }
+    // Approve step
+    if (t.dataset && t.dataset.approveStep && swarm.activeRunId) {
+      try {
+        await apiFetch('/cto/coder/runs/' + swarm.activeRunId + '/steps/' + t.dataset.approveStep + '/approve',
+                       { method: 'POST', body: {} });
+        toast('Step approved — executing', 'success');
+        setTimeout(() => { refreshActiveSteps(); refreshActiveRun(); }, 800);
+      } catch (e) { toast('Approve lỗi: ' + e.message, 'error'); }
+      return;
+    }
+    if (t.dataset && t.dataset.rejectStep && swarm.activeRunId) {
+      const reason = prompt('Lý do reject?', 'Not safe');
+      if (reason === null) return;
+      try {
+        await apiFetch('/cto/coder/runs/' + swarm.activeRunId + '/steps/' + t.dataset.rejectStep + '/reject',
+                       { method: 'POST', body: { notes: reason } });
+        toast('Step rejected', 'info');
+        refreshActiveSteps();
+      } catch (e) { toast(e.message, 'error'); }
+      return;
+    }
+  });
+
+  // Boot Tab 3 after main boot — poll state.me populated
+  async function bootSwarm() {
+    for (let i = 0; i < 50 && !state.me; i++) {
+      await new Promise(r => setTimeout(r, 100));
+    }
+    if (state.me && state.me.role === 'Owner') {
+      try { wireSwarmTab(); await loadRuns(); } catch (e) { console.error('swarm boot', e); }
+    }
+  }
+
+  window.addEventListener('beforeunload', stopPolling);
+  window.addEventListener('beforeunload', () => {
+    if (swarm.pollTimer) clearInterval(swarm.pollTimer);
+  });
+
+  boot();
+  bootSwarm();
+})();
+</script>
+</body>
+</html>

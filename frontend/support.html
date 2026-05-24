@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Zeni Cloud · Support Center</title>
+<meta name="theme-color" content="#0b1120" />
+<link rel="icon" href="/static/favicon.ico" />
+<style>
+  /* ─── Theme tokens ───────────────────────────────── */
+  :root {
+    --bg: #0b1120;
+    --bg-elev: #0f172a;
+    --bg-card: #111c34;
+    --bg-card-hover: #1a2745;
+    --border: #1e2a47;
+    --border-strong: #2a3a5e;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --text-dim: #64748b;
+    --primary: #60a5fa;
+    --primary-strong: #3b82f6;
+    --success: #34d399;
+    --warning: #fbbf24;
+    --danger: #f87171;
+    --agent: #a78bfa;
+    --shadow: 0 6px 24px rgba(0,0,0,.35);
+  }
+  *,*::before,*::after { box-sizing: border-box }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", system-ui, sans-serif;
+    font-size: 14px; line-height: 1.55;
+    color: var(--text); background: var(--bg);
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  }
+  button, input, textarea, select { font-family: inherit; font-size: inherit; color: inherit }
+  button { cursor: pointer; border: 0; background: transparent }
+  a { color: var(--primary); text-decoration: none }
+  a:hover { text-decoration: underline }
+
+  /* ─── App layout ─────────────────────────────────── */
+  .app { display: grid; grid-template-columns: 320px 1fr; height: 100vh; }
+  @media (max-width: 800px) {
+    .app { grid-template-columns: 1fr; }
+    .app.has-active .sidebar { display: none }
+    .app:not(.has-active) .main { display: none }
+  }
+
+  /* ─── Sidebar ────────────────────────────────────── */
+  .sidebar {
+    background: var(--bg-elev); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; min-height: 0;
+  }
+  .sb-head {
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .sb-title { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px }
+  .sb-title-badge {
+    display: inline-block; width: 28px; height: 28px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--primary), var(--agent));
+    color: #fff; font-weight: 700; text-align: center; line-height: 28px; font-size: 13px;
+  }
+  .btn-new {
+    background: var(--primary-strong); color: #fff; border-radius: 8px;
+    padding: 7px 12px; font-weight: 600; font-size: 13px; transition: .15s;
+  }
+  .btn-new:hover { background: var(--primary); transform: translateY(-1px) }
+  .sb-filters {
+    padding: 10px 12px; display: flex; gap: 6px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+  }
+  .chip {
+    background: var(--bg-card); color: var(--text-muted); padding: 5px 10px;
+    border-radius: 999px; font-size: 12px; font-weight: 500;
+    border: 1px solid var(--border); transition: .12s;
+  }
+  .chip:hover { background: var(--bg-card-hover); color: var(--text) }
+  .chip.active { background: var(--primary-strong); color: #fff; border-color: var(--primary) }
+
+  .sb-list { flex: 1; overflow-y: auto; padding: 4px 0 }
+  .sb-list::-webkit-scrollbar { width: 6px }
+  .sb-list::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px }
+  .session-item {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: background .12s;
+  }
+  .session-item:hover { background: var(--bg-card) }
+  .session-item.active { background: var(--bg-card); border-left: 3px solid var(--primary); padding-left: 13px }
+  .si-title {
+    font-weight: 600; font-size: 13.5px; margin-bottom: 4px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .si-meta { display: flex; gap: 8px; align-items: center; font-size: 11.5px; color: var(--text-dim) }
+  .si-status {
+    display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 10.5px;
+    font-weight: 600; text-transform: uppercase;
+  }
+  .si-status.open { background: rgba(96,165,250,.16); color: var(--primary) }
+  .si-status.pending_approval { background: rgba(251,191,36,.16); color: var(--warning) }
+  .si-status.resolved { background: rgba(52,211,153,.16); color: var(--success) }
+  .si-status.closed { background: rgba(100,116,139,.18); color: var(--text-dim) }
+  .si-empty { padding: 40px 18px; text-align: center; color: var(--text-dim); font-size: 13px }
+
+  /* ─── Main panel ─────────────────────────────────── */
+  .main { display: flex; flex-direction: column; background: var(--bg); min-height: 0 }
+  .main-head {
+    padding: 12px 18px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px; min-height: 56px;
+  }
+  .back-btn { display: none }
+  @media (max-width: 800px) { .back-btn { display: inline-flex; padding: 6px 10px; color: var(--text-muted) } }
+  .mh-info { flex: 1; min-width: 0 }
+  .mh-title { font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+  .mh-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px }
+  .btn-ghost {
+    color: var(--text-muted); padding: 6px 12px; border-radius: 6px;
+    font-size: 12.5px; transition: .12s;
+  }
+  .btn-ghost:hover { color: var(--text); background: var(--bg-card) }
+
+  .stream {
+    flex: 1; overflow-y: auto; padding: 22px 0;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .stream::-webkit-scrollbar { width: 6px }
+  .stream::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px }
+  .empty-stream {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: var(--text-dim); padding: 40px 20px; text-align: center;
+  }
+  .empty-stream h3 { font-size: 18px; color: var(--text); margin: 8px 0 6px }
+  .empty-stream p { font-size: 13.5px; max-width: 420px; line-height: 1.6 }
+
+  .msg { padding: 0 22px; display: flex; gap: 12px; max-width: 920px; margin: 0 auto; width: 100% }
+  .msg.right { justify-content: flex-end }
+  .msg-avatar {
+    width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px; color: #fff;
+  }
+  .msg-avatar.customer  { background: linear-gradient(135deg, #3b82f6, #2563eb) }
+  .msg-avatar.chairman  { background: linear-gradient(135deg, #f59e0b, #d97706) }
+  .msg-avatar.agent     { background: linear-gradient(135deg, #a78bfa, #7c3aed) }
+  .msg-avatar.system    { background: linear-gradient(135deg, #64748b, #475569) }
+  .msg-body { flex: 1; min-width: 0; max-width: 720px }
+  .msg.right .msg-body { display: flex; flex-direction: column; align-items: flex-end }
+  .msg-meta {
+    display: flex; gap: 8px; align-items: center; margin-bottom: 4px;
+    font-size: 11.5px; color: var(--text-dim);
+  }
+  .msg-meta b { color: var(--text); font-weight: 600 }
+  .msg-meta .agent-tag {
+    color: var(--agent); padding: 1px 6px; border-radius: 4px;
+    background: rgba(167,139,250,.12); font-size: 10.5px; font-weight: 600;
+  }
+  .msg-content {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 11px 14px; font-size: 13.5px; line-height: 1.6;
+    overflow-wrap: anywhere; word-break: break-word;
+  }
+  .msg.right .msg-content {
+    background: var(--primary-strong); border-color: var(--primary-strong); color: #fff;
+  }
+  .msg-content pre {
+    background: rgba(0,0,0,.32); border-radius: 6px; padding: 10px 12px;
+    overflow-x: auto; font-size: 12.5px; line-height: 1.5;
+    border: 1px solid var(--border); margin: 6px 0;
+  }
+  .msg-content code:not(pre code) {
+    background: rgba(0,0,0,.28); padding: 1px 5px; border-radius: 4px;
+    font-size: 12.5px; font-family: "SF Mono","Cascadia Code","Fira Code",ui-monospace,monospace;
+  }
+  .msg-content p { margin: 0 0 8px }
+  .msg-content p:last-child { margin-bottom: 0 }
+  .msg-content ul, .msg-content ol { margin: 6px 0 6px 18px; padding: 0 }
+  .msg-content li { margin: 2px 0 }
+
+  .proposed-action {
+    margin-top: 8px; background: rgba(251,191,36,.08); border: 1px solid rgba(251,191,36,.4);
+    border-radius: 8px; padding: 10px 12px; font-size: 12.5px;
+  }
+  .pa-head { font-weight: 600; color: var(--warning); margin-bottom: 6px; display: flex; align-items: center; gap: 6px }
+  .pa-body { color: var(--text-muted); font-family: "SF Mono",ui-monospace,monospace; font-size: 11.5px;
+             white-space: pre-wrap; max-height: 100px; overflow-y: auto }
+  .pa-actions { margin-top: 8px; display: flex; gap: 8px }
+  .pa-btn {
+    padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;
+  }
+  .pa-btn.approve { background: var(--success); color: #052e1c }
+  .pa-btn.reject { background: rgba(248,113,113,.16); color: var(--danger) }
+  .pa-btn:hover { opacity: 0.85 }
+
+  /* ─── Composer ───────────────────────────────────── */
+  .composer {
+    border-top: 1px solid var(--border); padding: 14px 22px;
+    background: var(--bg-elev);
+  }
+  .composer-shell {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px 12px; max-width: 920px; margin: 0 auto;
+    transition: border-color .15s;
+  }
+  .composer-shell:focus-within { border-color: var(--primary-strong) }
+  .composer textarea {
+    width: 100%; background: transparent; border: 0; outline: none; resize: none;
+    color: var(--text); font-size: 13.5px; line-height: 1.55;
+    min-height: 22px; max-height: 200px;
+  }
+  .composer textarea::placeholder { color: var(--text-dim) }
+  .composer-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 8px; gap: 10px;
+  }
+  .composer-hint { font-size: 11.5px; color: var(--text-dim) }
+  .composer-hint kbd {
+    background: rgba(0,0,0,.28); padding: 1px 5px; border-radius: 3px;
+    font-family: inherit; font-size: 10.5px;
+  }
+  .composer-actions { display: flex; gap: 6px; align-items: center }
+  .composer-toggle { display: flex; gap: 4px; align-items: center; font-size: 11.5px; color: var(--text-muted) }
+  .composer-toggle input { accent-color: var(--primary-strong) }
+  .btn-send {
+    background: var(--primary-strong); color: #fff; padding: 7px 16px;
+    border-radius: 8px; font-weight: 600; font-size: 13px; transition: .12s;
+  }
+  .btn-send:hover { background: var(--primary); transform: translateY(-1px) }
+  .btn-send:disabled { opacity: .5; cursor: not-allowed; transform: none }
+
+  /* ─── Modal — new session ─────────────────────────── */
+  .modal-bg {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    align-items: center; justify-content: center; z-index: 50; padding: 20px;
+  }
+  .modal-bg.show { display: flex }
+  .modal {
+    background: var(--bg-elev); border: 1px solid var(--border-strong);
+    border-radius: 14px; padding: 24px; max-width: 520px; width: 100%;
+    box-shadow: var(--shadow);
+  }
+  .modal h3 { margin: 0 0 6px; font-size: 18px }
+  .modal-sub { color: var(--text-muted); font-size: 13px; margin-bottom: 18px }
+  .field { margin-bottom: 14px }
+  .field label { display: block; margin-bottom: 5px; font-size: 12.5px; color: var(--text-muted); font-weight: 600 }
+  .field input, .field select, .field textarea {
+    width: 100%; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 9px 12px; outline: none; transition: border-color .12s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--primary-strong) }
+  .field textarea { resize: vertical; min-height: 80px }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px }
+
+  /* ─── Toast ──────────────────────────────────────── */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; max-width: 360px;
+    padding: 12px 16px; border-radius: 10px; font-size: 13px;
+    box-shadow: var(--shadow); z-index: 100;
+    transform: translateX(120%); transition: transform .25s ease;
+  }
+  .toast.show { transform: translateX(0) }
+  .toast.info { background: var(--bg-card); border: 1px solid var(--primary); color: var(--text) }
+  .toast.success { background: rgba(52,211,153,.14); border: 1px solid var(--success); color: var(--success) }
+  .toast.error { background: rgba(248,113,113,.14); border: 1px solid var(--danger); color: var(--danger) }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sb-head">
+      <div class="sb-title">
+        <span class="sb-title-badge">Z</span>
+        <span>Support</span>
+      </div>
+      <button class="btn-new" id="btn-new">+ Mới</button>
+    </div>
+    <div class="sb-filters" id="filters">
+      <span class="chip active" data-status="">Tất cả</span>
+      <span class="chip" data-status="open">Đang mở</span>
+      <span class="chip" data-status="pending_approval">Chờ duyệt</span>
+      <span class="chip" data-status="resolved">Resolved</span>
+    </div>
+    <div class="sb-list" id="session-list">
+      <div class="si-empty">Đang tải sessions…</div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="main-head">
+      <button class="back-btn btn-ghost" id="back-btn">← Sessions</button>
+      <div class="mh-info">
+        <div class="mh-title" id="mh-title">Chọn session để bắt đầu</div>
+        <div class="mh-sub" id="mh-sub">Hỗ trợ kỹ thuật từ chairman + AI agent</div>
+      </div>
+      <button class="btn-ghost" id="btn-resolve" style="display:none">✓ Mark resolved</button>
+    </div>
+
+    <div class="stream" id="stream">
+      <div class="empty-stream">
+        <div style="font-size:48px;line-height:1">💬</div>
+        <h3>Zeni Cloud Support Center</h3>
+        <p>
+          Chat trực tiếp với chairman + AI agent về deploy, billing, API token, hoặc bất kỳ câu hỏi nào về Zeni Cloud.
+          AI agent sẽ tự động trả lời FAQ — task phức tạp sẽ escalate lên chairman.
+        </p>
+        <button class="btn-new" id="empty-new" style="margin-top:14px">+ Tạo session mới</button>
+      </div>
+    </div>
+
+    <div class="composer" id="composer" style="display:none">
+      <div class="composer-shell">
+        <textarea id="msg-input" placeholder="Nhập tin nhắn… (Markdown OK)" rows="1"></textarea>
+        <div class="composer-bar">
+          <div class="composer-hint">
+            <kbd>Enter</kbd> gửi · <kbd>Shift+Enter</kbd> xuống dòng
+          </div>
+          <div class="composer-actions">
+            <label class="composer-toggle" title="AI agent auto-reply">
+              <input type="checkbox" id="ai-reply" checked /> AI reply
+            </label>
+            <button class="btn-send" id="btn-send">Gửi</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- New session modal -->
+<div class="modal-bg" id="modal-new">
+  <div class="modal">
+    <h3>Tạo support session mới</h3>
+    <p class="modal-sub">Mô tả vấn đề bạn gặp — AI agent sẽ tự reply nếu là FAQ, không thì escalate chairman.</p>
+    <form id="new-form">
+      <div class="field">
+        <label>Workspace</label>
+        <select id="f-ws" required></select>
+      </div>
+      <div class="field">
+        <label>Tiêu đề</label>
+        <input id="f-title" type="text" maxlength="120" placeholder="VD: Deploy báo image not found 422" required />
+      </div>
+      <div class="field">
+        <label>Phân loại</label>
+        <select id="f-category">
+          <option value="deploy">Deploy / Cloud Run</option>
+          <option value="billing">Billing / Wallet</option>
+          <option value="api">API / Integration</option>
+          <option value="bug">Bug report</option>
+          <option value="feature_request">Feature request</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Mức ưu tiên</label>
+        <select id="f-priority">
+          <option value="low">Thấp</option>
+          <option value="normal" selected>Bình thường</option>
+          <option value="high">Cao</option>
+          <option value="urgent">Khẩn cấp</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Tin nhắn đầu tiên (optional)</label>
+        <textarea id="f-msg" placeholder="Mô tả chi tiết vấn đề… AI agent sẽ tự động đề xuất solution nếu match FAQ."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" id="modal-cancel">Hủy</button>
+        <button type="submit" class="btn-new">Tạo session</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/static/zeni-api.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // ─── State ──────────────────────────────────────
+  const state = {
+    me: null,
+    workspaces: [],
+    sessions: [],
+    activeId: null,
+    activeSession: null,
+    messages: [],
+    statusFilter: '',
+    pollTimer: null,
+  };
+
+  // ─── DOM helpers ────────────────────────────────
+  const $ = (id) => document.getElementById(id);
+  const escapeHtml = (s) => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+  // Light markdown renderer (safe — escape first, then transform)
+  function renderMarkdown(s) {
+    let h = escapeHtml(s);
+    // code blocks
+    h = h.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (_, lang, code) =>
+      '<pre><code>' + code.replace(/\n+$/, '') + '</code></pre>');
+    // inline code
+    h = h.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+    // bold + italic
+    h = h.replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>');
+    h = h.replace(/_([^_\n]+)_/g, '<i>$1</i>');
+    // links
+    h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+                  '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    // bullet lists (basic — single level)
+    h = h.replace(/(^|\n)(?:[-•]\s+(.+))/g, '$1<li>$2</li>');
+    h = h.replace(/(<li>.+<\/li>)+/g, (m) => '<ul>' + m + '</ul>');
+    // numbered lists
+    h = h.replace(/(^|\n)(\d+\.)\s+(.+)/g, '$1<div>$2 $3</div>');
+    // line breaks → paragraphs
+    h = h.split(/\n{2,}/).map(p =>
+      /^<(ul|ol|pre|div)/.test(p.trim()) ? p : '<p>' + p.replace(/\n/g, '<br/>') + '</p>'
+    ).join('');
+    return h;
+  }
+
+  function toast(msg, kind) {
+    kind = kind || 'info';
+    const el = $('toast');
+    el.className = 'toast ' + kind;
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => el.classList.remove('show'), 3500);
+  }
+
+  function fmtTime(iso) {
+    if (!iso) return '';
+    try {
+      const d = new Date(iso); const now = new Date();
+      const diff = (now - d) / 1000;
+      if (diff < 60) return 'vừa xong';
+      if (diff < 3600) return Math.floor(diff / 60) + ' phút trước';
+      if (diff < 86400) return Math.floor(diff / 3600) + ' giờ trước';
+      return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return iso; }
+  }
+
+  // ─── API wrappers ──────────────────────────────
+  const SUPPORT = {
+    listSessions: (ws, status) => {
+      const q = new URLSearchParams();
+      if (ws) q.set('ws', ws);
+      if (status) q.set('status', status);
+      return ZeniAPI._fetch ? ZeniAPI._fetch('/support/sessions' + (q.toString() ? '?' + q : ''))
+                            : fetchAuth('/support/sessions' + (q.toString() ? '?' + q : ''));
+    },
+    createSession: (ws, body) => fetchAuth('/support/sessions?ws=' + encodeURIComponent(ws), { method: 'POST', body }),
+    listMessages: (sid) => fetchAuth('/support/sessions/' + sid + '/messages'),
+    sendMessage: (sid, body) => fetchAuth('/support/sessions/' + sid + '/messages', { method: 'POST', body }),
+    resolveSession: (sid) => fetchAuth('/support/sessions/' + sid + '/resolve', { method: 'POST', body: {} }),
+    approveAction: (mid) => fetchAuth('/support/messages/' + mid + '/approve-action', { method: 'POST', body: {} }),
+  };
+
+  // Local fetch (since ZeniAPI._fetch is closure-private)
+  async function fetchAuth(path, opts = {}) {
+    const ACCESS_KEY = 'zeni.jwt.access';
+    const accounts = JSON.parse(localStorage.getItem('zeni.accounts.v1') || '[]');
+    const activeId = localStorage.getItem('zeni.active.account');
+    const acc = accounts.find(a => a.id === activeId);
+    const tok = (acc && acc.access_token) || localStorage.getItem(ACCESS_KEY);
+    if (!tok) {
+      toast('Phiên đăng nhập hết hạn — chuyển về trang login', 'error');
+      setTimeout(() => location.href = '/app', 1200);
+      throw new Error('not authed');
+    }
+    const url = '/api/v1' + path;
+    const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok };
+    const init = { method: opts.method || 'GET', headers };
+    if (opts.body !== undefined) init.body = typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body);
+    const res = await fetch(url, init);
+    if (res.status === 401) {
+      toast('Token hết hạn — đang refresh…', 'error');
+      setTimeout(() => location.href = '/app', 1200);
+      throw new Error('401');
+    }
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({ detail: res.statusText }));
+      const msg = typeof detail.detail === 'string' ? detail.detail : JSON.stringify(detail.detail || detail);
+      const err = new Error(msg); err.status = res.status; throw err;
+    }
+    if (res.status === 204) return null;
+    return res.json();
+  }
+
+  // ─── Boot ───────────────────────────────────────
+  async function boot() {
+    try {
+      const me = await fetchAuth('/auth/me');
+      state.me = me;
+      const ws = await fetchAuth('/workspaces');
+      state.workspaces = ws || [];
+      // Populate workspace select
+      const sel = $('f-ws');
+      sel.innerHTML = state.workspaces.map(w =>
+        '<option value="' + escapeHtml(w.id) + '">' + escapeHtml(w.id + ' — ' + (w.name || '')) + '</option>'
+      ).join('');
+      await reloadSessions();
+    } catch (e) {
+      console.error('boot error', e);
+      $('session-list').innerHTML = '<div class="si-empty">Lỗi tải data: ' + escapeHtml(e.message || 'unknown') + '</div>';
+    }
+  }
+
+  async function reloadSessions() {
+    try {
+      // Owner role chairman view all (no ws filter); customer view own ws
+      const isOwner = state.me && state.me.role === 'Owner';
+      const params = new URLSearchParams();
+      if (state.statusFilter) params.set('status', state.statusFilter);
+      if (!isOwner && state.workspaces.length) params.set('ws', state.workspaces[0].id);
+      const list = await fetchAuth('/support/sessions' + (params.toString() ? '?' + params : ''));
+      state.sessions = list || [];
+      renderSessions();
+    } catch (e) {
+      console.error('reloadSessions', e);
+      $('session-list').innerHTML = '<div class="si-empty">Lỗi: ' + escapeHtml(e.message || 'unknown') + '</div>';
+    }
+  }
+
+  function renderSessions() {
+    const wrap = $('session-list');
+    if (!state.sessions.length) {
+      wrap.innerHTML = '<div class="si-empty">Chưa có session nào.<br/>Bấm <b>+ Mới</b> để tạo.</div>';
+      return;
+    }
+    wrap.innerHTML = state.sessions.map(s => {
+      const cls = s.id === state.activeId ? 'session-item active' : 'session-item';
+      return '<div class="' + cls + '" data-sid="' + escapeHtml(s.id) + '">'
+        + '<div class="si-title">' + escapeHtml(s.title) + '</div>'
+        + '<div class="si-meta">'
+        + '<span class="si-status ' + escapeHtml(s.status) + '">' + escapeHtml(s.status) + '</span>'
+        + '<span>' + escapeHtml(s.workspace_id) + '</span>'
+        + '<span>· ' + escapeHtml(fmtTime(s.last_message_at || s.created_at)) + '</span>'
+        + '</div></div>';
+    }).join('');
+  }
+
+  async function openSession(sid) {
+    state.activeId = sid;
+    state.activeSession = state.sessions.find(s => s.id === sid) || null;
+    document.getElementById('app').classList.add('has-active');
+    renderSessions();
+    if (state.activeSession) {
+      $('mh-title').textContent = state.activeSession.title;
+      $('mh-sub').textContent = state.activeSession.workspace_id + ' · ' + state.activeSession.priority + ' priority · ' + state.activeSession.status;
+      $('btn-resolve').style.display = state.activeSession.status === 'resolved' ? 'none' : 'inline-flex';
+      $('composer').style.display = state.activeSession.status === 'closed' ? 'none' : 'block';
+    }
+    await reloadMessages();
+    startPolling();
+  }
+
+  async function reloadMessages() {
+    if (!state.activeId) return;
+    try {
+      const msgs = await fetchAuth('/support/sessions/' + state.activeId + '/messages');
+      state.messages = msgs || [];
+      renderMessages();
+    } catch (e) {
+      console.error('reloadMessages', e);
+    }
+  }
+
+  function renderMessages() {
+    const stream = $('stream');
+    if (!state.messages.length) {
+      stream.innerHTML = '<div class="empty-stream"><div style="font-size:42px">📭</div><h3>Chưa có tin nhắn</h3><p>Gửi tin đầu tiên — AI agent sẽ trả lời ngay nếu match FAQ.</p></div>';
+      return;
+    }
+    const isMyMessage = (m) => m.sender_type === 'customer' && state.me && m.sender_name === state.me.email;
+    const html = state.messages.map(m => {
+      const right = isMyMessage(m);
+      const initial = m.sender_type === 'agent' ? 'AI'
+                    : m.sender_type === 'chairman' ? 'CTO'
+                    : m.sender_type === 'system' ? 'SYS'
+                    : ((m.sender_name || '?')[0] || '?').toUpperCase();
+      const aiTag = m.sender_type === 'agent' && m.ai_model
+        ? '<span class="agent-tag">' + escapeHtml(m.ai_model) + (m.ai_confidence ? ' · ' + Math.round(m.ai_confidence * 100) + '%' : '') + '</span>'
+        : '';
+      const proposed = m.proposed_action ? renderProposedAction(m) : '';
+      return '<div class="msg' + (right ? ' right' : '') + '">'
+        + (right ? '' : '<div class="msg-avatar ' + escapeHtml(m.sender_type) + '">' + escapeHtml(initial) + '</div>')
+        + '<div class="msg-body">'
+        +   '<div class="msg-meta">'
+        +     '<b>' + escapeHtml(m.sender_name || m.sender_type) + '</b>'
+        +     aiTag
+        +     '<span>' + escapeHtml(fmtTime(m.created_at)) + '</span>'
+        +   '</div>'
+        +   '<div class="msg-content">' + renderMarkdown(m.content) + proposed + '</div>'
+        + '</div>'
+        + (right ? '<div class="msg-avatar customer">' + escapeHtml(initial) + '</div>' : '')
+        + '</div>';
+    }).join('');
+    stream.innerHTML = html;
+    stream.scrollTop = stream.scrollHeight;
+  }
+
+  function renderProposedAction(m) {
+    const pa = m.proposed_action || {};
+    const status = m.action_status || 'proposed';
+    let actionHtml = '';
+    if (status === 'proposed' && state.me && state.me.role === 'Owner') {
+      actionHtml =
+        '<div class="pa-actions">'
+        + '<button class="pa-btn approve" data-approve="' + escapeHtml(m.id) + '">✓ Duyệt action</button>'
+        + '<button class="pa-btn reject">Từ chối</button>'
+        + '</div>';
+    } else {
+      actionHtml = '<div class="pa-actions"><span style="font-size:11.5px;color:var(--text-dim)">Action status: <b>' + escapeHtml(status) + '</b></span></div>';
+    }
+    return ''
+      + '<div class="proposed-action">'
+      +   '<div class="pa-head">⚡ Proposed action — yêu cầu chairman duyệt</div>'
+      +   '<div class="pa-body">' + escapeHtml(JSON.stringify(pa, null, 2)) + '</div>'
+      +   actionHtml
+      + '</div>';
+  }
+
+  async function sendMessage() {
+    const input = $('msg-input');
+    const content = input.value.trim();
+    if (!content || !state.activeId) return;
+    const aiReply = $('ai-reply').checked;
+    const btn = $('btn-send');
+    btn.disabled = true;
+    try {
+      await fetchAuth('/support/sessions/' + state.activeId + '/messages', {
+        method: 'POST',
+        body: { content, content_format: 'markdown', request_ai_reply: aiReply },
+      });
+      input.value = '';
+      input.style.height = 'auto';
+      await reloadMessages();
+      // Background AI reply may take 1-3s — poll once after delay
+      if (aiReply) setTimeout(reloadMessages, 1800);
+      reloadSessions();  // update last_message_at
+    } catch (e) {
+      toast('Gửi thất bại: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function createSession(ev) {
+    ev.preventDefault();
+    const ws = $('f-ws').value;
+    const title = $('f-title').value.trim();
+    const category = $('f-category').value;
+    const priority = $('f-priority').value;
+    const initial_message = $('f-msg').value.trim() || null;
+    if (!ws || !title) return;
+    try {
+      const sess = await fetchAuth('/support/sessions?ws=' + encodeURIComponent(ws), {
+        method: 'POST',
+        body: { title, category, priority, initial_message },
+      });
+      $('modal-new').classList.remove('show');
+      $('new-form').reset();
+      toast('Đã tạo session — AI agent đang xử lý…', 'success');
+      await reloadSessions();
+      openSession(sess.id);
+    } catch (e) {
+      toast('Tạo session lỗi: ' + e.message, 'error');
+    }
+  }
+
+  function startPolling() {
+    stopPolling();
+    state.pollTimer = setInterval(async () => {
+      if (!state.activeId) return;
+      try {
+        await reloadMessages();
+      } catch (e) { /* swallow */ }
+    }, 5000);
+  }
+
+  function stopPolling() {
+    if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
+  }
+
+  // ─── Wire events ───────────────────────────────
+  document.addEventListener('click', async (ev) => {
+    const t = ev.target;
+    // Session item click
+    const item = t.closest && t.closest('.session-item');
+    if (item) {
+      const sid = item.getAttribute('data-sid');
+      if (sid && sid !== state.activeId) openSession(sid);
+      return;
+    }
+    // Approve action
+    const approveBtn = t.closest && t.closest('[data-approve]');
+    if (approveBtn) {
+      const mid = approveBtn.getAttribute('data-approve');
+      if (!confirm('Duyệt action này? Agent sẽ thực thi ngay.')) return;
+      try {
+        await fetchAuth('/support/messages/' + mid + '/approve-action', { method: 'POST', body: {} });
+        toast('Action approved — đang thực thi', 'success');
+        await reloadMessages();
+      } catch (e) {
+        toast('Approve lỗi: ' + e.message, 'error');
+      }
+      return;
+    }
+    // Status filter chip
+    if (t.classList && t.classList.contains('chip')) {
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      t.classList.add('active');
+      state.statusFilter = t.getAttribute('data-status') || '';
+      reloadSessions();
+      return;
+    }
+  });
+
+  $('btn-new').addEventListener('click', () => $('modal-new').classList.add('show'));
+  $('empty-new').addEventListener('click', () => $('modal-new').classList.add('show'));
+  $('modal-cancel').addEventListener('click', () => $('modal-new').classList.remove('show'));
+  $('new-form').addEventListener('submit', createSession);
+  $('btn-send').addEventListener('click', sendMessage);
+  $('btn-resolve').addEventListener('click', async () => {
+    if (!state.activeId || !confirm('Đánh dấu session này resolved?')) return;
+    try {
+      await fetchAuth('/support/sessions/' + state.activeId + '/resolve', { method: 'POST', body: {} });
+      toast('Session resolved', 'success');
+      await reloadSessions();
+      openSession(state.activeId);
+    } catch (e) {
+      toast('Resolve lỗi: ' + e.message, 'error');
+    }
+  });
+  $('back-btn').addEventListener('click', () => {
+    document.getElementById('app').classList.remove('has-active');
+    state.activeId = null;
+    stopPolling();
+  });
+
+  // Composer keyboard
+  $('msg-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+  // Auto-grow textarea
+  $('msg-input').addEventListener('input', (e) => {
+    e.target.style.height = 'auto';
+    e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
+  });
+
+  window.addEventListener('beforeunload', stopPolling);
+
+  // Boot
+  boot();
+})();
+</script>
+</body>
+</html>
