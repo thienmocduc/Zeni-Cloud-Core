@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
-from app.api import admin_access, admin_access_callback, admin_platform, agents, agents_library, ai, ai_core, api_tokens, audit, auth, automation, backup_dr, benchmarks, billing, billing_v2, books, build_farm, cache, compliance, cost_dashboard, crons, cto_console, cto_coder, customer_oauth, customer_oauth_flow, data, design, edge_cdn, edge_runtime, email_api, email_verify, gcp, github_integration, identity, internal_cron, legal_entities, login_2fa, mail as mail_hosting, members, messaging, mfa, mobile_certs, multi_region, oauth, observability, ocr, openai_compat, package_registry, payouts, phone_otp, pricing, privacy, projects, push_notifications, queue, quick_deploy, realtime, reseller, router as zeni_router_api, router_stream, slack, sms, source_upload, storage as zeni_storage, tenant_provision, translate, trial, vector, vector_premium, voice_ai, waitlist, wallet, web3, workspace_whitelist, workspaces, zeni_mail, zeni_pay, zeni_token, zeni_voice
+from app.api import admin_access, admin_access_callback, admin_platform, agents, agents_library, ai, ai_core, api_tokens, audit, auth, automation, backup_dr, benchmarks, billing, billing_v2, books, build_farm, cache, compliance, cost_dashboard, crons, cto_console, cto_coder, cto_customer, customer_oauth, customer_oauth_flow, data, design, edge_cdn, edge_runtime, email_api, email_verify, gcp, github_integration, identity, internal_cron, legal_entities, login_2fa, mail as mail_hosting, members, messaging, mfa, mobile_certs, multi_region, oauth, observability, ocr, openai_compat, package_registry, payouts, phone_otp, pricing, privacy, projects, push_notifications, queue, quick_deploy, realtime, reseller, router as zeni_router_api, router_stream, slack, sms, source_upload, storage as zeni_storage, tenant_provision, translate, trial, vector, vector_premium, voice_ai, waitlist, wallet, web3, workspace_whitelist, workspaces, zeni_mail, zeni_pay, zeni_token, zeni_voice
 # Note: zeni_studio, zeni_crm, zeni_workspace = SaaS apps (not cloud infra),
 # code retained in apps/ for future independent deploy as Cloud Run services.
 from app.middleware.metrics_middleware import MetricsMiddleware
@@ -347,6 +347,7 @@ app.include_router(mail_hosting.router,           prefix=API_PREFIX)  # L7 Mail 
 app.include_router(tenant_provision.router,       prefix=API_PREFIX)  # Tenant Provisioning: auto-create workspace+user+wallet+token
 app.include_router(cto_console.router,            prefix=API_PREFIX)  # CTO Console: 3-tab support + provisioning + auto-coder (Owner-only)
 app.include_router(cto_coder.router,              prefix=API_PREFIX)  # CTO Coder Swarm: 6-vai Council deliberation + execution (Owner-only)
+app.include_router(cto_customer.router,           prefix=API_PREFIX)  # CTO Customer Portal: customer-facing AI deploy assist (Charter LOCK + Watcher + AutoLock)
 
 
 # ─── Frontend SPA mount ──────────────────────────────
@@ -473,6 +474,8 @@ if _static_dir.exists():
     _public_pages = {
         "admin": "admin.html",
         "cto": "cto.html",
+        "cto-customer": "cto-customer.html",
+        "deploy-help": "cto-customer.html",
         "support": "support.html",
         "reseller-portal": "reseller-portal.html",
         "verify-email": "verify-email.html",
