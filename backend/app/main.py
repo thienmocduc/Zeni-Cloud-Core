@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
-from app.api import admin_access, admin_access_callback, admin_platform, agents, agents_library, ai, ai_core, api_tokens, audit, auth, automation, backup_dr, benchmarks, billing, billing_v2, books, build_farm, cache, compliance, cost_dashboard, crons, cto_agent, customer_oauth, customer_oauth_flow, data, design, edge_cdn, edge_runtime, email_api, email_verify, gcp, github_integration, identity, internal_cron, legal_entities, login_2fa, mail as mail_hosting, members, messaging, mfa, mobile_certs, multi_region, oauth, observability, ocr, package_registry, payouts, phone_otp, pricing, privacy, projects, push_notifications, queue, quick_deploy, realtime, reseller, router as zeni_router_api, slack, sms, source_upload, storage as zeni_storage, translate, trial, vector, vector_premium, voice_ai, waitlist, wallet, web3, workspace_whitelist, workspaces, zeni_mail, zeni_pay, zeni_token, zeni_voice
+from app.api import admin_access, admin_access_callback, admin_platform, agents, agents_library, ai, ai_core, api_tokens, audit, auth, automation, backup_dr, benchmarks, billing, billing_v2, books, build_farm, cache, compliance, cost_dashboard, crons, cto_agent, cto_customer, customer_oauth, customer_oauth_flow, data, design, edge_cdn, edge_runtime, email_api, email_verify, gcp, github_integration, identity, internal_cron, legal_entities, login_2fa, mail as mail_hosting, members, messaging, mfa, mobile_certs, multi_region, oauth, observability, ocr, package_registry, payouts, phone_otp, pricing, privacy, projects, push_notifications, queue, quick_deploy, realtime, reseller, router as zeni_router_api, slack, sms, source_upload, storage as zeni_storage, translate, trial, vector, vector_premium, voice_ai, waitlist, wallet, web3, workspace_whitelist, workspaces, zeni_mail, zeni_pay, zeni_token, zeni_voice
 # Note: zeni_studio, zeni_crm, zeni_workspace = SaaS apps (not cloud infra),
 # code retained in apps/ for future independent deploy as Cloud Run services.
 from app.middleware.metrics_middleware import MetricsMiddleware
@@ -343,6 +343,7 @@ app.include_router(quick_deploy.router,           prefix=API_PREFIX)  # Quick De
 app.include_router(design.router,                 prefix=API_PREFIX)  # Design Agents: 6 KTS AI (kiến trúc + nội thất + kết cấu + MEP + BOQ + QA)
 app.include_router(mail_hosting.router,           prefix=API_PREFIX)  # L7 Mail Hosting · per-domain mailboxes (Phase 1 skeleton)
 app.include_router(cto_agent.router,              prefix=API_PREFIX)  # CTO Chat Assistant · AI-driven deploy orchestrator (Phase 1 MVP)
+app.include_router(cto_customer.router, prefix=API_PREFIX)  # CTO Customer Portal: customer-facing AI deploy assist (Charter LOCK + Watcher + AutoLock)
 from app.api import registry as zeni_registry
 app.include_router(zeni_registry.router,          prefix=API_PREFIX)  # Zeni Container Registry · per-workspace AR repo (replace Docker Hub Pro)
 
@@ -456,6 +457,22 @@ if _static_dir.exists():
     async def serve_app_spa(full_path: str) -> FileResponse:
         # SPA fallback — let client-side router handle the path
         return FileResponse(str(_app_path))
+
+    # ── CTO Customer Portal pages (NEW) - customer-facing AI ────
+    _public_pages = {
+        "cto-customer": "cto-customer.html",
+        "deploy-help": "cto-customer.html",
+    }
+    for _route, _filename in _public_pages.items():
+        _page_path = _static_dir / _filename
+        if _page_path.exists():
+            def _make_handler(target_path: Path = _page_path):
+                async def handler() -> FileResponse:
+                    return FileResponse(str(target_path))
+                return handler
+            _handler = _make_handler()
+            app.add_api_route(f"/{_route}", _handler, methods=["GET"], include_in_schema=False)
+            app.add_api_route(f"/{_route}.html", _handler, methods=["GET"], include_in_schema=False)
 
     # ── Catch-all for landing-style anchors (#pricing etc.) ─
     # Only handle paths that aren't reserved; otherwise let FastAPI 404

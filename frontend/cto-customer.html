@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Zeni Cloud · CTO Hỗ trợ Deploy</title>
+<meta name="theme-color" content="#0A0A0F" />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
+<link rel="icon" href="/static/favicon.ico" />
+<style>
+  :root {
+    --bg: #0A0A0F;
+    --bg-elev: #0f1419;
+    --bg-card: #161b22;
+    --bg-card-hover: #1f2733;
+    --border: #21262d;
+    --border-strong: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --text-dim: #6e7681;
+    --gold: #D4A85A;
+    --teal: #0E5C5C;
+    --primary: #58a6ff;
+    --success: #3fb950;
+    --warning: #d29922;
+    --danger: #f85149;
+    --agent: #bc8cff;
+    --mono: "SF Mono","Fira Code","Cascadia Code",ui-monospace,Consolas,monospace;
+  }
+  *,*::before,*::after { box-sizing: border-box }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+    font-size: 14px; line-height: 1.55;
+    color: var(--text); background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, textarea, select { font-family: inherit; font-size: inherit; color: inherit }
+  button { cursor: pointer; border: 0; background: transparent; outline: 0 }
+  a { color: var(--primary); text-decoration: none }
+  pre, code { font-family: var(--mono); font-size: 12.5px }
+  html, body, * {
+    scrollbar-width: thin !important;
+    scrollbar-color: var(--border-strong) transparent !important;
+  }
+  *::-webkit-scrollbar { width: 6px !important; height: 6px !important; background: transparent }
+  *::-webkit-scrollbar-thumb { background: var(--border-strong) !important; border-radius: 3px }
+
+  .app { display: flex; flex-direction: column; height: 100vh; overflow: hidden }
+
+  /* ── Topbar ───────────────────────────── */
+  .topbar {
+    background: linear-gradient(180deg, var(--bg-elev) 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 18px; flex-shrink: 0;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600 }
+  .brand-badge {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--gold), #f59e0b);
+    color: #0a0a0f; font-weight: 800; text-align: center; line-height: 30px; font-size: 13px;
+  }
+  .brand-name { color: var(--gold); font-weight: 700 }
+  .brand-sub { color: var(--text-dim); font-size: 12px; margin-left: 4px }
+  .spacer { flex: 1 }
+  .ws-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 999px; font-size: 12px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+  .ws-pill b { color: var(--text) }
+  .lock-banner {
+    background: rgba(248,81,73,.15);
+    border-bottom: 1px solid var(--danger);
+    color: var(--danger); padding: 10px 18px; font-size: 13px;
+    text-align: center; display: none;
+  }
+  .lock-banner.show { display: block }
+
+  /* ── Layout ───────────────────────────── */
+  .body { flex: 1; display: grid; grid-template-columns: 280px 1fr; overflow: hidden }
+
+  /* Sidebar */
+  .side {
+    background: var(--bg-elev); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; min-height: 0;
+  }
+  .side-head {
+    padding: 12px 14px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .side-head h3 { margin: 0; font-size: 13px; color: var(--text); font-weight: 600; flex: 1 }
+  .btn-new {
+    background: var(--gold); color: #0a0a0f; padding: 6px 12px;
+    border-radius: 6px; font-weight: 600; font-size: 12px;
+  }
+  .btn-new:hover { background: #f59e0b }
+  .side-list { flex: 1; overflow-y: auto; padding: 4px 0 }
+  .ses {
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: background .12s;
+  }
+  .ses:hover { background: var(--bg-card) }
+  .ses.active { background: var(--bg-card); border-left: 3px solid var(--gold); padding-left: 11px }
+  .ses-title { font-weight: 600; font-size: 13px; margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+  .ses-meta { display: flex; gap: 6px; align-items: center; font-size: 11px; color: var(--text-dim) }
+  .empty { padding: 30px 14px; text-align: center; color: var(--text-dim); font-size: 12.5px }
+
+  /* Main / chat */
+  .main { display: flex; flex-direction: column; min-height: 0; background: var(--bg) }
+  .main-head {
+    padding: 11px 18px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px; min-height: 50px;
+    background: var(--bg-elev);
+  }
+  .mh-title { font-weight: 600; font-size: 14.5px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+  .mh-sub { font-size: 11.5px; color: var(--text-dim); margin-top: 2px }
+  .mh-controls { display: flex; gap: 8px }
+  .model-select {
+    background: var(--bg-card); border: 1px solid var(--border);
+    padding: 5px 10px; border-radius: 6px; font-size: 12px;
+  }
+
+  .stream { flex: 1; overflow-y: auto; padding: 18px 0; display: flex; flex-direction: column; gap: 14px }
+  .empty-stream {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: var(--text-dim); padding: 40px 20px; text-align: center;
+  }
+  .empty-stream h3 { font-size: 17px; color: var(--text); margin: 8px 0 6px }
+  .empty-stream p { font-size: 13px; max-width: 480px; line-height: 1.6 }
+  .empty-suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; justify-content: center; max-width: 580px }
+  .suggestion {
+    background: var(--bg-card); border: 1px solid var(--border);
+    padding: 8px 14px; border-radius: 18px; cursor: pointer;
+    font-size: 12.5px; transition: .15s; color: var(--text-muted);
+  }
+  .suggestion:hover { background: var(--bg-card-hover); color: var(--text); border-color: var(--gold) }
+
+  .msg { padding: 0 24px; display: flex; gap: 12px; max-width: 940px; margin: 0 auto; width: 100% }
+  .msg-av {
+    width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 12px; color: #fff;
+  }
+  .msg-av.customer { background: linear-gradient(135deg, #58a6ff, #1f6feb) }
+  .msg-av.cto_ai   { background: linear-gradient(135deg, var(--gold), #f59e0b); color: #0a0a0f }
+  .msg-av.system   { background: linear-gradient(135deg, var(--danger), #b91c1c) }
+  .msg-body { flex: 1; min-width: 0 }
+  .msg-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 5px; font-size: 11.5px; color: var(--text-dim) }
+  .msg-meta b { color: var(--text); font-weight: 600 }
+  .msg-content {
+    background: var(--bg-card); border: 1px solid var(--border);
+    padding: 12px 14px; border-radius: 10px;
+    white-space: pre-wrap; word-break: break-word;
+    font-size: 13.5px; line-height: 1.65;
+  }
+  .msg.customer .msg-content { background: var(--bg-elev) }
+  .msg.cto_ai .msg-content { background: rgba(212,168,90,.06); border-color: rgba(212,168,90,.25) }
+  .msg.system .msg-content { background: rgba(248,81,73,.08); border-color: rgba(248,81,73,.3); color: var(--danger) }
+  .msg-content pre {
+    background: #050709; border: 1px solid var(--border); padding: 10px 12px;
+    border-radius: 6px; overflow-x: auto; margin: 8px 0;
+  }
+  .msg-content code:not(pre code) {
+    background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 3px; font-size: 90%;
+  }
+  .msg-warn {
+    margin-top: 4px; font-size: 11px; color: var(--warning); padding: 2px 0;
+  }
+
+  /* Composer */
+  .composer {
+    border-top: 1px solid var(--border); padding: 14px 18px;
+    background: var(--bg-elev); flex-shrink: 0;
+  }
+  .composer-row { display: flex; gap: 8px; align-items: flex-end; max-width: 940px; margin: 0 auto }
+  .composer textarea {
+    flex: 1; min-height: 50px; max-height: 200px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    padding: 11px 13px; border-radius: 10px; resize: none;
+    font-size: 13.5px; line-height: 1.55;
+  }
+  .composer textarea:focus { outline: 0; border-color: var(--gold) }
+  .btn-send {
+    background: var(--gold); color: #0a0a0f; font-weight: 700;
+    padding: 11px 20px; border-radius: 10px; min-width: 80px;
+    transition: .15s;
+  }
+  .btn-send:hover:not(:disabled) { background: #f59e0b }
+  .btn-send:disabled { opacity: .5; cursor: not-allowed }
+  .composer-hint { font-size: 11px; color: var(--text-dim); margin-top: 6px; max-width: 940px; margin-left: auto; margin-right: auto }
+  .composer-hint a { color: var(--text-muted); border-bottom: 1px dashed var(--border-strong) }
+
+  .typing { display: flex; gap: 5px; padding: 12px 14px }
+  .typing span {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text-dim); animation: pulse 1.4s infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: .2s }
+  .typing span:nth-child(3) { animation-delay: .4s }
+  @keyframes pulse { 0%, 60%, 100% { opacity: .3 } 30% { opacity: 1 } }
+
+  /* Login required */
+  .login-block {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100vh; padding: 40px;
+  }
+  .login-block h1 { color: var(--gold); margin-bottom: 12px }
+  .login-block p { color: var(--text-muted); margin-bottom: 24px; max-width: 480px; text-align: center }
+  .btn-login {
+    background: var(--gold); color: #0a0a0f; padding: 12px 32px;
+    border-radius: 10px; font-weight: 700; font-size: 14px;
+  }
+  .btn-login:hover { background: #f59e0b }
+
+  @media (max-width: 768px) {
+    .body { grid-template-columns: 1fr }
+    .side { display: none }
+    .side.mobile-open { display: flex; position: fixed; top: 50px; bottom: 0; left: 0; right: 0; z-index: 10 }
+  }
+</style>
+</head>
+<body>
+<div id="root">
+  <div class="login-block" id="login-block" style="display:none">
+    <h1>CTO AI Zeni Cloud</h1>
+    <p>Đăng nhập workspace của anh để được CTO AI hỗ trợ deploy. CTO AI là trợ lý kỹ thuật được Zeni cung cấp riêng cho khách hàng có workspace.</p>
+    <a class="btn-login" href="/app">Đăng nhập</a>
+  </div>
+
+  <div class="app" id="app" style="display:none">
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-badge">Z</div>
+        <span class="brand-name">Zeni Cloud</span>
+        <span class="brand-sub">· CTO Hỗ trợ Deploy</span>
+      </div>
+      <div class="spacer"></div>
+      <span class="ws-pill" id="ws-pill">Workspace: <b id="ws-name">…</b></span>
+      <span class="ws-pill" id="charter-pill" title="Charter integrity">🛡 v…</span>
+      <span class="ws-pill" id="user-pill">…</span>
+    </div>
+
+    <div class="lock-banner" id="lock-banner">
+      🔒 Workspace tạm khóa: <span id="lock-reason">…</span>. Mở khóa vào <b id="lock-until">…</b>
+    </div>
+
+    <div class="body">
+      <aside class="side">
+        <div class="side-head">
+          <h3>Phiên hỗ trợ</h3>
+          <button class="btn-new" id="btn-new-ses">+ Mới</button>
+        </div>
+        <div class="side-list" id="side-list"></div>
+      </aside>
+
+      <main class="main">
+        <div class="main-head">
+          <div style="flex:1; min-width:0">
+            <div class="mh-title" id="mh-title">Chào mừng đến CTO AI</div>
+            <div class="mh-sub" id="mh-sub">Hỏi tôi bất cứ điều gì về deploy project trên Zeni Cloud.</div>
+          </div>
+          <div class="mh-controls">
+            <select class="model-select" id="model-select">
+              <option value="deepseek-chat" selected>DeepSeek V4 Pro (mặc định)</option>
+              <option value="deepseek-flash">DeepSeek V4 Flash (nhanh)</option>
+              <option value="deepseek-reasoner">DeepSeek R1 (sâu)</option>
+              <option value="claude-haiku-4-5">Claude Haiku (dự phòng)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="stream" id="stream">
+          <div class="empty-stream" id="empty-stream">
+            <h3>Chào anh! Tôi là CTO AI của Zeni Cloud.</h3>
+            <p>Tôi hỗ trợ kỹ thuật khi anh deploy project trên Zeni. Cho tôi biết anh đang gặp vấn đề gì?</p>
+            <div class="empty-suggestions">
+              <div class="suggestion" data-msg="Làm sao deploy Next.js lên Zeni Cloud?">Deploy Next.js</div>
+              <div class="suggestion" data-msg="Project FastAPI build lỗi port binding, anh giúp em fix">Fix port binding</div>
+              <div class="suggestion" data-msg="Cấp cho em một Zeni PAT để CI/CD push image">Cấp Zeni PAT</div>
+              <div class="suggestion" data-msg="Cấu hình custom domain cho project của em">Custom domain</div>
+              <div class="suggestion" data-msg="Pricing region asia-southeast1 hết bao nhiêu VND/tháng?">Pricing</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="composer">
+          <div class="composer-row">
+            <textarea id="input" placeholder="Hỏi CTO AI về deploy... (Enter = gửi, Shift+Enter = xuống dòng)" rows="2"></textarea>
+            <button class="btn-send" id="btn-send">Gửi</button>
+          </div>
+          <div class="composer-hint">
+            Tôi chỉ hỗ trợ dịch vụ Zeni Cloud. <a href="/legal/terms">Điều khoản</a> · <a href="/legal/privacy">Bảo mật</a>
+            · Mọi tin nhắn được audit để đảm bảo an toàn.
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+(function() {
+  // ── Config ─────────────────────────────────────
+  const API_BASE = '/api/v1';
+  const TOKEN_KEY = 'zeni_token';
+  const WS_KEY = 'zeni_current_ws';
+
+  // ── State ──────────────────────────────────────
+  const state = {
+    token: null,
+    user: null,
+    workspaces: [],
+    currentWs: null,
+    currentSession: null,
+    sessions: [],
+    sending: false,
+    lockStatus: { locked: false },
+  };
+
+  // ── Token / auth ───────────────────────────────
+  function getToken() {
+    return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+  }
+
+  async function api(path, opts = {}) {
+    const headers = { 'Content-Type': 'application/json', ...opts.headers };
+    if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
+    const r = await fetch(`${API_BASE}${path}`, { ...opts, headers });
+    if (r.status === 401) {
+      // not authenticated → kick to login
+      showLogin();
+      throw new Error('Phiên hết hạn, vui lòng đăng nhập lại');
+    }
+    let body;
+    try { body = await r.json(); } catch { body = null; }
+    if (!r.ok) {
+      const msg = body?.detail?.reason || body?.detail || body?.message || `HTTP ${r.status}`;
+      const err = new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      err.status = r.status; err.body = body;
+      throw err;
+    }
+    return body;
+  }
+
+  function showLogin() {
+    document.getElementById('login-block').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  }
+  function showApp() {
+    document.getElementById('login-block').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+  }
+
+  // ── Init ───────────────────────────────────────
+  async function init() {
+    state.token = getToken();
+    if (!state.token) { showLogin(); return; }
+
+    // Load user info
+    try {
+      const me = await api('/auth/me');
+      state.user = me;
+      document.getElementById('user-pill').innerHTML = `👤 <b>${escapeHtml(me.email || me.name || 'user')}</b>`;
+    } catch (e) {
+      console.error('auth/me failed', e);
+      showLogin(); return;
+    }
+
+    // Load workspaces
+    try {
+      const ws = await api('/workspaces');
+      state.workspaces = ws.items || ws || [];
+      const stored = localStorage.getItem(WS_KEY);
+      if (stored && state.workspaces.find(w => w.id === stored)) {
+        state.currentWs = stored;
+      } else if (state.workspaces.length > 0) {
+        state.currentWs = state.workspaces[0].id;
+      }
+      if (!state.currentWs) {
+        document.getElementById('mh-sub').textContent = 'Chưa có workspace nào — vào /app để tạo workspace trước.';
+        return;
+      }
+      const wsObj = state.workspaces.find(w => w.id === state.currentWs);
+      document.getElementById('ws-name').textContent = wsObj?.name || state.currentWs;
+    } catch (e) { console.error('workspaces failed', e); }
+
+    showApp();
+    await loadCharterStatus();
+    await refreshLockStatus();
+    await loadSessions();
+  }
+
+  async function loadCharterStatus() {
+    try {
+      const st = await api('/cto/customer/charter-status');
+      const pill = document.getElementById('charter-pill');
+      if (st.integrity_ok) {
+        pill.innerHTML = `🛡 Charter v${escapeHtml(st.version)}`;
+        pill.title = `OK · ${st.hash_prefix}`;
+      } else {
+        pill.innerHTML = '⚠ Charter TAMPER';
+        pill.style.color = 'var(--danger)';
+      }
+    } catch (e) { console.warn('charter status failed', e); }
+  }
+
+  async function refreshLockStatus() {
+    if (!state.currentWs) return;
+    try {
+      const s = await api(`/cto/customer/lock-status?workspace_id=${encodeURIComponent(state.currentWs)}`);
+      state.lockStatus = s;
+      const banner = document.getElementById('lock-banner');
+      if (s.locked) {
+        banner.classList.add('show');
+        document.getElementById('lock-reason').textContent = s.reason || '—';
+        document.getElementById('lock-until').textContent = s.unlock_at ? new Date(s.unlock_at).toLocaleString('vi-VN') : '—';
+      } else {
+        banner.classList.remove('show');
+      }
+    } catch (e) { console.warn('lock status failed', e); }
+  }
+
+  async function loadSessions() {
+    if (!state.currentWs) return;
+    try {
+      const list = await api(`/cto/customer/sessions?workspace_id=${encodeURIComponent(state.currentWs)}`);
+      state.sessions = list || [];
+      renderSessions();
+    } catch (e) { console.warn('sessions failed', e); }
+  }
+
+  function renderSessions() {
+    const el = document.getElementById('side-list');
+    if (state.sessions.length === 0) {
+      el.innerHTML = '<div class="empty">Chưa có phiên hỗ trợ nào.<br/>Bấm "+ Mới" hoặc gõ tin để bắt đầu.</div>';
+      return;
+    }
+    el.innerHTML = state.sessions.map(s => `
+      <div class="ses ${s.id === state.currentSession?.id ? 'active' : ''}" data-sid="${s.id}">
+        <div class="ses-title">${escapeHtml(s.title || 'Hỗ trợ')}</div>
+        <div class="ses-meta">
+          <span>${s.message_count} msg</span>
+          <span>·</span>
+          <span>${formatTime(s.last_message_at || s.created_at)}</span>
+        </div>
+      </div>
+    `).join('');
+    el.querySelectorAll('.ses').forEach(node => {
+      node.addEventListener('click', () => openSession(node.getAttribute('data-sid')));
+    });
+  }
+
+  async function openSession(sid) {
+    const s = state.sessions.find(x => x.id === sid);
+    if (!s) return;
+    state.currentSession = s;
+    document.getElementById('mh-title').textContent = s.title || 'Hỗ trợ deploy';
+    document.getElementById('mh-sub').textContent = `Phiên #${s.id.slice(0,8)} · model ${s.model}`;
+    renderSessions();
+    document.getElementById('empty-stream').style.display = 'none';
+    document.getElementById('stream').innerHTML = '<div class="empty">Đang tải tin nhắn...</div>';
+    try {
+      const msgs = await api(`/cto/customer/sessions/${s.id}/messages?workspace_id=${encodeURIComponent(state.currentWs)}`);
+      renderMessages(msgs);
+    } catch (e) {
+      document.getElementById('stream').innerHTML = `<div class="empty">Lỗi tải: ${escapeHtml(e.message)}</div>`;
+    }
+  }
+
+  function renderMessages(msgs) {
+    const stream = document.getElementById('stream');
+    if (!msgs || msgs.length === 0) {
+      stream.innerHTML = '<div class="empty-stream"><p>Chưa có tin trong phiên này.</p></div>';
+      return;
+    }
+    stream.innerHTML = msgs.map(renderMessage).join('');
+    stream.scrollTop = stream.scrollHeight;
+  }
+
+  function renderMessage(m) {
+    const isC = m.sender_type === 'customer';
+    const isS = m.sender_type === 'system';
+    const senderName = isC ? (state.user?.name || 'Bạn')
+                       : (isS ? 'Hệ thống' : 'CTO AI');
+    const avChar = isC ? (senderName[0] || 'U').toUpperCase()
+                       : (isS ? '!' : 'Z');
+    return `
+      <div class="msg ${escapeHtml(m.sender_type)}">
+        <div class="msg-av ${escapeHtml(m.sender_type)}">${escapeHtml(avChar)}</div>
+        <div class="msg-body">
+          <div class="msg-meta">
+            <b>${escapeHtml(senderName)}</b>
+            <span>${formatTime(m.created_at)}</span>
+            ${m.model ? `<span>· ${escapeHtml(m.model)}</span>` : ''}
+          </div>
+          <div class="msg-content">${escapeHtml(m.content)}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function appendMessage(senderType, content, opts = {}) {
+    const stream = document.getElementById('stream');
+    if (document.getElementById('empty-stream')) {
+      document.getElementById('empty-stream').style.display = 'none';
+    }
+    if (stream.querySelector('.empty')) stream.innerHTML = '';
+    const node = document.createElement('div');
+    node.innerHTML = renderMessage({
+      sender_type: senderType,
+      content,
+      created_at: new Date().toISOString(),
+      model: opts.model,
+    });
+    stream.appendChild(node.firstElementChild);
+    stream.scrollTop = stream.scrollHeight;
+  }
+
+  function showTyping() {
+    const stream = document.getElementById('stream');
+    const node = document.createElement('div');
+    node.className = 'msg cto_ai';
+    node.id = 'typing-indicator';
+    node.innerHTML = `
+      <div class="msg-av cto_ai">Z</div>
+      <div class="msg-body">
+        <div class="msg-content"><div class="typing"><span></span><span></span><span></span></div></div>
+      </div>
+    `;
+    stream.appendChild(node);
+    stream.scrollTop = stream.scrollHeight;
+  }
+  function hideTyping() {
+    const t = document.getElementById('typing-indicator');
+    if (t) t.remove();
+  }
+
+  async function sendMessage(text) {
+    if (!text || !text.trim() || state.sending) return;
+    if (!state.currentWs) { alert('Chưa chọn workspace'); return; }
+    if (state.lockStatus.locked) { alert('Workspace đang bị khóa: ' + state.lockStatus.reason); return; }
+
+    state.sending = true;
+    document.getElementById('btn-send').disabled = true;
+    const inp = document.getElementById('input');
+    inp.value = '';
+    appendMessage('customer', text);
+    showTyping();
+
+    try {
+      const body = {
+        workspace_id: state.currentWs,
+        message: text,
+        model: document.getElementById('model-select').value || 'deepseek-chat',
+      };
+      if (state.currentSession) body.session_id = state.currentSession.id;
+
+      const r = await api('/cto/customer/chat', { method: 'POST', body: JSON.stringify(body) });
+      hideTyping();
+
+      // Update or create session
+      if (!state.currentSession || state.currentSession.id !== r.session_id) {
+        await loadSessions();
+        state.currentSession = state.sessions.find(s => s.id === r.session_id) || state.currentSession;
+        if (state.currentSession) {
+          document.getElementById('mh-title').textContent = state.currentSession.title || 'Hỗ trợ deploy';
+          renderSessions();
+        }
+      }
+      appendMessage('cto_ai', r.reply, { model: r.model });
+
+      // Filter warnings → quiet warn under msg
+      if (r.filter_warnings && r.filter_warnings.length > 0) {
+        const stream = document.getElementById('stream');
+        const w = document.createElement('div');
+        w.className = 'msg-warn';
+        w.style.cssText = 'max-width:940px;margin:0 auto;padding:0 24px;font-size:11px;color:var(--text-dim)';
+        w.textContent = '⚠ Filter: ' + r.filter_warnings.slice(0,3).join(', ');
+        stream.appendChild(w);
+      }
+
+      // Auto-refresh lock status (in case auto-lock fired)
+      await refreshLockStatus();
+    } catch (e) {
+      hideTyping();
+      if (e.status === 423) {
+        appendMessage('system', '🔒 Workspace của anh tạm khóa do vi phạm bảo mật. ' + (e.body?.detail?.reason || ''));
+        await refreshLockStatus();
+      } else if (e.status === 429) {
+        appendMessage('system', '⏳ Vượt rate limit. ' + e.message);
+      } else {
+        appendMessage('system', '❌ Lỗi: ' + e.message);
+      }
+    } finally {
+      state.sending = false;
+      document.getElementById('btn-send').disabled = false;
+      inp.focus();
+    }
+  }
+
+  // ── Helpers ──────────────────────────────────
+  function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function formatTime(s) {
+    if (!s) return '';
+    try {
+      const d = new Date(s);
+      const now = new Date();
+      const diff = (now - d) / 1000;
+      if (diff < 60) return 'vừa xong';
+      if (diff < 3600) return Math.floor(diff/60) + ' phút trước';
+      if (diff < 86400) return Math.floor(diff/3600) + ' giờ trước';
+      return d.toLocaleDateString('vi-VN');
+    } catch { return ''; }
+  }
+
+  // ── Event wiring ─────────────────────────────
+  document.getElementById('btn-send').addEventListener('click', () => {
+    const t = document.getElementById('input').value;
+    sendMessage(t);
+  });
+  document.getElementById('input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(document.getElementById('input').value);
+    }
+  });
+  document.getElementById('btn-new-ses').addEventListener('click', () => {
+    state.currentSession = null;
+    document.getElementById('mh-title').textContent = 'Phiên mới';
+    document.getElementById('mh-sub').textContent = 'Gõ câu hỏi để bắt đầu phiên hỗ trợ mới.';
+    document.getElementById('stream').innerHTML = '';
+    document.getElementById('stream').appendChild(document.getElementById('empty-stream') || (function(){
+      const e = document.createElement('div');
+      e.className = 'empty-stream';
+      e.innerHTML = '<h3>Phiên mới</h3><p>Gõ câu hỏi để bắt đầu.</p>';
+      return e;
+    })());
+    renderSessions();
+    document.getElementById('input').focus();
+  });
+  document.querySelectorAll('.suggestion').forEach(el => {
+    el.addEventListener('click', () => sendMessage(el.getAttribute('data-msg')));
+  });
+
+  // Poll lock status mỗi 60s
+  setInterval(refreshLockStatus, 60_000);
+
+  init();
+})();
+</script>
+</body>
+</html>
