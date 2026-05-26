@@ -18,6 +18,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import CurrentUser, get_current_user, require_workspace_access
@@ -142,9 +143,44 @@ async def orchestrate_design(
             cost_usd=session.total_cost_usd,
         )
 
+    # Persist design session for downstream artifacts + signoff (Task #20/#21)
+    try:
+        body = session.to_dict()
+        await db.execute(
+            text(
+                """INSERT INTO design_sessions (
+                    id, workspace_id, actor_email, brief, style_choice,
+                    num_floors, num_residents, location_province, verdict,
+                    agent_outputs, metrics, errors, duration_ms, total_cost_usd
+                ) VALUES (
+                    CAST(:id AS UUID), :ws, :actor, :brief, :style,
+                    :nf, :nr, :loc, :verdict,
+                    CAST(:agent_outputs AS JSONB), CAST(:metrics AS JSONB), CAST(:errors AS JSONB),
+                    :duration_ms, :cost
+                ) ON CONFLICT (id) DO NOTHING"""
+            ),
+            {
+                "id": session.session_id,
+                "ws": ws,
+                "actor": me.email,
+                "brief": payload.brief[:4000],
+                "style": payload.style_choice,
+                "nf": payload.num_floors,
+                "nr": payload.num_residents,
+                "loc": payload.location_province,
+                "verdict": session.verdict,
+                "agent_outputs": __import__("json").dumps(body["agents_results"], ensure_ascii=False),
+                "metrics": __import__("json").dumps(body["metrics"], ensure_ascii=False),
+                "errors": __import__("json").dumps(body["errors"], ensure_ascii=False),
+                "duration_ms": session.duration_ms,
+                "cost": round(session.total_cost_usd, 6),
+            },
+        )
+    except Exception as persist_err:
+        log.warning("[design.orchestrate] session persist failed (table may not exist yet): %s", persist_err)
+
     await db.commit()
 
-    body = session.to_dict()
     return DesignOrchestrateOut(**body)
 
 

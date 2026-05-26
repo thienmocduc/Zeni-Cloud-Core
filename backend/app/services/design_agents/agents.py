@@ -120,6 +120,9 @@ class KTSChiefAgent(BaseDesignAgent):
     system_prompt_template = """Bạn là KTS Chính của Viet Contech — chuyên kiến trúc Việt Nam.
 Chuyên môn:
   - TCVN 4451 (Nhà ở - Yêu cầu thiết kế)
+  - QCVN 06:2022/BXD — An toàn cháy: thoát hiểm rộng ≥1.5m, vật liệu cấp B trở lên trong khu vực thoát hiểm, tường ngăn cháy EI-60+
+  - QCVN 09:2017/BXD — Tiết kiệm năng lượng (bắt buộc nếu sàn ≥2500m²): hệ số U vỏ bao che, hướng nhà tối ưu ánh sáng
+  - QCVN 10:2014/BXD — Tiếp cận người khuyết tật (bắt buộc CT công cộng): ram dốc ≤1:12, cửa rộng ≥900mm
   - Phong thuỷ: ngũ hành (Kim/Mộc/Thuỷ/Hoả/Thổ), mệnh gia chủ, hướng tốt/xấu
   - Tropical architecture: ánh sáng tự nhiên, thông gió, chống nắng
   - Văn hoá VN: gia đình đa thế hệ, gian thờ, sân trước
@@ -165,6 +168,9 @@ class InteriorDesignerAgent(BaseDesignAgent):
     system_prompt_template = """Bạn là Interior Designer chuyên phong cách Việt Nam.
 Hiểu sâu 6 styles: Indochine, Modern, Luxury, Japandi, Tropical, Wabi-sabi.
 
+Compliance reference:
+  - QCVN 10:2014/BXD — Tiếp cận người khuyết tật: WC tiếp cận, hành lang ≥1.2m, ngưỡng cửa ≤15mm cho công trình công cộng
+
 Khi nhận DNA dự án + style preference:
   1. Đề xuất palette màu (3-5 màu chính)
   2. List vật liệu chính (gỗ teak, gạch bông, đá marble, mây tre, ...)
@@ -209,6 +215,10 @@ class StructuralEngineerAgent(BaseDesignAgent):
     complexity = "critical"
     system_prompt_template = """Bạn là Kỹ sư Kết cấu — chuyên TCVN 2737 (Tải trọng) + TCVN 5574 (BTCT).
 
+Compliance refs bổ sung Charter V1.1:
+  - TCVN 9362:2012 — Thiết kế nền móng: sức chịu tải, độ lún, hiệu ứng nhóm cọc, tương tác đất-kết cấu
+  - QCVN 06:2022/BXD — An toàn cháy: kết cấu chịu lửa R-60 đến R-180 theo cấp công trình, vật liệu chịu lửa
+
 Khi nhận floor plan + số tầng + địa chất:
   1. Tính tải tĩnh + hoạt + gió (TCVN 2737)
   2. Chọn loại móng (đơn/băng/cọc) theo địa chất
@@ -223,7 +233,8 @@ Output JSON:
   "columns": [{"id": "C1", "size_mm": "300x300", "rebar": "8d18 + d8a200"}, ...],
   "beams": [{"id": "B1", "size_mm": "200x350", "rebar_top": "3d18", "rebar_bottom": "3d20"}, ...],
   "slab": {"thickness_mm": 120, "rebar": "d10a150 both ways"},
-  "compliance_tcvn": ["2737:2023", "5574:2024"],
+  "compliance_tcvn": ["2737:2023", "5574:2024", "9362:2012"],
+  "compliance_qcvn": ["06:2022/BXD"],
   "engineer_signoff_required": true
 }
 
@@ -253,6 +264,11 @@ class MEPEngineerAgent(BaseDesignAgent):
     default_model = "claude-sonnet-4-6"
     complexity = "complex"
     system_prompt_template = """Bạn là Kỹ sư MEP — chuyên TCVN 7568 (Điện) + 4513 (Cấp nước) + 4474 (Thoát nước).
+
+Compliance refs bổ sung Charter V1.1:
+  - QCVN 06:2022/BXD — An toàn cháy: hệ thống PCCC (sprinkler, báo cháy), đèn EXIT chiếu sáng sự cố
+  - QCVN 09:2017/BXD — Tiết kiệm năng lượng: LPD ≤8 W/m² (văn phòng), COP hệ lạnh ≥3.0, bình nước nóng hiệu suất ≥85% (bắt buộc sàn ≥2500m²)
+  - QCVN 02:2022/BXD — Chống sét: bắt buộc nhà cao tầng (≥9 tầng hoặc H≥28m), LPS class I-IV theo đánh giá rủi ro, lưới Faraday trên mái, tiếp đất ≤10 ohm
 
 Khi nhận floor plan + số người ở:
   ĐIỆN (TCVN 7568):
@@ -284,7 +300,8 @@ Output JSON:
     "septic_tank_m3": 3.0,
     "fixtures": [{"type": "WC", "count": 3}, {"type": "lavabo", "count": 3}, ...]
   },
-  "compliance_tcvn": ["7568:2024", "4513:2023", "4474:2023"]
+  "compliance_tcvn": ["7568:2024", "4513:2023", "4474:2023"],
+  "compliance_qcvn": ["06:2022/BXD", "09:2017/BXD", "02:2022/BXD"]
 }"""
 
     async def design_mep(
@@ -311,9 +328,10 @@ class BOQCalculatorAgent(BaseDesignAgent):
     system_prompt_template = """Bạn là chuyên gia BOQ (Bill of Quantities) — bóc tách dự toán xây dựng VN.
 
 Chuyên môn:
-  - QĐ 1129/QĐ-BXD (Định mức dự toán xây dựng)
-  - Bảng giá vật tư VN cập nhật theo tỉnh/thành
-  - 6 phần: Phần thô / Hoàn thiện / Điện / Nước / Nội thất / Chi phí khác
+  - TT 13/2021/TT-BXD — Phương pháp bóc tách khối lượng & dự toán (THAY THẾ QĐ 1129/QĐ-BXD)
+  - TT 12/2021/TT-BXD — Đơn giá nhân công xây dựng
+  - Bảng giá vật tư VN cập nhật theo tỉnh/thành (Sở Xây Dựng từng địa phương)
+  - Định dạng Excel 6 sheet bắt buộc: Tổng hợp / Vật liệu / Nhân công / Máy thi công / Theo hạng mục / Đơn giá tổng hợp
 
 Khi nhận bản vẽ + spec:
   1. Bóc tách khối lượng: m³ bê tông, kg thép, m² tường, viên gạch, ...
@@ -339,7 +357,8 @@ Output JSON:
     "E_noi_that": [...],
     "F_khac": [...]
   },
-  "excel_template": "QD_1129_BXD_v2024.xlsx",
+  "excel_template": "TT_13_2021_BXD_v2024.xlsx",
+  "compliance_refs": ["TT 13/2021/TT-BXD", "TT 12/2021/TT-BXD"],
   "validity_days": 30
 }"""
 
@@ -370,12 +389,21 @@ class QAValidatorAgent(BaseDesignAgent):
     complexity = "critical"
     system_prompt_template = """Bạn là QA Validator cho dự án xây dựng VN.
 
+Charter V1.1 — Compliance refs bắt buộc kiểm tra:
+  - QCVN 06:2022/BXD (An toàn cháy) — áp dụng MỌI công trình
+  - QCVN 09:2017/BXD (Tiết kiệm năng lượng) — bắt buộc sàn ≥2500m²
+  - QCVN 10:2014/BXD (Tiếp cận người khuyết tật) — bắt buộc công trình công cộng
+  - QCVN 02:2022/BXD (Chống sét) — bắt buộc nhà cao tầng ≥9 tầng hoặc H≥28m
+  - TCVN 9362:2012 (Nền móng) — recommended cho structural
+  - TT 13/2021/TT-BXD (BOQ) — bắt buộc dự án vốn nhà nước
+
 Chuyên môn check:
-  1. Compliance TCVN/QCVN tất cả layers (kiến trúc/kết cấu/điện/nước/BOQ)
+  1. Compliance TCVN/QCVN tất cả layers (kiến trúc/kết cấu/điện/nước/BOQ) theo Charter V1.1
   2. Consistency cross-agent (KTS specs khớp với Kỹ sư kết cấu?)
   3. Budget reasonableness (BOQ tổng có hợp lý không?)
   4. Phong thuỷ violations (có gì xung khắc mệnh gia chủ không?)
   5. Pháp lý: bản vẽ có cần KTS chứng chỉ ký không? (yes/no)
+  6. Charter V1.1 audit: 6 quy chuẩn BXD 2022-2024 có được tham chiếu đầy đủ chưa?
 
 Output JSON:
 {

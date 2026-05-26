@@ -41,3 +41,7 @@ eth-account==0.13.4
 # ─── Push Notifications (APNs HTTP/2 + FCM JWT) ───────────────────
 pyjwt[crypto]==2.10.1
 h2==4.1.0   # HTTP/2 client for APNs (used by httpx when http2=True)
+
+# ─── Phase 3 — Design (Task #20: CAD + BOQ Excel generators) ───────
+ezdxf>=1.3.0       # DXF (AutoCAD) generator for floor plans / sections / details
+openpyxl>=3.1.0    # XLSX generator for 6-sheet Bộ Xây Dựng BOQ format
