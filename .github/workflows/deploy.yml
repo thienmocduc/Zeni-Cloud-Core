@@ -23,6 +23,8 @@ on:
         description: "Skip smoke tests (emergency only)"
         required: false
         default: "false"
+  repository_dispatch:
+    types: [deploy]
 
 # Only one production deploy at a time
 concurrency:
