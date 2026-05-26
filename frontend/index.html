@@ -1554,9 +1554,11 @@ select {
 .toast.info .toast-icon { background: rgba(165, 180, 252, 0.2); color: var(--ajna-light); box-shadow: 0 0 8px rgba(165, 180, 252, 0.4); }
 
 /* ═══ WORKSPACE DROPDOWN · cosmic glass ═══ */
+/* BUG FIX 2026-05-26: sidebar có overflow:hidden → dropdown bị clip.
+   Đổi position:absolute → fixed để escape sidebar overflow + cho phép scroll khi nhiều workspace. */
 .ws-menu {
-  position: absolute;
-  top: 54px; left: 16px;
+  position: fixed;
+  top: 132px; left: 16px;
   background:
     linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(99, 102, 241, 0.04)),
     rgba(10, 5, 32, 0.95);
@@ -1565,13 +1567,19 @@ select {
   border: 1px solid var(--border-strong);
   border-radius: var(--r-md);
   min-width: 260px;
+  max-width: 320px;
   padding: 6px;
   z-index: 9999;
-  max-height: calc(100vh - 80px);
+  max-height: 70vh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   box-shadow: var(--shadow-lg), 0 0 32px rgba(168, 85, 247, 0.2);
   display: none;
 }
+.ws-menu::-webkit-scrollbar { width: 6px; }
+.ws-menu::-webkit-scrollbar-track { background: transparent; }
+.ws-menu::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.4); border-radius: 3px; }
+.ws-menu::-webkit-scrollbar-thumb:hover { background: rgba(168, 85, 247, 0.6); }
 .ws-menu.show { display: block; }
 .ws-menu-item {
   display: flex; align-items: center; gap: 10px;

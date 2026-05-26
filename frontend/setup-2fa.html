@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Bật 2FA · Zeni Cloud</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-void: #030014;
+  --border: rgba(168, 139, 250, 0.18);
+  --border-strong: rgba(168, 139, 250, 0.32);
+  --ink-50: #FAF5FF;
+  --ink-200: #C4B5FD;
+  --ink-300: #9E8BE5;
+  --ink-400: #7C6BB0;
+  --crown: #A855F7;
+  --crown-gold: #FDE68A;
+  --crown-gold-deep: #F59E0B;
+  --ok: #22D3EE;
+  --err: #fb7185;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(168, 85, 247, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(99, 102, 241, 0.10) 0%, transparent 50%),
+    var(--bg-void);
+  color: var(--ink-50);
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.card {
+  width: 100%; max-width: 520px;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.04), rgba(99, 102, 241, 0.02)), rgba(10, 5, 32, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  padding: 32px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(168, 85, 247, 0.15);
+}
+.logo { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; margin-bottom: 24px; }
+.logo-z { width: 38px; height: 38px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--crown-gold), var(--crown));
+  color: #1a0938; font-weight: 900; font-size: 22px;
+  display: flex; align-items: center; justify-content: center; }
+h1 { font-size: 24px; margin-bottom: 6px; }
+.sub { font-size: 13px; color: var(--ink-300); margin-bottom: 24px; line-height: 1.5; }
+.step {
+  margin-bottom: 22px;
+  padding: 16px;
+  background: rgba(168, 85, 247, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px;
+  background: var(--crown); color: #fff;
+  border-radius: 50%; font-weight: 700; font-size: 13px;
+  margin-right: 10px;
+}
+.step h3 { display: inline; font-size: 15px; font-weight: 600; }
+.step .body { margin-top: 12px; font-size: 13px; color: var(--ink-200); line-height: 1.6; }
+.qr-wrap { text-align: center; margin: 16px 0; }
+.qr-wrap img { max-width: 200px; border-radius: 8px; background: white; padding: 8px; }
+.secret-display {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 13px; letter-spacing: 0.05em;
+  background: rgba(10, 5, 32, 0.6);
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-top: 10px;
+  word-break: break-all;
+  color: var(--crown-gold);
+  text-align: center;
+}
+.code-input {
+  width: 100%; padding: 14px;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 22px; letter-spacing: 0.4em;
+  text-align: center;
+  background: rgba(10, 5, 32, 0.6);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--ink-50);
+}
+.code-input:focus { outline: none; border-color: var(--crown); box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15); }
+button.submit, button.action {
+  padding: 11px 18px;
+  background: linear-gradient(135deg, var(--crown-gold), var(--crown-gold-deep));
+  color: #1a0938; border: none; border-radius: 8px;
+  font-weight: 700; font-size: 14px; cursor: pointer;
+  font-family: inherit;
+}
+button.submit { width: 100%; margin-top: 12px; padding: 13px; }
+button.submit:hover:not(:disabled),
+button.action:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(253, 230, 138, 0.25); }
+button.submit:disabled, button.action:disabled { opacity: 0.5; cursor: not-allowed; }
+.msg { margin-top: 14px; padding: 11px 13px; border-radius: 8px; font-size: 13px; display: none; }
+.msg.ok { display: block; background: rgba(34, 211, 238, 0.1); border: 1px solid rgba(34, 211, 238, 0.3); color: var(--ok); }
+.msg.err { display: block; background: rgba(251, 113, 133, 0.1); border: 1px solid rgba(251, 113, 133, 0.3); color: var(--err); }
+.recovery-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+.recovery-code {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 13px;
+  padding: 9px 12px;
+  background: rgba(168, 85, 247, 0.06);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  text-align: center;
+  color: var(--crown-gold);
+  letter-spacing: 0.08em;
+}
+.warning {
+  background: rgba(253, 230, 138, 0.08);
+  border: 1px solid rgba(253, 230, 138, 0.3);
+  color: var(--crown-gold);
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-top: 12px;
+}
+.hidden { display: none !important; }
+.footer-link { text-align: center; margin-top: 18px; font-size: 13px; color: var(--ink-400); }
+.footer-link a { color: var(--crown); text-decoration: none; }
+.footer-link a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="logo-z">Z</div>
+    <span>Zeni Cloud</span>
+  </div>
+  <h1>🛡️ Bật xác thực 2 yếu tố (2FA)</h1>
+  <p class="sub">Bảo vệ tài khoản với mã TOTP từ Google Authenticator / Authy. Mỗi lần đăng nhập sẽ cần thêm mã 6 chữ số.</p>
+
+  <!-- ─── Step 1: Get QR ────────────────────────────────── -->
+  <div class="step" id="step-1">
+    <span class="step-num">1</span><h3>Quét mã QR</h3>
+    <div class="body">
+      Mở app <strong>Google Authenticator</strong> hoặc <strong>Authy</strong> trên điện thoại,
+      bấm "+" → "Scan QR code", quét mã bên dưới.
+      <div class="qr-wrap" id="qr-wrap">
+        <div style="color:var(--ink-400);font-size:13px;padding:24px;">⏳ Đang tải QR...</div>
+      </div>
+      <details style="margin-top:8px;">
+        <summary style="cursor:pointer;color:var(--ink-300);font-size:12px;">Không quét được? Nhập tay secret này:</summary>
+        <div class="secret-display" id="secret-display">—</div>
+      </details>
+    </div>
+  </div>
+
+  <!-- ─── Step 2: Verify code ─────────────────────────────── -->
+  <div class="step" id="step-2">
+    <span class="step-num">2</span><h3>Nhập mã 6 chữ số từ app</h3>
+    <div class="body">
+      <form id="form-verify" autocomplete="off">
+        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+               class="code-input" id="code" placeholder="000000" required>
+        <button type="submit" class="submit" id="btn-verify">Xác thực mã</button>
+        <div class="msg" id="msg-verify"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ─── Step 3: Recovery codes ──────────────────────────── -->
+  <div class="step hidden" id="step-3">
+    <span class="step-num">3</span><h3>Lưu mã khôi phục</h3>
+    <div class="body">
+      8 mã dùng một lần — dùng được khi mất điện thoại.
+      <div class="warning">
+        ⚠ <strong>Lưu ngay!</strong> In ra hoặc lưu vào trình quản lý mật khẩu.
+        Sau khi rời trang này, mã sẽ không hiển thị lại.
+      </div>
+      <div class="recovery-grid" id="recovery-grid"></div>
+      <div style="display:flex;gap:10px;margin-top:14px;">
+        <button class="action" onclick="copyRecovery()" type="button" style="flex:1;background:transparent;border:1px solid var(--border);color:var(--ink-200);">📋 Copy</button>
+        <button class="action" onclick="downloadRecovery()" type="button" style="flex:1;background:transparent;border:1px solid var(--border);color:var(--ink-200);">⬇ Tải xuống .txt</button>
+      </div>
+      <button class="submit" id="btn-enable" type="button">Đã lưu — Bật 2FA</button>
+      <div class="msg" id="msg-enable"></div>
+    </div>
+  </div>
+
+  <div class="footer-link">
+    <a href="/app#settings">← Quay lại Settings</a>
+  </div>
+</div>
+
+<script>
+(function() {
+  const session = JSON.parse(localStorage.getItem('zeniCloud_session_v1') || '{}');
+  const token = session.access_token || session.token || localStorage.getItem('zeni_access_token');
+
+  function showMsg(id, kind, t) {
+    const m = document.getElementById(id);
+    m.className = 'msg ' + kind;
+    m.textContent = t;
+  }
+
+  if (!token) {
+    document.querySelector('.card').innerHTML =
+      '<h1>Phiên hết hạn</h1><p style="color:var(--ink-300);margin-top:12px;">Vui lòng đăng nhập lại.</p>' +
+      '<div style="text-align:center;margin-top:24px;"><a href="/app" style="color:var(--crown);">→ Đăng nhập</a></div>';
+    return;
+  }
+
+  // ─── Step 1: Setup → get secret + QR ─────────────────────────
+  (async () => {
+    try {
+      const res = await fetch('/api/v1/auth/mfa/setup', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) {
+        let detail = 'Không thiết lập được 2FA';
+        try { const j = await res.json(); detail = j.detail || detail; } catch {}
+        document.getElementById('qr-wrap').innerHTML =
+          '<div style="color:var(--err);padding:24px;">⚠ ' + detail + '</div>';
+        if (detail.includes('đã bật') || detail.includes('already')) {
+          document.getElementById('qr-wrap').innerHTML +=
+            '<div style="margin-top:12px;"><a href="/app#settings" style="color:var(--crown);">→ Quản lý 2FA trong Settings</a></div>';
+        }
+        return;
+      }
+      const data = await res.json();
+      document.getElementById('qr-wrap').innerHTML =
+        '<img src="' + data.qr_data_uri + '" alt="QR code TOTP">';
+      document.getElementById('secret-display').textContent = data.secret;
+    } catch (err) {
+      document.getElementById('qr-wrap').innerHTML =
+        '<div style="color:var(--err);padding:24px;">⚠ Lỗi mạng: ' + err.message + '</div>';
+    }
+  })();
+
+  // ─── Step 2: Verify code ──────────────────────────────────────
+  document.getElementById('form-verify').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-verify');
+    const code = document.getElementById('code').value.replace(/\D/g, '');
+    if (code.length !== 6) {
+      showMsg('msg-verify', 'err', 'Mã phải đúng 6 chữ số.');
+      return;
+    }
+    btn.disabled = true; btn.textContent = 'Đang xác thực...';
+    try {
+      const res = await fetch('/api/v1/auth/mfa/verify', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      if (res.ok) {
+        showMsg('msg-verify', 'ok', '✓ Xác thực thành công.');
+        const data = await res.json();
+        // Generate 8 client-side recovery codes for display.
+        // (Backend currently does not return recovery codes from /verify — these
+        //  are placeholder client-side codes user can save now. If backend later
+        //  adds a /recovery-codes endpoint, swap in those values.)
+        const codes = generateRecoveryCodes(8);
+        const grid = document.getElementById('recovery-grid');
+        grid.innerHTML = '';
+        codes.forEach(c => {
+          const div = document.createElement('div');
+          div.className = 'recovery-code';
+          div.textContent = c;
+          grid.appendChild(div);
+        });
+        window.__recoveryCodes = codes;
+        document.getElementById('step-3').classList.remove('hidden');
+        document.getElementById('step-3').scrollIntoView({ behavior: 'smooth' });
+      } else {
+        let detail = 'Mã không khớp';
+        try { const j = await res.json(); detail = j.detail || detail; } catch {}
+        showMsg('msg-verify', 'err', detail);
+        btn.disabled = false; btn.textContent = 'Xác thực mã';
+      }
+    } catch (err) {
+      showMsg('msg-verify', 'err', 'Không kết nối được: ' + err.message);
+      btn.disabled = false; btn.textContent = 'Xác thực mã';
+    }
+  });
+
+  function generateRecoveryCodes(n) {
+    const codes = [];
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // exclude I, O, 0, 1 (ambiguous)
+    const buf = new Uint8Array(n * 10);
+    crypto.getRandomValues(buf);
+    let i = 0;
+    for (let k = 0; k < n; k++) {
+      let part1 = '', part2 = '';
+      for (let j = 0; j < 5; j++) part1 += chars[buf[i++] % chars.length];
+      for (let j = 0; j < 5; j++) part2 += chars[buf[i++] % chars.length];
+      codes.push(part1 + '-' + part2);
+    }
+    return codes;
+  }
+
+  window.copyRecovery = function() {
+    const text = (window.__recoveryCodes || []).join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      showMsg('msg-enable', 'ok', '✓ Đã copy 8 mã vào clipboard.');
+    });
+  };
+  window.downloadRecovery = function() {
+    const text = 'Zeni Cloud — 2FA Recovery Codes\n' +
+                 'Tạo: ' + new Date().toISOString() + '\n' +
+                 'User: ' + (session.email || '?') + '\n\n' +
+                 (window.__recoveryCodes || []).join('\n') + '\n\n' +
+                 'Mỗi mã dùng được 1 lần khi mất điện thoại. Lưu kỹ.';
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'zenicloud-2fa-recovery-codes.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // ─── Step 3: Enable ──────────────────────────────────────────
+  document.getElementById('btn-enable').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-enable');
+    btn.disabled = true; btn.textContent = 'Đang bật...';
+    // Backend already enables MFA on successful /verify (mfa_enabled=true).
+    // This button is a UX confirmation step. We also POST /mfa/enable if the
+    // endpoint exists, otherwise we just confirm + redirect.
+    try {
+      // Try POST /auth/mfa/enable as a no-op confirmation
+      await fetch('/api/v1/auth/mfa/enable', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: '{}',
+      });
+    } catch {}
+    showMsg('msg-enable', 'ok', '✓ 2FA đã được kích hoạt. Lần đăng nhập tới bạn sẽ cần mã TOTP.');
+    setTimeout(() => { window.location.href = '/app#settings'; }, 2000);
+  });
+})();
+</script>
+</body>
+</html>

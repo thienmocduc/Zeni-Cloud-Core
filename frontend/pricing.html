@@ -7,10 +7,10 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
 
-<title>Bảng giá · Zeni Cloud · Pricing đơn giản, minh bạch — Trả tiền VND</title>
-<meta name="description" content="5 gói Zeni Cloud: Free, Starter, Pro, Business, Enterprise. Trả tiền VND, hoá đơn VAT VN. Pro 4.9M VND/tháng — rẻ hơn Vercel 33%, AWS 87%.">
-<meta property="og:title" content="Bảng giá · Zeni Cloud">
-<meta property="og:description" content="Trả tiền VND, hoá đơn VAT, hỗ trợ tiếng Việt. Pro 4.9M VND — rẻ hơn Vercel 33%, AWS 87%.">
+<title>Bảng giá · Zeni Cloud · Pricing minh bạch, trả tiền VND</title>
+<meta name="description" content="6 gói Zeni Cloud: Free · Starter 459K₫ · Builder 1.2M₫ · Pro 3.6M₫ · Power 12.2M₫ · Enterprise 49M₫. AI Council 6-vai (Opus 4.7 + Sonnet + Haiku adaptive). Hoá đơn VAT VN.">
+<meta property="og:title" content="Bảng giá · Zeni Cloud 2026">
+<meta property="og:description" content="6 gói realistic — Pro 3.6M₫/tháng (20M AI tokens + Council Opus 4.7). Hoá đơn VAT VN.">
 <meta property="og:url" content="https://zenicloud.io/pricing">
 <meta property="og:type" content="website">
 
@@ -540,7 +540,7 @@ a { color: inherit; text-decoration: none; }
 <section class="hero-pricing">
   <div class="kicker">● Bảng giá Zeni Cloud</div>
   <h1>Pricing đơn giản, <em>minh bạch</em><br>— Trả tiền VND</h1>
-  <p class="sub">5 gói linh hoạt từ Free đến Enterprise. Không phí ẩn. Hoá đơn VAT VN. Thanh toán qua VietQR / chuyển khoản. Huỷ bất cứ lúc nào — không vendor lock-in.</p>
+  <p class="sub">6 gói linh hoạt từ Free đến Enterprise — bao gồm <strong>AI Council 6-vai</strong> (Opus 4.7 + Sonnet 4.6 + Gemini Flash adaptive routing). Hoá đơn VAT VN. VietQR thanh toán. Huỷ bất cứ lúc nào — không vendor lock-in.</p>
   <div class="cycle-toggle" role="tablist">
     <button id="bill-month" class="active" type="button">Tháng</button>
     <button id="bill-year" type="button">Năm <span class="cycle-save">−17%</span></button>
@@ -698,12 +698,21 @@ a { color: inherit; text-decoration: none; }
 (function() {
   'use strict';
 
-  /* ═══ Hard-coded fallback data (used when API unavailable) ═══ */
+  /* ═══ Hard-coded fallback data (used when API unavailable) ═══
+   * REALISTIC v2 (10/05/2026) — pricing đúng cost gốc, margin 40-60%.
+   * Cost gốc tính theo Adaptive Routing + Cache 70% trên Anthropic/Gemini API:
+   *   - Blended LLM: $1.5/1M tokens (effective sau cache)
+   *   - Compute Cloud Run: $5/khách
+   *   - Postgres shared: $0.30
+   *   - Storage GCS: $0.10
+   *   - Build/Logs: $1
+   * Phase 2 (self-host DeepSeek 6 tháng nữa) sẽ giảm cost LLM 90% → margin 80-90%.
+   */
   var FALLBACK_PLANS = [
     {
       id: 'free',
       name: 'Free',
-      tagline: 'Khám phá',
+      tagline: 'Dùng thử',
       price_month_vnd: 0,
       price_year_vnd: 0,
       price_month_usd: 0,
@@ -711,98 +720,119 @@ a { color: inherit; text-decoration: none; }
       cta: 'Bắt đầu',
       cta_url: '/signup?plan=free',
       features: [
-        '1 project',
-        '100K requests/tháng',
-        '5K AI tokens/tháng',
+        '1 project (cold start)',
+        '1K requests/tháng',
+        '100K AI tokens (~50 chat)',
         '1GB storage',
         'Community support',
         'Subdomain *.zenicloud.app',
-        'Forever free',
-        'Không cần thẻ tín dụng'
+        'Không cần thẻ tín dụng',
+        '14 ngày trial Pro features'
       ]
     },
     {
       id: 'starter',
       name: 'Starter',
-      tagline: 'Khởi tạo',
-      price_month_vnd: 999000,
-      price_year_vnd: 9990000,
-      price_month_usd: 40,
+      tagline: 'Khởi tạo · 459K₫/tháng',
+      price_month_vnd: 459000,
+      price_year_vnd: 4590000,
+      price_month_usd: 19,
       featured: false,
       cta: 'Đăng ký',
       cta_url: '/signup?plan=starter',
       features: [
-        '5 projects',
-        '1M requests/tháng',
-        '100K AI tokens/tháng',
-        '10GB storage',
+        '3 projects',
+        '50K requests/tháng',
+        '1M AI tokens (~500 chat)',
+        '5GB storage',
+        '3 dev seats',
         'Email support',
-        'Custom domain',
-        'VietQR + VAT VN',
-        '2 connectors VN'
+        'Custom domain SSL',
+        'VietQR + VAT VN'
+      ]
+    },
+    {
+      id: 'builder',
+      name: 'Builder',
+      tagline: 'Phát triển · 1.2M₫/tháng',
+      price_month_vnd: 1199000,
+      price_year_vnd: 11990000,
+      price_month_usd: 49,
+      featured: false,
+      cta: 'Đăng ký',
+      cta_url: '/signup?plan=builder',
+      features: [
+        '10 projects',
+        '150K requests/tháng',
+        '5M AI tokens (~2.5K chat)',
+        '10GB storage',
+        '5 dev seats',
+        'Build Farm (Tauri/Rust)',
+        'Staged canary deploy',
+        'Email support'
       ]
     },
     {
       id: 'pro',
       name: 'Pro',
-      tagline: 'Doanh nghiệp',
-      price_month_vnd: 4900000,
-      price_year_vnd: 49000000,
-      price_month_usd: 200,
+      tagline: 'Doanh nghiệp · 3.6M₫/tháng',
+      price_month_vnd: 3649000,
+      price_year_vnd: 36490000,
+      price_month_usd: 149,
       featured: true,
       cta: 'Đăng ký',
       cta_url: '/signup?plan=pro',
       features: [
         'Unlimited projects',
-        '10M requests/tháng',
-        '1M AI tokens/tháng',
-        '100GB storage',
+        '500K requests/tháng',
+        '20M AI tokens (~1K Council runs)',
+        '50GB storage',
+        '10 dev seats',
         'Priority support 24/5',
-        'Custom domain + SSL',
         'Smart Contract deploy',
-        '10 connectors VN'
+        'CTO Coder Swarm 6-vai'
       ]
     },
     {
       id: 'business',
-      name: 'Business',
-      tagline: 'Tập đoàn',
-      price_month_vnd: 49000000,
-      price_year_vnd: 490000000,
-      price_month_usd: 2000,
+      name: 'Power',
+      tagline: 'Tập đoàn · 12.2M₫/tháng',
+      price_month_vnd: 12225000,
+      price_year_vnd: 122250000,
+      price_month_usd: 499,
       featured: false,
       cta: 'Đăng ký',
       cta_url: '/signup?plan=business',
       features: [
         'Unlimited projects',
-        '100M requests/tháng',
-        '10M AI tokens/tháng',
-        '1TB storage',
-        'Dedicated CSM',
-        'SLA 99.9%',
-        'SSO SAML + SCIM',
-        'NĐ13 compliance pack'
+        '2M requests/tháng',
+        '80M AI tokens',
+        '200GB storage',
+        '50 dev seats',
+        'Multi-region (Asia + US)',
+        'Priority Council Opus 4.7',
+        'SLA 99.9% + dedicated CSM'
       ]
     },
     {
       id: 'enterprise',
       name: 'Enterprise',
-      tagline: 'Riêng biệt',
-      price_month_vnd: 199000000,
-      price_year_vnd: null,
-      price_month_usd: null,
+      tagline: 'Riêng biệt · 49M₫/tháng',
+      price_month_vnd: 49000000,
+      price_year_vnd: 490000000,
+      price_month_usd: 1999,
       featured: false,
       cta: 'Liên hệ',
       cta_url: 'mailto:caotuanphat581@gmail.com?subject=Enterprise%20Plan%20Zeni%20Cloud',
       features: [
-        'Custom infrastructure',
-        'Unlimited everything',
-        'Custom AI quota',
-        'On-prem / dedicated',
-        '24/7 dedicated support',
-        'SLA 99.95% + ISO/SOC',
-        'BYOK + audit log',
-        'White-label option'
+        '300M AI tokens base',
+        'Dedicated DB instance',
+        'BYOK (Anthropic/OpenAI/Gemini)',
+        'On-prem / dedicated infra',
+        '24/7 phone support',
+        'SLA 99.95% + ISO/SOC2',
+        'White-label reseller option',
+        'Custom contract + procurement'
       ]
     }
   ];
@@ -819,11 +849,38 @@ a { color: inherit; text-decoration: none; }
     return '$' + amount.toLocaleString('en-US');
   }
 
+  /* ═══ Normalize API plan → frontend shape (backward compat) ═══
+   * API returns: price_vnd_monthly, price_usd_monthly (snake_case_unit)
+   * Frontend uses: price_month_vnd, price_month_usd, price_year_vnd
+   * Also fills UI fields (tagline, cta, features) from FALLBACK_PLANS by id.
+   */
+  function normalizePlan(plan) {
+    var fb = FALLBACK_PLANS.find(function(p) { return p.id === plan.id; }) || {};
+    var monthVnd = (plan.price_month_vnd != null) ? plan.price_month_vnd : plan.price_vnd_monthly;
+    var monthUsd = (plan.price_month_usd != null) ? plan.price_month_usd : plan.price_usd_monthly;
+    var yearVnd = (plan.price_year_vnd != null)
+      ? plan.price_year_vnd
+      : (monthVnd != null ? Math.round(monthVnd * 12 * 0.83) : null);
+    return {
+      id: plan.id,
+      name: plan.name || fb.name || plan.id,
+      tagline: plan.tagline || fb.tagline || '',
+      price_month_vnd: monthVnd,
+      price_year_vnd: yearVnd,
+      price_month_usd: monthUsd,
+      featured: (plan.featured != null) ? plan.featured : (fb.featured || false),
+      cta: plan.cta || fb.cta || 'Bắt đầu',
+      cta_url: plan.cta_url || fb.cta_url || ('/signup?plan=' + plan.id),
+      features: (Array.isArray(plan.features) && plan.features.length > 0) ? plan.features : (fb.features || [])
+    };
+  }
+
   /* ═══ Render tier grid ═══ */
   var currentCycle = 'month';
-  function renderTiers(plans) {
+  function renderTiers(rawPlans) {
     var grid = document.getElementById('tier-grid');
     if (!grid) return;
+    var plans = rawPlans.map(normalizePlan);
     var html = '';
     plans.forEach(function(plan) {
       var price = currentCycle === 'year' ? plan.price_year_vnd : plan.price_month_vnd;
@@ -887,49 +944,4 @@ a { color: inherit; text-decoration: none; }
       signal: ctrl ? ctrl.signal : undefined
     })
       .then(function(r) {
-        if (timeout) clearTimeout(timeout);
-        if (!r.ok) throw new Error('API unavailable');
-        return r.json();
-      })
-      .then(function(data) {
-        if (data && Array.isArray(data.plans) && data.plans.length > 0) {
-          renderTiers(data.plans);
-        } else {
-          renderTiers(FALLBACK_PLANS);
-        }
-      })
-      .catch(function() {
-        if (timeout) clearTimeout(timeout);
-        renderTiers(FALLBACK_PLANS);
-      });
-  }
-
-  /* ═══ Toggle billing cycle ═══ */
-  document.getElementById('bill-month').addEventListener('click', function() {
-    currentCycle = 'month';
-    document.getElementById('bill-month').classList.add('active');
-    document.getElementById('bill-year').classList.remove('active');
-    loadPlans();
-  });
-  document.getElementById('bill-year').addEventListener('click', function() {
-    currentCycle = 'year';
-    document.getElementById('bill-year').classList.add('active');
-    document.getElementById('bill-month').classList.remove('active');
-    loadPlans();
-  });
-
-  /* ═══ FAQ accordion ═══ */
-  document.querySelectorAll('.faq-q').forEach(function(q) {
-    q.addEventListener('click', function() {
-      var item = q.parentElement;
-      item.classList.toggle('open');
-    });
-  });
-
-  /* ═══ Init ═══ */
-  loadPlans();
-})();
-</script>
-
-</body>
-</html>
+        if (ti

@@ -862,3 +862,210 @@ async def _bg_delete(workspace_id: str, project_name: str, region: str, actor_em
         log.info("[bg_delete] %s/%s deleted", workspace_id, project_name)
     except CloudRunError as e:
         log.exception("[bg_delete] %s/%s failed: %s", workspace_id, project_name, e)
+
+
+# =================================================================
+# CTO Patch 2026-05-24 — tenant-callable deploy actions (PAT auth)
+# Bug ticket Viet Contech: POST /redeploy /image /visibility = 405/404
+# Root cause: chỉ có deploy_project ở POST "" — không có action lên
+# project đã tồn tại. Khách cần API để re-pull image (tag :latest cached),
+# update image (rebuild + push tag mới), bật/tắt public access.
+# =================================================================
+class _ImageUpdateIn(BaseModel):
+    image: str = Field(..., min_length=4, max_length=512, description="Container image URL (vd: docker.io/<user>/<repo>:<tag>)")
+
+
+class _RedeployIn(BaseModel):
+    env_override: dict | None = Field(default=None, description="Optional ENV vars to override (merged on top of existing)")
+
+
+class _VisibilityIn(BaseModel):
+    public: bool = Field(..., description="True = bind allUsers->run.invoker, False = remove allUsers binding")
+
+
+@router.post("/{project_id}/image")
+async def update_project_image(
+    ws: str,
+    project_id: str,
+    body: _ImageUpdateIn,
+    bg: BackgroundTasks,
+    me: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Update Cloud Run service to new container image. Triggers new revision.
+
+    Use case: customer rebuilt image with new SHA tag → call this endpoint with
+    new image URL → Zeni updates Cloud Run service → new revision deployed.
+
+    Auth: workspace member (Admin role recommended for prod).
+    Body: {"image": "docker.io/<user>/<repo>:<tag>"}
+    Returns 202 — actual deploy runs in background. Poll GET /projects/{id} for status.
+    """
+    await require_workspace_access(ws, me)
+    if me.role == "Viewer":
+        raise HTTPException(status_code=403, detail="Cần Developer role trở lên")
+    p = await _resolve_project(db, ws, project_id)
+    if not p.cloud_run_service:
+        raise HTTPException(404, "Project chưa được deploy lần đầu (không có Cloud Run service). Gọi POST /projects để deploy mới.")
+
+    new_image = body.image.strip()
+    await _validate_image_with_workspace(db, ws, new_image)
+    await _validate_image_exists(new_image)
+
+    # Mark deploying — UI sẽ thấy spinner thay vì state cũ
+    p.status = "deploying"
+    p.image = new_image
+    await audit_push(
+        db, actor=me.email, workspace_id=ws, action="compute.image_update",
+        target=p.name, severity="info",
+        metadata={"project_id": str(p.id), "image_new": new_image, "service": p.cloud_run_service},
+    )
+    await db.commit()
+
+    # Background re-deploy with new image (keep env vars + size from current state)
+    bg.add_task(
+        _bg_deploy,
+        project_id=p.id, ws=ws, name=p.name, image=new_image,
+        size=(p.size or "s"), region=(p.region or "asia-southeast1"),
+        env_vars=None, secrets=None,
+        port=int(p.port) if getattr(p, "port", None) else 8080,
+        allow_unauth=True, actor_email=me.email, action="compute.image_update",
+        unit_cost=0.0, resources=SIZE_TO_RESOURCES.get(p.size or "s", SIZE_TO_RESOURCES["s"]),
+        cpu_display=p.cpu or "1 vCPU", mem_display=p.memory or "1GB",
+        git_ref="image-update",
+    )
+
+    return {
+        "ok": True,
+        "project_id": str(p.id),
+        "service": p.cloud_run_service,
+        "image_new": new_image,
+        "status": "deploying",
+        "poll_url": f"/api/v1/projects/{p.id}?ws={ws}",
+    }
+
+
+@router.post("/{project_id}/redeploy")
+async def redeploy_project(
+    ws: str,
+    project_id: str,
+    bg: BackgroundTasks,
+    body: _RedeployIn | None = None,
+    me: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Redeploy với image hiện tại — useful khi tag :latest đã được push lại
+    (Cloud Run cached SHA cũ → cần trigger new revision để pull mới).
+
+    Auth: workspace member (Developer+ recommended).
+    Body: {"env_override": {...}} (optional)
+    """
+    await require_workspace_access(ws, me)
+    if me.role == "Viewer":
+        raise HTTPException(status_code=403, detail="Cần Developer role trở lên")
+    p = await _resolve_project(db, ws, project_id)
+    if not p.cloud_run_service:
+        raise HTTPException(404, "Project chưa deploy lần đầu — gọi POST /projects để deploy mới.")
+    if not p.image:
+        raise HTTPException(400, "Project không có image — không thể redeploy. Gọi POST /image trước.")
+
+    env_override = (body.env_override if body else None) or {}
+
+    p.status = "deploying"
+    await audit_push(
+        db, actor=me.email, workspace_id=ws, action="compute.redeploy",
+        target=p.name, severity="info",
+        metadata={"project_id": str(p.id), "image": p.image, "service": p.cloud_run_service,
+                  "env_override_keys": list(env_override.keys())},
+    )
+    await db.commit()
+
+    bg.add_task(
+        _bg_deploy,
+        project_id=p.id, ws=ws, name=p.name, image=p.image,
+        size=(p.size or "s"), region=(p.region or "asia-southeast1"),
+        env_vars=env_override or None, secrets=None,
+        port=int(p.port) if getattr(p, "port", None) else 8080,
+        allow_unauth=True, actor_email=me.email, action="compute.redeploy",
+        unit_cost=0.0, resources=SIZE_TO_RESOURCES.get(p.size or "s", SIZE_TO_RESOURCES["s"]),
+        cpu_display=p.cpu or "1 vCPU", mem_display=p.memory or "1GB",
+        git_ref="redeploy",
+    )
+
+    return {
+        "ok": True,
+        "project_id": str(p.id),
+        "service": p.cloud_run_service,
+        "image": p.image,
+        "status": "deploying",
+        "poll_url": f"/api/v1/projects/{p.id}?ws={ws}",
+    }
+
+
+@router.post("/{project_id}/visibility")
+async def set_project_visibility(
+    ws: str,
+    project_id: str,
+    body: _VisibilityIn,
+    me: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Toggle Cloud Run service public/private — bind/unbind allUsers->run.invoker.
+
+    Auth: Admin+ (sensitive — affects security posture).
+    Body: {"public": true|false}
+    """
+    await require_workspace_access(ws, me)
+    if me.role in ("Viewer", "Developer"):
+        raise HTTPException(status_code=403, detail="Cần Admin để đổi visibility")
+    p = await _resolve_project(db, ws, project_id)
+    if not p.cloud_run_service:
+        raise HTTPException(404, "Project chưa deploy — không có Cloud Run service")
+
+    region = p.region or "asia-southeast1"
+
+    # Use google-cloud-run client (already imported by cloud_run service module)
+    try:
+        from google.cloud import run_v2
+        client = run_v2.ServicesClient()
+        resource = f"projects/zeni-cloud-core/locations/{region}/services/{p.cloud_run_service}"
+        policy = client.get_iam_policy(request={"resource": resource})
+
+        # Filter existing bindings — remove allUsers from run.invoker
+        new_bindings = []
+        for b in policy.bindings:
+            if b.role == "roles/run.invoker":
+                members = [m for m in b.members if m != "allUsers"]
+                if members:
+                    new_bindings.append(run_v2.types.iam_policy_pb2.Binding(role=b.role, members=members))
+            else:
+                new_bindings.append(b)
+
+        # Add allUsers if making public
+        if body.public:
+            new_bindings.append(run_v2.types.iam_policy_pb2.Binding(
+                role="roles/run.invoker", members=["allUsers"]
+            ))
+
+        policy.bindings.clear()
+        policy.bindings.extend(new_bindings)
+        client.set_iam_policy(request={"resource": resource, "policy": policy})
+    except Exception as e:
+        log.exception("[set_visibility] %s/%s failed: %s", ws, p.name, e)
+        raise HTTPException(status_code=500, detail=f"IAM update failed: {type(e).__name__}: {str(e)[:200]}")
+
+    await audit_push(
+        db, actor=me.email, workspace_id=ws, action="compute.visibility",
+        target=p.name, severity="warning" if body.public else "info",
+        metadata={"project_id": str(p.id), "service": p.cloud_run_service,
+                  "public": body.public, "region": region},
+    )
+    await db.commit()
+
+    return {
+        "ok": True,
+        "project_id": str(p.id),
+        "service": p.cloud_run_service,
+        "public": body.public,
+        "url": p.domain,
+    }

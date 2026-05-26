@@ -71,6 +71,43 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
             "lines": {"type": "integer", "required": False, "description": "Số dòng (max 200, default 50)"},
         },
     },
+    {
+        "name": "delegate_to_specialist",
+        "description": (
+            "Khi khách hỏi chuyên môn NGOÀI scope deploy (vd: review hợp đồng pháp lý, "
+            "code review chi tiết, viết marketing copy, phân tích tài chính, thiết kế nội thất, "
+            "compliance NĐ13, OCR hóa đơn VAT, tính lương, v.v.) — KHÔNG tự trả lời mà "
+            "delegate sang specialist agent phù hợp từ thư viện 108 agents qua ZeniRouter. "
+            "CTO vẫn giữ vai trò orchestrator: nhận response từ specialist, format gọn gàng, "
+            "ship cho khách với context Zeni. Nếu không có specialist phù hợp, trả 'ok=false'."
+        ),
+        "parameters": {
+            "agent_id": {
+                "type": "string", "required": True,
+                "description": (
+                    "Slug agent từ catalog (bảng agent_catalog). Ví dụ phổ biến: "
+                    "'legal-document-reviewer', 'contract-generator', 'compliance-checker' (legal); "
+                    "'code-reviewer', 'bug-triage-bot', 'api-doc-generator' (dev); "
+                    "'marketing-copywriter', 'email-campaign-writer' (marketing); "
+                    "'csv-analyzer', 'data-cleaner', 'etl-pipeline-builder' (data); "
+                    "'tax-filing-helper-vn', 'cash-flow-forecaster' (finance VN); "
+                    "'shopee-seller-bot', 'tiktok-shop-bot', 'vietqr-receipt-parser', 'misa-sync' (VN-vertical); "
+                    "'mood-board-curator', 'color-palette-generator', 'feng-shui-advisor' (design); "
+                    "'smart-contract-auditor', 'nft-metadata-generator' (web3); "
+                    "'menu-engineering', 'recipe-standardizer' (f&b); "
+                    "'symptom-triage', 'lab-result-interpreter', 'diet-plan-vn-food' (healthcare). "
+                    "Đầy đủ 108 slug có trong bảng agent_catalog."
+                ),
+            },
+            "input": {
+                "type": "string", "required": True,
+                "description": (
+                    "Câu hỏi/nội dung cụ thể cho specialist. PHẢI preserve full context của khách "
+                    "(không paraphrase). Specialist nhận input → trả output, CTO format + ship cho user."
+                ),
+            },
+        },
+    },
 ]
 
 
@@ -339,6 +376,110 @@ async def tool_read_logs(*, workspace_id: str, db: AsyncSession, project_id: str
             "line_count": len(log_lines), "logs": log_lines}
 
 
+# ─── Tool: delegate_to_specialist (NEW 2026-05-26) ────────────
+async def tool_delegate_to_specialist(
+    *, workspace_id: str, user_email: str, db: AsyncSession,
+    agent_id: str, input: str,
+) -> dict[str, Any]:
+    """Delegate task chuyên môn cho specialist agent từ thư viện 108 qua ZeniRouter.
+
+    Flow:
+      1. Lookup agent_id trong agent_catalog → get system_prompt + default_model + cost
+      2. Call llm_gateway.run_inference với system_prompt + user input
+      3. Trả response cho CTO orchestrator (CTO sẽ format + ship cho user)
+
+    Bảo mật:
+      - Agent phải is_active = TRUE
+      - Workspace context preserved (no cross-tenant data leak)
+      - Strip injection (CTO charter đã filter sẵn ở Watcher layer)
+    """
+    from sqlalchemy import text as _sql
+    from app.services.llm_gateway import run_inference
+
+    if not agent_id or not isinstance(agent_id, str):
+        return {"ok": False, "error": "agent_id required (slug from agent_catalog)"}
+    if not input or not isinstance(input, str):
+        return {"ok": False, "error": "input required (preserve user full request)"}
+    if len(input) > 8000:
+        return {"ok": False, "error": "input quá dài (max 8000 chars). Tóm tắt + retry."}
+
+    row = (await db.execute(_sql("""
+        SELECT id, name, name_vi, system_prompt, default_model, cost_per_run_usd, pricing_tier
+        FROM agent_catalog
+        WHERE id = :aid AND is_active = TRUE
+    """), {"aid": agent_id})).mappings().one_or_none()
+    if not row:
+        hints = (await db.execute(_sql("""
+            SELECT id, name_vi FROM agent_catalog
+            WHERE is_active = TRUE AND (id ILIKE :pat OR name ILIKE :pat OR name_vi ILIKE :pat)
+            ORDER BY install_count DESC NULLS LAST LIMIT 5
+        """), {"pat": f"%{agent_id[:20]}%"})).mappings().all()
+        hint_text = "; ".join(f"{h['id']} ({h['name_vi']})" for h in hints) if hints else "không có"
+        return {
+            "ok": False,
+            "error": f"Specialist '{agent_id}' không tồn tại hoặc đã disable. Có thể anh muốn: {hint_text}",
+        }
+
+    messages = [
+        {"role": "system", "content": row["system_prompt"]},
+        {"role": "user", "content": input},
+    ]
+    model = row["default_model"] or "deepseek-chat"
+
+    try:
+        result = await run_inference(
+            messages=messages,
+            model=model,
+            max_tokens=2048,
+            temperature=0.4,
+        )
+    except Exception as e:
+        log.exception("[cto.delegate] agent=%s call failed", agent_id)
+        return {"ok": False, "error": f"Specialist {agent_id} call failed: {type(e).__name__}"}
+
+    response_text = (result or {}).get("text") or (result or {}).get("content") or ""
+    usage = (result or {}).get("usage") or {}
+
+    try:
+        from app.services.audit import audit_push
+        await audit_push(
+            db, actor=user_email, workspace_id=workspace_id,
+            action="cto.delegate.specialist", target=agent_id, severity="info",
+            metadata={
+                "agent_id": agent_id,
+                "agent_name": row["name_vi"] or row["name"],
+                "input_length": len(input),
+                "output_length": len(response_text),
+                "model_used": model,
+                "cost_usd": float(row["cost_per_run_usd"] or 0.005),
+            },
+        )
+        await db.commit()
+    except Exception:
+        log.warning("[cto.delegate] audit push failed (non-fatal)")
+
+    return {
+        "ok": True,
+        "specialist": {
+            "agent_id": agent_id,
+            "name": row["name_vi"] or row["name"],
+            "pricing_tier": row["pricing_tier"],
+        },
+        "response": response_text,
+        "model_used": model,
+        "tokens": {
+            "input": usage.get("input_tokens", 0),
+            "output": usage.get("output_tokens", 0),
+        },
+        "cost_usd": float(row["cost_per_run_usd"] or 0.005),
+        "_cto_hint": (
+            "Specialist đã trả response. Anh (CTO) format gọn gàng + ship cho user. "
+            "Nếu specialist response chưa đủ, có thể delegate tiếp cho specialist khác. "
+            "Nhắc user pricing_tier nếu agent ở tier cao hơn gói hiện tại của họ."
+        ),
+    }
+
+
 # ─── Tool dispatch ─────────────────────────────────────────────
 TOOL_HANDLERS = {
     "provision_registry": tool_provision_registry,
@@ -347,6 +488,7 @@ TOOL_HANDLERS = {
     "get_project_status": tool_get_project_status,
     "add_whitelist": tool_add_whitelist,
     "read_logs": tool_read_logs,
+    "delegate_to_specialist": tool_delegate_to_specialist,
 }
 
 
@@ -371,7 +513,7 @@ async def execute_tool(
 
 def format_tools_for_prompt() -> str:
     """Render TOOL_DEFINITIONS as plain text for the system prompt."""
-    lines = ["Bạn có thể gọi 6 tools sau (mỗi tool emit 1 JSON object riêng):", ""]
+    lines = ["Bạn có thể gọi 7 tools sau (mỗi tool emit 1 JSON object riêng):", ""]
     for t in TOOL_DEFINITIONS:
         params = t["parameters"]
         if params:
