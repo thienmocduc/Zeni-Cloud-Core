@@ -129,7 +129,7 @@ jobs:
             --concurrency=40 \
             --timeout=600 \
             --env-vars-file=envs.yaml \
-            --set-secrets="DATABASE_URL=zeni-database-url:latest,JWT_SECRET=zeni-jwt-secret:latest,VAULT_KEY=zeni-vault-key:latest,ADMIN_PASSWORD=zeni-admin-password:latest,GMAIL_SMTP_USER=zeni-smtp-user:latest,GMAIL_SMTP_PASSWORD=zeni-smtp-password:latest,ZENI_CRON_SECRET=zeni-cron-secret:latest" \
+            --set-secrets="DATABASE_URL=zeni-database-url:latest,JWT_SECRET=zeni-jwt-secret:latest,VAULT_KEY=zeni-vault-key:latest,ADMIN_PASSWORD=zeni-admin-password:latest,GMAIL_SMTP_USER=zeni-smtp-user:latest,GMAIL_SMTP_PASSWORD=zeni-smtp-password:latest,ZENI_CRON_SECRET=zeni-cron-secret:latest,GOOGLE_OAUTH_CLIENT_ID=google-oauth-client-id:latest,GOOGLE_OAUTH_CLIENT_SECRET=google-oauth-client-secret:latest,GITHUB_OAUTH_CLIENT_ID=github-oauth-client-id:latest,GITHUB_OAUTH_CLIENT_SECRET=github-oauth-client-secret:latest" \
             --labels="version=${{ steps.ver.outputs.tag }},commit=${{ steps.ver.outputs.short_sha }}" \
             --quiet
 
