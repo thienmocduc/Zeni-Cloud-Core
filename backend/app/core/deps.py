@@ -109,10 +109,17 @@ async def require_workspace_access(
     ws: str,
     user: CurrentUser,
 ) -> None:
-    if user.role == "Owner":
-        return
+    """Workspace scope guard — works for BOTH platform Owner (chairman) and workspace Owner.
+
+    SECURITY FIX 2026-05-26: Previously bypassed all Owners which leaked cross-tenant data.
+    Now strictly checks ws ∈ user.workspaces. Chairman has all workspaces in his list so still passes.
+    Workspace Owner has only their own workspace(s) → cannot access other tenants.
+    """
     if ws not in user.workspaces:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="workspace access denied")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"workspace access denied: ws='{ws}' not in user.workspaces (role={user.role})",
+        )
 
 
 def require_role(*allowed: str):
