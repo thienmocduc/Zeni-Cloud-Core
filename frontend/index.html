@@ -1567,11 +1567,23 @@ select {
   min-width: 260px;
   padding: 6px;
   z-index: 9999;
-  max-height: calc(100vh - 80px);
+  /* Bug fix 2026-05-26: dropdown was max-height calc(100vh - 80px) which
+     on small viewports made it taller than its container and pushed off-screen.
+     Lock to 60vh + slim scrollbar so users with >10 workspaces can scroll. */
+  max-height: 60vh;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168, 85, 247, 0.4) transparent;
   box-shadow: var(--shadow-lg), 0 0 32px rgba(168, 85, 247, 0.2);
   display: none;
 }
+.ws-menu::-webkit-scrollbar { width: 6px; }
+.ws-menu::-webkit-scrollbar-track { background: transparent; }
+.ws-menu::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.4);
+  border-radius: 3px;
+}
+.ws-menu::-webkit-scrollbar-thumb:hover { background: rgba(168, 85, 247, 0.6); }
 .ws-menu.show { display: block; }
 .ws-menu-item {
   display: flex; align-items: center; gap: 10px;
@@ -2982,15 +2994,69 @@ document.addEventListener('keydown', e => {
       try { byId('ws-dot').style.background = ws.color || '#888'; } catch(e) {}
       try { byId('ws-name').textContent = ws.name || '—'; } catch(e) {}
       try { byId('ws-role').textContent = ws.role || '—'; } catch(e) {}
-      try { byId('user-avatar').textContent = u.avatar || (u.name||'·')[0]; } catch(e) {}
+      // Avatar: nếu là URL (https://...) render thành <img>, ngược lại render initial letter
+      try {
+        const avatarEl = byId('user-avatar');
+        if (avatarEl) {
+          const avatarVal = u.avatar || '';
+          const isUrl = typeof avatarVal === 'string' && /^https?:\/\//i.test(avatarVal);
+          if (isUrl) {
+            // Render as image. Sanitize URL bằng cách dùng setAttribute (không innerHTML)
+            avatarEl.textContent = '';
+            const img = document.createElement('img');
+            img.src = avatarVal;
+            img.alt = u.name || '';
+            img.referrerPolicy = 'no-referrer';
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+            img.style.borderRadius = '50%';
+            img.onerror = () => { avatarEl.textContent = (u.name||'·')[0].toUpperCase(); };
+            avatarEl.appendChild(img);
+          } else {
+            avatarEl.textContent = (avatarVal || (u.name||'·')[0]).toUpperCase();
+          }
+        }
+      } catch(e) { console.warn('[refreshSidebar] avatar render fail:', e); }
       try { byId('user-name').textContent = u.name || '—'; } catch(e) {}
       try { byId('user-email').textContent = u.email || '—'; } catch(e) {}
       try { byId('nav-proj-count').textContent = getProjects().length; } catch(e) {}
-      // Show CTO Console link for Owner role only
+
+      // ─── ROLE-BASED MENU FILTERING ─────────────────────────────────────
+      // Platform-admin only items (chỉ Zeni platform admin thấy, KHÔNG cho customer):
+      //   - Database (zeni infrastructure)
+      //   - Web3 & Wallet (zeni blockchain platform)
+      //   - CTO Console (internal CTO tool)
+      // Detection: dựa vào email whitelist + role 'PlatformOwner' nếu backend support
       try {
-        const ctoLink = byId('nav-cto-console');
-        if (ctoLink && u.role === 'Owner') ctoLink.style.display = '';
-      } catch(e) {}
+        const PLATFORM_ADMIN_EMAILS = [
+          'doanhnhancaotuan@gmail.com',
+          'caotuanphat581@gmail.com',
+          'wellnexusvn@gmail.com',
+        ];
+        const isPlatformAdmin =
+          u.role === 'PlatformOwner' ||
+          u.role === 'PlatformAdmin' ||
+          (u.email && PLATFORM_ADMIN_EMAILS.includes(u.email.toLowerCase()));
+
+        const PLATFORM_ONLY_VIEWS = ['database', 'web3', 'cto-admin'];
+        PLATFORM_ONLY_VIEWS.forEach(v => {
+          document.querySelectorAll(`.nav-item[data-view="${v}"]`).forEach(item => {
+            item.style.display = isPlatformAdmin ? '' : 'none';
+          });
+        });
+
+        // Owner-level workspace items (workspace Owner thấy, Viewer KHÔNG thấy):
+        //   - Billing, Audit Log, Members, Settings, API Tokens, Subscription
+        const OWNER_ONLY_VIEWS = ['billing', 'audit', 'members', 'settings', 'api-tokens', 'subscription'];
+        const wsRole = (WORKSPACES[state.currentWs] || {}).role || u.role || 'Viewer';
+        const isWsOwnerOrAdmin = ['Owner', 'Admin', 'PlatformOwner', 'PlatformAdmin'].includes(wsRole);
+        OWNER_ONLY_VIEWS.forEach(v => {
+          document.querySelectorAll(`.nav-item[data-view="${v}"]`).forEach(item => {
+            item.style.display = (isWsOwnerOrAdmin || isPlatformAdmin) ? '' : 'none';
+          });
+        });
+      } catch(e) { console.warn('[refreshSidebar] role filter fail:', e); }
 
       // nav click wiring — LUÔN PHẢI ĐƯỢC ATTACH dù sidebar info có lỗi
       document.querySelectorAll('.nav-item').forEach(item => {
@@ -11172,12 +11238,14 @@ document.addEventListener('keydown', e => {
     const session = JSON.parse(localStorage.getItem('zeniCloud_session_v1') || '{}');
     const profCard = el('div', { class: 'card', style: { padding: '24px', marginBottom: '20px' } });
     profCard.appendChild(el('h3', { style: { fontSize: '17px', marginBottom: '6px', color: 'var(--ink-50)' }, text: '👤 Profile' }));
-    profCard.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-400)', marginBottom: '20px' }, text: 'Thông tin tài khoản. Đổi password qua Forgot password flow.' }));
+    profCard.appendChild(el('p', { style: { fontSize: '13px', color: 'var(--ink-400)', marginBottom: '20px' }, text: 'Thông tin tài khoản. Đổi password trực tiếp hoặc qua Forgot password flow.' }));
     profCard.appendChild(fld('Email', 'set-prof-email', session.email || '—', '', true));
     profCard.appendChild(fld('Họ tên', 'set-prof-name', session.name || '—', '', true));
     profCard.appendChild(fld('Role', 'set-prof-role', session.role || 'Admin', '', true));
-    profCard.appendChild(el('div', { style: { display: 'flex', gap: '10px' } }, [
-      el('a', { href: '/forgot-password.html', class: 'btn btn-md btn-ghost', text: '🔒 Đổi password' }),
+    profCard.appendChild(el('div', { style: { display: 'flex', gap: '10px', flexWrap: 'wrap' } }, [
+      el('a', { href: '/change-password', class: 'btn btn-md btn-ghost', text: '🔒 Đổi password' }),
+      el('a', { href: '/forgot-password', class: 'btn btn-md btn-ghost', text: '❓ Quên password' }),
+      el('a', { href: '/setup-2fa', class: 'btn btn-md btn-ghost', text: '🛡️ Bật 2FA' }),
       el('button', { class: 'btn btn-md btn-ghost', onclick: () => setView('L5'), text: '🔐 Quản lý API tokens' })
     ]));
     c.appendChild(profCard);
