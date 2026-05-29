@@ -306,8 +306,8 @@ async def public_signup(
         )).scalar_one_or_none()
         if existing_code is None:
             break
-        # Collision → append 3 random alphanumeric chars
-        final_code = (base_code[:5] + _secrets.token_hex(2).upper())[:10]
+        # Collision → 4 prefix chars + 4 random hex = 8 chars (fits varchar(8))
+        final_code = (base_code[:4] + _secrets.token_hex(2).upper())[:8]
 
     ws = Workspace(
         id=data.workspace_id,
