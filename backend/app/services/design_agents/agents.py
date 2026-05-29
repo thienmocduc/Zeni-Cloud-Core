@@ -45,12 +45,43 @@ class AgentResult:
     next_actions: list[str] = field(default_factory=list)
 
 
+def _extract_json(text: str) -> dict[str, Any]:
+    """Best-effort parse a JSON object from an LLM response.
+
+    Handles raw JSON, ```json fenced blocks, and prose-wrapped JSON. Returns {}
+    if nothing parseable is found — caller keeps the raw text in output_text.
+    """
+    if not text:
+        return {}
+    s = text.strip()
+    if s.startswith("```"):
+        nl = s.find("\n")
+        if nl != -1:
+            s = s[nl + 1:]
+        if s.endswith("```"):
+            s = s[:-3]
+        s = s.strip()
+    try:
+        obj = json.loads(s)
+        return obj if isinstance(obj, dict) else {"_value": obj}
+    except Exception:
+        pass
+    start, end = s.find("{"), s.rfind("}")
+    if 0 <= start < end:
+        try:
+            obj = json.loads(s[start:end + 1])
+            return obj if isinstance(obj, dict) else {"_value": obj}
+        except Exception:
+            return {}
+    return {}
+
+
 # ─── BASE AGENT ─────────────────────────────────────────────────
 class BaseDesignAgent:
     """Common pattern for all 6 specialized agents."""
 
     role: str = "base"
-    default_model: str = "claude-sonnet-4-6"  # Zeni Router model_id
+    default_model: str = "gemini-2.5-flash"  # Vertex AI default (subclasses override)
     complexity: str = "complex"
     system_prompt_template: str = ""
 
@@ -61,38 +92,35 @@ class BaseDesignAgent:
         complexity: Optional[str] = None,
         workspace_id: Optional[str] = None,
     ) -> AgentResult:
-        """Call Zeni Router with adaptive tier routing."""
-        from app.services.coder.orchestrator import call_persona
+        """Call the Zeni LLM gateway with this agent's model.
 
-        # Map agent role → persona (reuse Zeni Coder persona system)
-        persona_map = {
-            "kts_chief": "architect",
-            "interior_designer": "planner",
-            "structural_engineer": "reviewer",
-            "mep_engineer": "security",
-            "boq_calculator": "qa",
-            "qa_validator": "reviewer",
-        }
-        persona = persona_map.get(self.role, "planner")
+        Each agent uses its own ``default_model``; the gateway routes to the
+        right provider (Anthropic / Vertex Gemini / OpenAI). Design agents emit
+        structured JSON — we parse it into ``output`` while always preserving the
+        raw response in ``output_text``.
+        """
+        from app.services.llm_gateway import run_inference
+
+        _ = (complexity, workspace_id)  # accepted for API compat; gateway routes by model
 
         try:
-            resp = await call_persona(
-                persona=persona,
-                user_prompt=prompt,
-                extra_context=system or self.system_prompt_template,
-                complexity=complexity or self.complexity,
+            res = await run_inference(
+                model=self.default_model,
+                prompt=prompt,
+                system=system or self.system_prompt_template,
+                temperature=0.4,
+                max_tokens=8000,
             )
             return AgentResult(
                 agent_role=self.role,
-                success=resp.error is None,
-                output=resp.output_json or {},
-                output_text=resp.output_text,
-                model_used=resp.model_id,
-                input_tokens=resp.input_tokens,
-                output_tokens=resp.output_tokens,
-                cost_usd=resp.cost_usd,
-                latency_ms=resp.latency_ms,
-                error=resp.error,
+                success=bool((res.output or "").strip()),
+                output=_extract_json(res.output),
+                output_text=res.output,
+                model_used=res.model,
+                input_tokens=res.input_tokens,
+                output_tokens=res.output_tokens,
+                cost_usd=res.cost_usd,
+                latency_ms=res.latency_ms,
             )
         except Exception as e:
             log.exception("[%s] LLM call failed", self.role)
@@ -115,7 +143,7 @@ class KTSChiefAgent(BaseDesignAgent):
     Output: DNA dự án JSON (style, layout principles, phong thuỷ analysis, constraints)
     """
     role = "kts_chief"
-    default_model = "claude-sonnet-4-6"  # routing escalate to opus if complex
+    default_model = "gemini-2.5-pro"  # Vertex AI (prod ADC) — critical lead reasoning
     complexity = "critical"
     system_prompt_template = """Bạn là KTS Chính của Viet Contech — chuyên kiến trúc Việt Nam.
 Chuyên môn:
@@ -163,7 +191,7 @@ class InteriorDesignerAgent(BaseDesignAgent):
     Output: render prompts (cho Flux/SDXL) + style spec (palette, vật liệu)
     """
     role = "interior_designer"
-    default_model = "claude-sonnet-4-6"
+    default_model = "gemini-2.5-flash"  # Vertex AI — style match, lighter tier
     complexity = "complex"
     system_prompt_template = """Bạn là Interior Designer chuyên phong cách Việt Nam.
 Hiểu sâu 6 styles: Indochine, Modern, Luxury, Japandi, Tropical, Wabi-sabi.
@@ -211,7 +239,7 @@ class StructuralEngineerAgent(BaseDesignAgent):
     Output: structural calc report + bản vẽ móng/cột/dầm specifications
     """
     role = "structural_engineer"
-    default_model = "claude-opus-4-7"  # critical — frontier tier
+    default_model = "gemini-2.5-pro"  # Vertex AI — critical structural calcs
     complexity = "critical"
     system_prompt_template = """Bạn là Kỹ sư Kết cấu — chuyên TCVN 2737 (Tải trọng) + TCVN 5574 (BTCT).
 
@@ -261,7 +289,7 @@ class MEPEngineerAgent(BaseDesignAgent):
     Output: bản vẽ điện + nước specifications
     """
     role = "mep_engineer"
-    default_model = "claude-sonnet-4-6"
+    default_model = "gemini-2.5-flash"  # Vertex AI — rule-based MEP
     complexity = "complex"
     system_prompt_template = """Bạn là Kỹ sư MEP — chuyên TCVN 7568 (Điện) + 4513 (Cấp nước) + 4474 (Thoát nước).
 
@@ -323,7 +351,7 @@ class BOQCalculatorAgent(BaseDesignAgent):
     Output: Excel BOQ 6 sheets theo mẫu Bộ Xây dựng
     """
     role = "boq_calculator"
-    default_model = "claude-haiku-4-5"  # tốc độ ưu tiên + cost cheap
+    default_model = "gemini-2.5-flash"  # Vertex AI — fast tabular takeoff
     complexity = "medium"
     system_prompt_template = """Bạn là chuyên gia BOQ (Bill of Quantities) — bóc tách dự toán xây dựng VN.
 
@@ -385,7 +413,7 @@ class QAValidatorAgent(BaseDesignAgent):
     Output: validation report + green-light hoặc list issues
     """
     role = "qa_validator"
-    default_model = "claude-opus-4-7"  # critical — frontier judgment
+    default_model = "gemini-2.5-pro"  # Vertex AI — critical QA judgment
     complexity = "critical"
     system_prompt_template = """Bạn là QA Validator cho dự án xây dựng VN.
 
