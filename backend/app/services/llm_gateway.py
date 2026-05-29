@@ -162,13 +162,23 @@ async def _call_vertex_ai(model_name: str, prompt: str, system: str | None, temp
 
     model_obj = GenerativeModel(model_name=model_name, system_instruction=system)
     config = GenerationConfig(temperature=temperature, max_output_tokens=max_tokens)
-    resp = await asyncio.to_thread(model_obj.generate_content, prompt, generation_config=config)
 
-    # Vertex response parsing — .text shortcut throws if multi-part; manually join
-    if not resp.candidates:
-        return ""
-    parts = resp.candidates[0].content.parts
-    return "".join(getattr(p, "text", "") for p in parts)
+    # Phase B fires 3 agents in parallel → can burst Vertex quota. Retry transient
+    # 429s with backoff before letting the caller degrade to the mock fallback.
+    for attempt in range(4):
+        try:
+            resp = await asyncio.to_thread(model_obj.generate_content, prompt, generation_config=config)
+            # .text shortcut throws if multi-part; join parts manually
+            if not resp.candidates:
+                return ""
+            parts = resp.candidates[0].content.parts
+            return "".join(getattr(p, "text", "") for p in parts)
+        except Exception as e:
+            msg = str(e).lower()
+            if attempt < 3 and ("429" in msg or "resource exhausted" in msg or "rate limit" in msg):
+                await asyncio.sleep(1.5 * (2 ** attempt))
+                continue
+            raise
 
 
 def _mock_response(prompt: str, model: str) -> str:

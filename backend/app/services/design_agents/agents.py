@@ -54,13 +54,19 @@ def _extract_json(text: str) -> dict[str, Any]:
     if not text:
         return {}
     s = text.strip()
-    if s.startswith("```"):
-        nl = s.find("\n")
-        if nl != -1:
-            s = s[nl + 1:]
-        if s.endswith("```"):
-            s = s[:-3]
-        s = s.strip()
+    # Prefer a fenced ```json ... ``` block, even when preceded by prose.
+    if "```" in s:
+        rest = s[s.find("```") + 3:]
+        nl = rest.find("\n")
+        if nl != -1 and rest[:nl].strip().lower() in ("json", "json5", ""):
+            rest = rest[nl + 1:]
+        end_fence = rest.find("```")
+        block = (rest[:end_fence] if end_fence != -1 else rest).strip()
+        try:
+            obj = json.loads(block)
+            return obj if isinstance(obj, dict) else {"_value": obj}
+        except Exception:
+            s = block  # fall through to brace-scan on the block content
     try:
         obj = json.loads(s)
         return obj if isinstance(obj, dict) else {"_value": obj}
@@ -83,6 +89,7 @@ class BaseDesignAgent:
     role: str = "base"
     default_model: str = "gemini-2.5-flash"  # Vertex AI default (subclasses override)
     complexity: str = "complex"
+    max_output_tokens: int = 8000  # Gemini 2.5 thinking shares this budget — see BOQ override
     system_prompt_template: str = ""
 
     async def call_llm(
@@ -109,7 +116,7 @@ class BaseDesignAgent:
                 prompt=prompt,
                 system=system or self.system_prompt_template,
                 temperature=0.4,
-                max_tokens=8000,
+                max_tokens=self.max_output_tokens,
             )
             return AgentResult(
                 agent_role=self.role,
@@ -191,7 +198,7 @@ class InteriorDesignerAgent(BaseDesignAgent):
     Output: render prompts (cho Flux/SDXL) + style spec (palette, vật liệu)
     """
     role = "interior_designer"
-    default_model = "gemini-2.5-flash"  # Vertex AI — style match, lighter tier
+    default_model = "gemini-2.5-flash-lite"  # Vertex AI — longest output; minimal thinking so JSON never truncates
     complexity = "complex"
     system_prompt_template = """Bạn là Interior Designer chuyên phong cách Việt Nam.
 Hiểu sâu 6 styles: Indochine, Modern, Luxury, Japandi, Tropical, Wabi-sabi.
@@ -289,7 +296,7 @@ class MEPEngineerAgent(BaseDesignAgent):
     Output: bản vẽ điện + nước specifications
     """
     role = "mep_engineer"
-    default_model = "gemini-2.5-flash"  # Vertex AI — rule-based MEP
+    default_model = "gemini-2.5-flash-lite"  # Vertex AI — rule-based MEP; minimal thinking for stable JSON
     complexity = "complex"
     system_prompt_template = """Bạn là Kỹ sư MEP — chuyên TCVN 7568 (Điện) + 4513 (Cấp nước) + 4474 (Thoát nước).
 
@@ -351,8 +358,9 @@ class BOQCalculatorAgent(BaseDesignAgent):
     Output: Excel BOQ 6 sheets theo mẫu Bộ Xây dựng
     """
     role = "boq_calculator"
-    default_model = "gemini-2.5-flash"  # Vertex AI — fast tabular takeoff
+    default_model = "gemini-2.5-flash-lite"  # Vertex AI — minimal thinking; full BOQ JSON fits budget
     complexity = "medium"
+    max_output_tokens = 16000  # largest deliverable; flash-lite barely thinks so full JSON fits
     system_prompt_template = """Bạn là chuyên gia BOQ (Bill of Quantities) — bóc tách dự toán xây dựng VN.
 
 Chuyên môn:
@@ -399,7 +407,10 @@ Output JSON:
             f"# ARCHITECTURE\n{json.dumps(architecture_spec, ensure_ascii=False)[:2000]}\n\n"
             f"# STRUCTURAL\n{json.dumps(structural_spec, ensure_ascii=False)[:2000]}\n\n"
             f"# MEP\n{json.dumps(mep_spec, ensure_ascii=False)[:2000]}\n\n"
-            f"# LOCATION: {location_province}\n\nGenerate BOQ JSON theo QĐ 1129."
+            f"# LOCATION: {location_province}\n\n"
+            "Bóc tách BOQ → trả về DUY NHẤT 1 JSON object đúng schema ở system prompt. "
+            "Mỗi sheet liệt kê 8-12 hạng mục CHÍNH (gộp hạng mục phụ), KHÔNG liệt kê chi tiết "
+            "vụn vặt. Số liệu gọn, đủ để ký dự toán sơ bộ. KHÔNG giải thích ngoài JSON."
         )
         return await self.call_llm(prompt, workspace_id=workspace_id)
 
