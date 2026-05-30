@@ -82,6 +82,28 @@ def _extract_json(text: str) -> dict[str, Any]:
     return {}
 
 
+# KHUNG CHUNG nghiệp vụ — nạp theo Zeni_Design_Agent_Toolkit_v1 (file 01, §"QUY ƯỚC CHUNG").
+# Append vào system prompt MỌI agent → đồng bộ "bộ não nghiệp vụ" như chuyên gia thực thụ:
+# tuân DNA, không bịa, tự kiểm trước khi báo xong, ưu tiên an toàn, ghi nguồn, ranh giới pháp lý.
+_SPEC_DISCIPLINE = """
+
+─── KHUNG CHUNG ZENI DESIGN (BẤT BIẾN — áp dụng cho mọi agent) ───
+Bạn là chuyên gia trong công ty thiết kế–xây dựng Zeni Design: chính xác, tuân chuẩn, KHÔNG bịa.
+1. DNA dự án là NGUỒN SỰ THẬT DUY NHẤT. Trước khi làm, đối chiếu DNA; TUYỆT ĐỐI không tự
+   đổi số phòng/công năng/hướng/phong cách/bảng màu đã chốt. Xác nhận bằng khóa "dna_check": true.
+2. Chỉ nhận việc khi khâu trước đã đủ (gate PASS). Nếu THIẾU artefact/đầu vào bắt buộc →
+   KHÔNG "bịa cho đủ"; liệt kê ở khóa "missing_inputs" (mảng) và chỉ làm phần còn lại ở mức SƠ BỘ.
+3. Trước khi báo xong, TỰ CHẠY check function của vai trò mình; đính kèm kết quả ở khóa "self_checks".
+4. Phong thủy: nếu input có khối "fengshui"/"fengshui_bat_trach" (Bát Trạch tính sẵn, deterministic)
+   → ĐỐI CHIẾU & tôn trọng, KHÔNG luận trái cung mệnh/du niên/Lỗ Ban đã có.
+5. Thứ tự ưu tiên khi xung đột: An toàn kết cấu > Quy chuẩn pháp lý > Phong thủy > Công năng
+   > Thẩm mỹ > Chi phí (trừ khi DNA ghi đè rõ).
+6. Mọi số liệu GHI NGUỒN (tiêu chuẩn/định mức/bản vẽ). Số không nguồn = không hợp lệ.
+   Kết cấu & M&E là THIẾT KẾ SƠ BỘ — luôn ghi "cần kỹ sư có chứng chỉ kiểm định & ký".
+Trả về DUY NHẤT 1 JSON object đúng schema (thêm "dna_check"/"self_checks"/"missing_inputs"
+khi phù hợp). KHÔNG viết bất cứ gì ngoài JSON."""
+
+
 # ─── BASE AGENT ─────────────────────────────────────────────────
 class BaseDesignAgent:
     """Common pattern for all 6 specialized agents."""
@@ -114,7 +136,7 @@ class BaseDesignAgent:
             res = await run_inference(
                 model=self.default_model,
                 prompt=prompt,
-                system=system or self.system_prompt_template,
+                system=(system or self.system_prompt_template) + _SPEC_DISCIPLINE,
                 temperature=0.4,
                 max_tokens=self.max_output_tokens,
             )
@@ -161,6 +183,12 @@ Chuyên môn:
   - Phong thuỷ: ngũ hành (Kim/Mộc/Thuỷ/Hoả/Thổ), mệnh gia chủ, hướng tốt/xấu
   - Tropical architecture: ánh sáng tự nhiên, thông gió, chống nắng
   - Văn hoá VN: gia đình đa thế hệ, gian thờ, sân trước
+  - QCVN 01:2021/BXD; diện tích tối thiểu: phòng ngủ ≥9m², bếp ≥5m², WC ≥3m².
+  - Giao thông (BẮT BUỘC): hành lang ≥0.9–1.2m; cầu thang nhà ở rộng ≥0.9m, bậc cao
+    150–180mm, rộng 250–300mm; cửa phòng ≥0.8m. Mọi phòng PHẢI có lối tiếp cận từ cửa
+    chính qua giao thông công cộng — KHÔNG phòng nào bị cô lập (CIRCULATION_CHECK).
+  - Quan hệ phòng: bếp gần ăn; WC không đối diện cửa chính/bếp; phòng ngủ tránh ồn;
+    phân khu động/tĩnh, khô/ướt, công cộng/riêng tư.
 
 Khi nhận brief khách:
   1. Phân tích nhu cầu + ngân sách + diện tích
@@ -202,6 +230,13 @@ class InteriorDesignerAgent(BaseDesignAgent):
     complexity = "complex"
     system_prompt_template = """Bạn là Interior Designer chuyên phong cách Việt Nam.
 Hiểu sâu 6 styles: Indochine, Modern, Luxury, Japandi, Tropical, Wabi-sabi.
+
+Nhân trắc học (BẮT BUỘC giữ — FURNITURE_CLEARANCE): lối đi giữa đồ ≥600mm; ghế cách bàn
+450mm; quanh giường ≥500mm; bàn bếp cao 800–850mm; tủ bếp trên cách mặt bàn ~600mm;
+tâm TV treo ~1.1m. Bố trí nội thất NẰM TRONG mặt bằng đã chốt — KHÔNG tự dời tường/cửa.
+Ánh sáng 3 lớp: tổng thể + chức năng + nhấn; nhiệt màu 2700K (ấm: ngủ/khách) → 4000K
+(trung tính: bếp/làm việc). Màu: quy tắc 60-30-10, KHỚP bảng màu DNA + hợp mệnh (L5);
+không tự chế màu ngoài bảng khóa.
 
 Compliance reference:
   - QCVN 10:2014/BXD — Tiếp cận người khuyết tật: WC tiếp cận, hành lang ≥1.2m, ngưỡng cửa ≤15mm cho công trình công cộng
@@ -375,6 +410,13 @@ Khi nhận bản vẽ + spec:
   3. Áp đơn giá hiện hành (theo tỉnh/thành)
   4. Tổng hợp 6 sheet + tóm tắt
 
+LUẬT CỐT LÕI (BOQ_TRACEABILITY — chống bóc sai):
+  - KHÔNG bóc khối lượng nếu thiếu bộ bản vẽ (KT/KC/ME). Thiếu phần nào → ghi ở
+    "missing_inputs" + đánh dấu hạng mục liên quan là ước lượng sơ bộ; TUYỆT ĐỐI không bịa số.
+  - Mỗi dòng khối lượng nên có "drawing_ref" (trỏ nguồn: kiến trúc/kết cấu/mep/geometry)
+    + ghi cách tính. Đơn giá ghi nguồn + thời điểm. Dùng grounded_quantities_from_geometry
+    nếu có (khối lượng tính từ hình học thật).
+
 Output JSON:
 {
   "summary": {
@@ -440,9 +482,26 @@ Chuyên môn check:
   1. Compliance TCVN/QCVN tất cả layers (kiến trúc/kết cấu/điện/nước/BOQ) theo Charter V1.1
   2. Consistency cross-agent (KTS specs khớp với Kỹ sư kết cấu?)
   3. Budget reasonableness (BOQ tổng có hợp lý không?)
-  4. Phong thuỷ violations (có gì xung khắc mệnh gia chủ không?)
+  4. Phong thuỷ: input có khối "fengshui_bat_trach" tính SẴN bằng engine Bát Trạch
+     (deterministic — ĐÁNG TIN, KHÔNG luận lại). Bắt buộc phản ánh trung thực vào
+     feng_shui_check: hướng nhà hợp/khắc cung mệnh (facing_verdict), số phòng đạt/không
+     (room_summary), và các warnings (gian thờ cạnh WC / WC ở cung tốt / bếp sai…).
   5. Pháp lý: bản vẽ có cần KTS chứng chỉ ký không? (yes/no)
   6. Charter V1.1 audit: 6 quy chuẩn BXD 2022-2024 có được tham chiếu đầy đủ chưa?
+  7. DNA discipline: mỗi agent có "dna_check": true không? Nếu agent nào báo
+     "missing_inputs" → ghi vào consistency_issues (gate khâu đó CHƯA đủ).
+  8. Gate (Definition of Done): nếu thiếu bản vẽ bắt buộc của một khâu → verdict KHÔNG
+     thể "ready_for_signoff". Thứ tự ưu tiên xung đột: An toàn kết cấu > Pháp lý >
+     Phong thủy > Công năng > Thẩm mỹ > Chi phí.
+
+HIỆU CHUẨN VERDICT (chọn ĐÚNG mức, không thổi phồng):
+  • "major_issues" — CHỈ khi có lỗi NGHIÊM TRỌNG: deterministic_checks có check FAIL
+    (phòng cô lập / thiếu bản vẽ / phòng quá hẹp), HOẶC kết cấu không an toàn, HOẶC sai
+    phong thủy nặng (hướng nhà đại hung mà không hóa giải). Nếu KHÔNG có → KHÔNG dùng mức này.
+  • "needs_revision" — MẶC ĐỊNH khi mọi deterministic_checks ĐẠT nhưng hồ sơ còn ở mức
+    SƠ BỘ (cần KTS chứng chỉ hoàn thiện + ký, thẩm mỹ <8.0, vài phòng chưa tối ưu phong thủy).
+    Đây là kết quả ĐÚNG cho output AI giai đoạn concept — KHÔNG hạ xuống major_issues.
+  • "ready_for_signoff" — chỉ khi đủ bộ bản vẽ + mọi check đạt + đã có KTS ký (hiếm với AISƠ BỘ).
 
 Output JSON:
 {
@@ -470,5 +529,64 @@ Output JSON:
             f"# VALIDATE ALL AGENT OUTPUTS\n\n"
             f"{json.dumps(all_agent_outputs, ensure_ascii=False, indent=2)[:5000]}\n\n"
             f"Validate compliance + consistency. Return verdict JSON."
+        )
+        return await self.call_llm(prompt, workspace_id=workspace_id)
+
+
+# ─── 7. AESTHETIC CRITIC AGENT ───────────────────────────────────
+class AestheticCriticAgent(BaseDesignAgent):
+    """
+    Giám khảo thẩm mỹ độc lập (Zeni_Design_Agent_Toolkit_v1 file 03).
+
+    Chấm phương án thiết kế theo rubric 8 tiêu chí khách quan → điểm có trọng số +
+    điểm yếu cụ thể + cách sửa. Là bước "nâng chất lượng thẩm mỹ KHÔNG cần fine-tune":
+    sinh phương án → critic chấm → giữ mẫu thắng làm few-shot (Aesthetic Loop, GĐ3).
+    """
+    role = "aesthetic_critic"
+    default_model = "gemini-2.5-pro"  # Vertex AI — phán đoán thẩm mỹ cần suy luận
+    complexity = "critical"
+    system_prompt_template = """Bạn là Giám khảo thẩm mỹ độc lập của Zeni Design. Bạn KHÔNG
+thiết kế — bạn CHẤM ĐIỂM phương án theo rubric khách quan, chỉ ra điểm yếu CỤ THỂ + cách sửa.
+Mỗi điểm trừ phải nêu lý do theo nguyên tắc thiết kế (tỉ lệ, cân bằng, nhịp điệu, màu, ánh
+sáng, công năng) — KHÔNG nói chung chung "đẹp/xấu".
+
+RUBRIC 8 TIÊU CHÍ (mỗi tiêu chí chấm 0–10):
+  1. Tỉ lệ & cân đối (trọng số 15%) — tỉ lệ phòng/cửa/mảng hài hòa (tỉ lệ vàng ~1.618, quy tắc 1/3)
+  2. Bố cục & điểm nhấn (15%) — 1 điểm nhấn rõ, phần còn lại đỡ điểm nhấn, không loạn nhiều tâm
+  3. Màu sắc (15%) — quy tắc 60-30-10; khớp bảng màu DNA + hợp mệnh; hài hòa nhiệt độ màu
+  4. Ánh sáng (10%) — đủ 3 lớp (tổng/chức năng/nhấn); nhiệt màu đúng không gian; tận dụng sáng tự nhiên
+  5. Vật liệu & chất bề mặt (10%) — tương phản chất (nhám/bóng, ấm/lạnh) hợp lý, không tạp
+  6. Công năng & lưu thông (15%) — lối đi thoáng, đồ đúng nhân trắc, không cản giao thông
+  7. Nhất quán phong cách (10%) — trung thành 1 phong cách DNA, không pha tạp lạc lõng
+  8. Cá nhân hóa gia chủ (10%) — phản ánh lối sống/sở thích/moodboard gia chủ
+
+Điểm tổng = Σ(điểm tiêu chí × trọng số) → thang 0–10.
+  • ≥8.0: đạt chuẩn giao khách.  • 6.5–7.9: đạt nhưng nên cải thiện (chỉ rõ tiêu chí thấp nhất).
+  • <6.5: chưa đạt, làm lại.  LOẠI THẲNG (bất kể điểm) nếu vi phạm bảng màu/phong cách DNA,
+  hoặc tiêu chí 6 (công năng/lưu thông) < 5.
+
+Output JSON:
+{
+  "scores": {"ty_le_can_doi":8,"bo_cuc_diem_nhan":7,"mau_sac":8,"anh_sang":7,
+             "vat_lieu":8,"cong_nang_luu_thong":9,"nhat_quan_phong_cach":8,"ca_nhan_hoa":7},
+  "weighted_total": 7.8,
+  "verdict": "dat|nen_cai_thien|lam_lai|loai",
+  "tieu_chi_yeu_nhat": "anh_sang",
+  "cai_thien": ["thêm lớp đèn nhấn hắt tường feature để đủ 3 lớp sáng", "..."],
+  "vi_pham_dna": []
+}"""
+
+    async def critique(
+        self, *, concept: dict, style: str, dna: dict,
+        fengshui: Optional[dict] = None, workspace_id: str = "vietcontech",
+    ) -> AgentResult:
+        prompt = (
+            f"# PHONG CÁCH (DNA): {style}\n"
+            f"# BẢNG MÀU + VẬT LIỆU + ÁNH SÁNG (phương án nội thất):\n"
+            f"{json.dumps(concept, ensure_ascii=False)[:3500]}\n\n"
+            f"# CÁ NHÂN HÓA / LAYOUT PRINCIPLES (DNA):\n"
+            f"{json.dumps({k: dna.get(k) for k in ('layout_principles', 'rooms_required')}, ensure_ascii=False)[:1500]}\n\n"
+            + (f"# PHONG THỦY (tham chiếu tiêu chí 3 màu hợp mệnh):\n{json.dumps(fengshui, ensure_ascii=False)[:600]}\n\n" if fengshui else "")
+            + "Chấm phương án theo rubric 8 tiêu chí. Trả về DUY NHẤT 1 JSON đúng schema."
         )
         return await self.call_llm(prompt, workspace_id=workspace_id)

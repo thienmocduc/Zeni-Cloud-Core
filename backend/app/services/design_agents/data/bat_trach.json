@@ -1,0 +1,61 @@
+{
+  "_meta": {
+    "ten": "Bảng Bát Trạch (Đông/Tây tứ trạch)",
+    "version": "1.0",
+    "ngay": "2026-05-30",
+    "ghi_chu": "Dùng cho L5 Feng Shui Agent. Quẻ mệnh tính theo Bát Quái du niên. Nam và Nữ có công thức khác nhau. Đây là tri thức phong thủy dân gian, KHÔNG phải khoa học; xếp dưới an toàn kết cấu + quy chuẩn pháp lý.",
+    "thu_tu_uu_tien": "An toàn kết cấu > Quy chuẩn pháp lý > Phong thủy > Công năng > Thẩm mỹ > Chi phí"
+  },
+  "nhom_menh": {
+    "Dong_tu_trach": {
+      "cac_que": ["Khảm", "Ly", "Chấn", "Tốn"],
+      "huong_tot": ["Bắc", "Nam", "Đông", "Đông Nam"],
+      "huong_xau": ["Tây", "Tây Bắc", "Tây Nam", "Đông Bắc"]
+    },
+    "Tay_tu_trach": {
+      "cac_que": ["Càn", "Khôn", "Cấn", "Đoài"],
+      "huong_tot": ["Tây", "Tây Bắc", "Tây Nam", "Đông Bắc"],
+      "huong_xau": ["Bắc", "Nam", "Đông", "Đông Nam"]
+    }
+  },
+  "du_nien": {
+    "_mo_ta": "4 cát: Sinh Khí (đại cát), Thiên Y (tài lộc/sức khỏe), Diên Niên (quan hệ), Phục Vị (ổn định). 4 hung: Tuyệt Mệnh (đại hung), Ngũ Quỷ (thị phi), Lục Sát (kiện tụng), Họa Hại (xui rủi).",
+    "cat": {
+      "Sinh Khí": "đại cát - đặt cửa chính, phòng khách, bàn làm việc",
+      "Thiên Y": "tài lộc, sức khỏe - đặt phòng ngủ chủ, bếp (miệng bếp hướng về)",
+      "Diên Niên": "quan hệ, hôn nhân - đặt phòng ngủ, phòng khách",
+      "Phục Vị": "ổn định - đặt phòng thờ, phòng học"
+    },
+    "hung": {
+      "Tuyệt Mệnh": "đại hung - đặt WC, kho, nhà để xe",
+      "Ngũ Quỷ": "thị phi - đặt WC, kho",
+      "Lục Sát": "kiện tụng - đặt WC, nhà tắm",
+      "Họa Hại": "xui rủi nhỏ - đặt kho, cầu thang"
+    }
+  },
+  "bo_tri_phong_theo_du_nien": {
+    "cua_chinh": ["Sinh Khí", "Diên Niên", "Thiên Y", "Phục Vị"],
+    "phong_khach": ["Sinh Khí", "Diên Niên"],
+    "phong_ngu_chu": ["Thiên Y", "Diên Niên", "Sinh Khí"],
+    "bep": ["toa_hung_huong_cat: đặt bếp ở cung xấu nhưng miệng bếp quay về hướng tốt (thường Thiên Y/Sinh Khí)"],
+    "phong_tho": ["Phục Vị", "Sinh Khí", "Thiên Y"],
+    "wc": ["Tuyệt Mệnh", "Ngũ Quỷ", "Lục Sát", "Họa Hại"],
+    "kho": ["Tuyệt Mệnh", "Ngũ Quỷ", "Họa Hại"],
+    "cau_thang": ["Họa Hại", "Lục Sát"]
+  },
+  "que_menh_theo_cung_phi": {
+    "_mo_ta": "Cung phi tính từ năm sinh âm lịch. Mapping cung phi (1-9) -> quẻ. Cung 5: Nam->Khôn(2), Nữ->Cấn(8).",
+    "1": "Khảm", "2": "Khôn", "3": "Chấn", "4": "Tốn",
+    "6": "Càn", "7": "Đoài", "8": "Cấn", "9": "Ly"
+  },
+  "huong_tot_xau_theo_que": {
+    "Khảm": {"Sinh Khí": "Đông Nam", "Thiên Y": "Đông", "Diên Niên": "Nam", "Phục Vị": "Bắc", "Tuyệt Mệnh": "Tây Nam", "Ngũ Quỷ": "Đông Bắc", "Lục Sát": "Tây Bắc", "Họa Hại": "Tây"},
+    "Ly":  {"Sinh Khí": "Đông", "Thiên Y": "Đông Nam", "Diên Niên": "Bắc", "Phục Vị": "Nam", "Tuyệt Mệnh": "Tây Bắc", "Ngũ Quỷ": "Tây", "Lục Sát": "Đông Bắc", "Họa Hại": "Tây Nam"},
+    "Chấn": {"Sinh Khí": "Nam", "Thiên Y": "Bắc", "Diên Niên": "Đông Nam", "Phục Vị": "Đông", "Tuyệt Mệnh": "Tây", "Ngũ Quỷ": "Tây Bắc", "Lục Sát": "Tây Nam", "Họa Hại": "Đông Bắc"},
+    "Tốn": {"Sinh Khí": "Bắc", "Thiên Y": "Nam", "Diên Niên": "Đông", "Phục Vị": "Đông Nam", "Tuyệt Mệnh": "Đông Bắc", "Ngũ Quỷ": "Tây Nam", "Lục Sát": "Tây", "Họa Hại": "Tây Bắc"},
+    "Càn": {"Sinh Khí": "Tây", "Thiên Y": "Đông Bắc", "Diên Niên": "Tây Nam", "Phục Vị": "Tây Bắc", "Tuyệt Mệnh": "Nam", "Ngũ Quỷ": "Đông", "Lục Sát": "Bắc", "Họa Hại": "Đông Nam"},
+    "Khôn": {"Sinh Khí": "Đông Bắc", "Thiên Y": "Tây", "Diên Niên": "Tây Bắc", "Phục Vị": "Tây Nam", "Tuyệt Mệnh": "Bắc", "Ngũ Quỷ": "Đông Nam", "Lục Sát": "Nam", "Họa Hại": "Đông"},
+    "Cấn": {"Sinh Khí": "Tây Nam", "Thiên Y": "Tây Bắc", "Diên Niên": "Tây", "Phục Vị": "Đông Bắc", "Tuyệt Mệnh": "Đông Nam", "Ngũ Quỷ": "Bắc", "Lục Sát": "Đông", "Họa Hại": "Nam"},
+    "Đoài": {"Sinh Khí": "Tây Bắc", "Thiên Y": "Tây Nam", "Diên Niên": "Đông Bắc", "Phục Vị": "Tây", "Tuyệt Mệnh": "Đông", "Ngũ Quỷ": "Nam", "Lục Sát": "Đông Nam", "Họa Hại": "Bắc"}
+  }
+}

@@ -40,17 +40,20 @@ async def generate_image(
     *, prompt: str, aspect_ratio: str = "1:1", n: int = 1,
     negative_prompt: str | None = None, seed: int | None = None,
     safety_filter: str = "block_some",
+    model: str = "imagen-3.0-generate-002",
 ) -> dict[str, Any]:
     """
     Generate image(s) from text using Imagen 3.
 
     aspect_ratio: '1:1' | '9:16' | '16:9' | '3:4' | '4:3'
+    model: 'imagen-3.0-generate-002' (highest quality, quota 1/min) |
+           'imagen-3.0-fast-generate-001' (near-equal quality, quota 20/min, cheaper)
     Returns list of base64-encoded PNG images.
     """
     _ensure_init()
     from vertexai.preview.vision_models import ImageGenerationModel
 
-    model = ImageGenerationModel.from_pretrained("imagen-3.0-generate-002")
+    gen_model = ImageGenerationModel.from_pretrained(model)
     kwargs: dict[str, Any] = {
         "prompt": prompt,
         "number_of_images": min(max(1, n), 4),
@@ -64,7 +67,7 @@ async def generate_image(
         kwargs["seed"] = seed
         kwargs["add_watermark"] = False  # required when seed set
 
-    resp = await asyncio.to_thread(model.generate_images, **kwargs)
+    resp = await asyncio.to_thread(gen_model.generate_images, **kwargs)
     images = []
     for img in resp.images:
         b64 = base64.b64encode(img._image_bytes).decode("ascii")
@@ -72,12 +75,13 @@ async def generate_image(
             "data_uri": f"data:image/png;base64,{b64}",
             "size_bytes": len(img._image_bytes),
         })
+    unit_price = 0.02 if "fast" in model else 0.04  # Imagen 3 fast vs standard pricing
     return {
-        "model": "imagen-3.0",
+        "model": model,
         "count": len(images),
         "aspect_ratio": aspect_ratio,
         "images": images,
-        "cost_usd": 0.04 * len(images),  # Imagen 3 standard pricing
+        "cost_usd": unit_price * len(images),
     }
 
 

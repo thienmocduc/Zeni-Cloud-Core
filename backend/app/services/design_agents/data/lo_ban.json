@@ -1,0 +1,44 @@
+{
+  "_meta": {
+    "ten": "Thước Lỗ Ban",
+    "version": "1.0",
+    "ghi_chu": "Dùng cho L5 Lỗ Ban Agent. Mỗi thước có chu kỳ riêng, chia thành các cung tốt/xấu lặp lại. Tra: lấy kích thước mm mod chu kỳ -> xác định cung. Số liệu cung phổ biến theo thước Lỗ Ban thị trường VN (loại in trên thước nhôm).",
+    "luu_y": "Có nhiều biến thể thước trên thị trường; đây là bản phổ biến. Khi triển khai thực tế nên cho phép cấu hình lại dải cung."
+  },
+  "thuoc": {
+    "thong_thuy_52_2": {
+      "ten": "Thước Thông Thủy (Dương trạch - khoảng thông thủy)",
+      "chu_ky_mm": 522,
+      "dung_cho": ["cửa đi", "cửa sổ", "cổng", "khoảng thông thủy ô cửa"],
+      "so_cung": 8,
+      "do_rong_cung_mm": 65.25,
+      "cung": [
+        {"ten": "Quý Nhân", "tot": true,  "y_nghia": "gặp quý nhân phù trợ"},
+        {"ten": "Hiểm Họa", "tot": false, "y_nghia": "tai họa, hiểm nguy"},
+        {"ten": "Thiên Tai", "tot": false, "y_nghia": "tai ương từ trời"},
+        {"ten": "Thiên Tài", "tot": true,  "y_nghia": "tài lộc, của cải"},
+        {"ten": "Nhân Lộc", "tot": true,  "y_nghia": "lộc về người, phúc"},
+        {"ten": "Cô Độc", "tot": false, "y_nghia": "cô quạnh, lẻ loi"},
+        {"ten": "Thiên Tặc", "tot": false, "y_nghia": "trộm cướp, mất mát"},
+        {"ten": "Tể Tướng", "tot": true,  "y_nghia": "công danh, địa vị"}
+      ]
+    },
+    "duong_trach_42_9": {
+      "ten": "Thước Dương Trạch (khối xây - bệ, bậc, đồ nội thất)",
+      "chu_ky_mm": 429,
+      "dung_cho": ["bệ", "bậc thang", "kích thước phủ bì", "đồ nội thất", "ban thờ"],
+      "so_cung": 8,
+      "do_rong_cung_mm": 53.625,
+      "cung": [
+        {"ten": "Tài", "tot": true,  "y_nghia": "tài lộc"},
+        {"ten": "Bệnh", "tot": false, "y_nghia": "bệnh tật"},
+        {"ten": "Ly", "tot": false, "y_nghia": "chia ly"},
+        {"ten": "Nghĩa", "tot": true,  "y_nghia": "tình nghĩa, đạo nghĩa"},
+        {"ten": "Quan", "tot": true,  "y_nghia": "công danh, quan lộc"},
+        {"ten": "Kiếp", "tot": false, "y_nghia": "tai kiếp, cướp đoạt"},
+        {"ten": "Hại", "tot": false, "y_nghia": "tổn hại"},
+        {"ten": "Bản (Mạng)", "tot": true,  "y_nghia": "vốn liếng, gốc rễ tốt"}
+      ]
+    }
+  }
+}

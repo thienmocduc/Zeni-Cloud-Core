@@ -17,6 +17,7 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,6 +26,8 @@ from app.core.deps import CurrentUser, get_current_user, require_workspace_acces
 from app.db.base import get_db
 from app.services.audit import audit_push, billing_push
 from app.services.design_agents import DesignSession, orchestrate_project
+from app.services.design_agents.brief_catalog import BRIEF_FORM, build_design_program
+from app.services.design_agents.studio_page import STUDIO_HTML
 
 log = logging.getLogger("zeni.api.design")
 router = APIRouter(prefix="/design", tags=["design"])
@@ -46,8 +49,11 @@ class DesignOrchestrateIn(BaseModel):
         - "Biệt thự 3 tầng, 5 phòng ngủ, 4 thành viên gia đình"
         - "Cải tạo nhà phố 5x20m, phong cách Indochine, ngân sách 2 tỷ"
     """
-    brief: str = Field(min_length=20, max_length=10_000,
-                       description="Mô tả dự án bằng tiếng Việt (20-10000 ký tự)")
+    brief: str = Field(default="", max_length=10_000,
+                       description="Mô tả tự do (tuỳ chọn nếu đã gửi 'form')")
+    form: dict[str, Any] | None = Field(default=None,
+                       description="Lựa chọn form có cấu trúc (xem GET /design/brief-form). "
+                                   "Nếu có → build program XÁC ĐỊNH, ưu tiên hơn 'brief'.")
     style_choice: str = Field(default="indochine", max_length=32,
                               description=f"Phong cách: {sorted(ALLOWED_STYLES)}")
     num_floors: int = Field(default=2, ge=1, le=20,
@@ -65,6 +71,22 @@ class DesignOrchestrateOut(BaseModel):
     workspace_id: str
     verdict: str
     agents_results: dict[str, Any]
+    # Imagen 3 luxury perspective renders (exterior + key rooms) as base64 data URIs.
+    # Returned to the client for display; intentionally NOT persisted to the DB row.
+    renders: dict[str, Any] = {"views": [], "count": 0, "cost_usd": 0.0}
+    # Deterministic floor-plan geometry (Item 1): 2D SVG drawings (geometry["drawings"]) +
+    # per-floor room layout + column grid + grounded structural/MEP/BOQ seeds. SVGs are small
+    # (~6KB each); returned for display, intentionally NOT persisted to the DB row.
+    geometry: dict[str, Any] | None = None
+    # L5 Phong thủy Bát Trạch + Lỗ Ban (deterministic, $0) — cung mệnh gia chủ, đối chiếu
+    # hướng nhà + từng phòng, tra Lỗ Ban cửa. None khi thiếu năm sinh gia chủ.
+    fengshui: dict[str, Any] | None = None
+    # DNA hash — mã băm trường khóa bất biến của dự án (spec §1.2), truy vết nhất quán.
+    dna_hash: str = ""
+    # Check functions deterministic (spec Chương 6): PA/CIRCULATION/CLEARANCE/BOQ traceability.
+    checks: dict[str, Any] | None = None
+    # Aesthetic Critic — chấm rubric 8 tiêu chí (toolkit file 03).
+    aesthetic: dict[str, Any] | None = None
     metrics: dict[str, Any]
     errors: list[str]
 
@@ -94,26 +116,56 @@ async def orchestrate_design(
     if me.role in ("Viewer",):
         raise HTTPException(status_code=403, detail="Cần role Developer trở lên để chạy design orchestration")
 
-    # Validate style
-    if payload.style_choice not in ALLOWED_STYLES:
+    # ── Resolve input: form lựa chọn (deterministic) ưu tiên hơn brief tự do ──
+    program_override: dict[str, Any] | None = None
+    if payload.form:
+        prog = build_design_program(payload.form)
+        run_brief = prog["brief_text"]
+        run_floors = prog["num_floors"]
+        run_residents = prog["num_residents"]
+        run_style = prog["style_choice"]
+        run_location = prog["location_province"]
+        program_override = {
+            "rooms_required": prog["rooms_required"],
+            "layout_principles": prog["layout_principles"],
+            "constraints": prog["constraints"],
+            "fengshui_input": prog.get("fengshui_input"),  # L5 Bát Trạch + Lỗ Ban
+        }
+    else:
+        run_brief = (payload.brief or "").strip()
+        if len(run_brief) < 20:
+            raise HTTPException(
+                status_code=400,
+                detail="Cần 'brief' ≥20 ký tự HOẶC 'form' lựa chọn có cấu trúc.",
+            )
+        run_floors = payload.num_floors
+        run_residents = payload.num_residents
+        run_style = payload.style_choice
+        run_location = payload.location_province
+
+    # Validate style (resolved)
+    if run_style not in ALLOWED_STYLES:
         raise HTTPException(
             status_code=400,
             detail=f"style_choice không hợp lệ. Cho phép: {sorted(ALLOWED_STYLES)}",
         )
 
-    log.info("[design.orchestrate] ws=%s actor=%s style=%s floors=%d residents=%d",
-             ws, me.email, payload.style_choice, payload.num_floors, payload.num_residents)
+    log.info("[design.orchestrate] ws=%s actor=%s style=%s floors=%d residents=%d mode=%s",
+             ws, me.email, run_style, run_floors, run_residents,
+             "form" if payload.form else "brief")
 
     # Run orchestrator (async, ~30-60s — chấp nhận sync chờ vì user UX kỳ vọng "ngồi xem")
     try:
         session: DesignSession = await orchestrate_project(
-            brief=payload.brief,
+            brief=run_brief,
             workspace_id=ws,
-            style_choice=payload.style_choice,
-            num_floors=payload.num_floors,
-            num_residents=payload.num_residents,
-            location_province=payload.location_province,
+            style_choice=run_style,
+            num_floors=run_floors,
+            num_residents=run_residents,
+            location_province=run_location,
             soil_data=payload.soil_data,
+            program_override=program_override,
+            form_answers=payload.form,  # cho PA_COMPLETENESS_CHECK
         )
     except Exception as e:
         log.exception("[design.orchestrate] failed ws=%s: %s", ws, e)
@@ -163,11 +215,11 @@ async def orchestrate_design(
                 "id": session.session_id,
                 "ws": ws,
                 "actor": me.email,
-                "brief": payload.brief[:4000],
-                "style": payload.style_choice,
-                "nf": payload.num_floors,
-                "nr": payload.num_residents,
-                "loc": payload.location_province,
+                "brief": run_brief[:4000],
+                "style": run_style,
+                "nf": run_floors,
+                "nr": run_residents,
+                "loc": run_location,
                 "verdict": session.verdict,
                 "agent_outputs": __import__("json").dumps(body["agents_results"], ensure_ascii=False),
                 "metrics": __import__("json").dumps(body["metrics"], ensure_ascii=False),
@@ -191,6 +243,32 @@ async def list_supported_styles(
     """Trả về danh sách style được LoRA model support."""
     _ = me  # placeholder: chỉ cần authenticated
     return sorted(ALLOWED_STYLES)
+
+
+@router.get("/brief-form", response_model=list[dict[str, Any]])
+async def get_brief_form() -> list[dict[str, Any]]:
+    """
+    Catalog câu hỏi có cấu trúc cho gia chủ/KTS CHỌN (thay vì viết prompt).
+
+    Trả về danh sách câu hỏi (single/multi/number/text) kèm mô tả chi tiết từng
+    lựa chọn — giống mục PA — để client render thành form. Khi gia chủ submit
+    (POST /design/orchestrate với `form`), toàn bộ 6 agents build kết quả KHỚP
+    ĐÚNG các mục đã chọn.
+
+    Public (chỉ là metadata catalog, không lộ dữ liệu người dùng). Việc chạy
+    thật ở /orchestrate vẫn yêu cầu auth.
+    """
+    return BRIEF_FORM
+
+
+@router.get("/studio", response_class=HTMLResponse)
+async def design_studio() -> HTMLResponse:
+    """
+    Studio thiết kế — trang HTML hướng dẫn gia chủ CHỌN nhu cầu (mô tả chi tiết)
+    + ô nhập cá nhân hoá, rồi gọi /orchestrate để 6 agents ra mặt bằng + render
+    khớp đúng lựa chọn. Public HTML (đăng nhập ngay trong trang để lấy token).
+    """
+    return HTMLResponse(content=STUDIO_HTML)
 
 
 @router.get("/health")
